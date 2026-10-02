@@ -4,18 +4,21 @@ node = "24.19.0"
 "aqua:rhysd/actionlint" = "1.7.12"
 "github:editorconfig-checker/editorconfig-checker" = { version = "4.0.2", rename_exe = "editorconfig-checker" }
 shellcheck = "0.11.0"
+python = "3.13.14"
+uv = "0.12.22"
+"pipx:towncrier" = { version = "26.9.0", uvx = true, uvx_args = "--python 3.13.14 --no-python-downloads" }
 
 [tasks.check]
-description = "Check formatting, text conventions, task scripts and GitHub Actions without rewriting files"
-depends = ["format:check", "check:editorconfig", "check:workflows", "check:scripts"]
+description = "Check formatting, text conventions, task scripts, GitHub Actions and changelog policy without rewriting files"
+depends = ["format:check", "check:editorconfig", "check:workflows", "check:scripts", "changelog:check"]
 
 [tasks."pr:check"]
 description = "Run all current checks and tests before opening or updating a PR"
 depends = ["check", "test"]
 
 [tasks."format:check"]
-description = "Check formatting of the foundation files without rewriting them"
-run = "prettier --check '*.md' '.github/**/*.{md,yml}' '.prettierrc.json'"
+description = "Check repository documentation and YAML/JSON configuration without rewriting them"
+run = "prettier --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.prettierrc.json' '.coderabbit.yaml'"
 
 [tasks."check:editorconfig"]
 description = "Validate text files against EditorConfig"
@@ -26,5 +29,13 @@ description = "Validate GitHub Actions workflows"
 run = "actionlint"
 
 [tasks."check:scripts"]
-description = "Check the formatting task and its smoke tests"
-run = "shellcheck .mise/tasks/format .mise/tasks/test"
+description = "Check the formatting, changelog and test tasks"
+run = "shellcheck .mise/tasks/format .mise/tasks/test/format .mise/tasks/changelog/*"
+
+[tasks.test]
+description = "Test repository tooling safeguards; application tests arrive with application code"
+depends = ["test:format", "test:changelog"]
+
+[tasks."test:changelog"]
+description = "Test fragment policy, comparison context and read-only previews"
+run = "python -m unittest discover -s tests -p 'test_changelog.py' -v"

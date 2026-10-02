@@ -17,12 +17,16 @@ Install [mise](https://mise.jdx.dev/getting-started.html), then run:
 ```sh
 mise trust
 mise install
-mise run pr:check
+mise run test
 ```
 
-The current gate checks formatting, EditorConfig rules, shell tasks and GitHub Actions, and tests the formatting safeguards. Application tests and a runnable demo will arrive with the first application increment. Tool versions are pinned in `mise.toml`; Node is currently used only to run Prettier.
+This verifies the tool setup. Run `mise run pr:check` on a contribution branch after staging its new changelog fragment, or on a checked-out PR branch that already includes one. Clean `main` intentionally fails the local PR fragment requirement.
+
+The current gate checks formatting, EditorConfig rules, shell tasks, GitHub Actions and changelog fragments, and tests the tooling safeguards. Application tests and a runnable demo will arrive with the first application increment. Tool versions are pinned in `mise.toml`; Node runs Prettier and Python runs Towncrier and tooling tests.
 
 To format edited files, name them explicitly: `mise run format -- README.md`. The command rejects directories and glob patterns. See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete task contract.
+
+Every PR adds a benefit-focused release-note fragment. Use `mise run changelog:add -- maintenance "Explain the contributor benefit."` for an internal improvement, then stage the generated fragment before running the PR gate. `mise run changelog:preview` prints a read-only draft to stdout. See [CONTRIBUTING.md](CONTRIBUTING.md) for categories and local/CI check contexts.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the review workflow and [AGENTS.md](AGENTS.md) for agent guidance.
 

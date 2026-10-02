@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Create a unique release-note fragment with an explicit category and summary"
+set -euo pipefail
+
+if (( $# != 2 )); then
+  echo 'Usage: mise run changelog:add -- <category> "Benefit-focused summary"' >&2
+  exit 2
+fi
+
+case "$1" in
+  added | changed | fixed | removed | security | maintenance) ;;
+  *)
+    echo 'Category must be added, changed, fixed, removed, security or maintenance.' >&2
+    exit 2
+    ;;
+esac
+
+if [[ ! "$2" =~ [^[:space:]] ]]; then
+  echo 'Summary must contain non-whitespace text.' >&2
+  exit 2
+fi
+
+exec towncrier create --config towncrier.toml --no-edit --content "$2" "+.$1.md"
