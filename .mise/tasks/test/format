@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
 #MISE description="Test explicit-file formatting safeguards"
+#MISE depends=["deps:install"]
 set -euo pipefail
 
 format_task="$PWD/.mise/tasks/format"
-fixture_dir="$(mktemp -d "${TMPDIR:-/tmp}/datapad-format-test.XXXXXXXX")"
+formatter="$PWD/node_modules/.bin/vp"
+format_config="$PWD/vite.config.ts"
+# Vite+ requires inputs inside the workspace; keep fixtures outside ignored paths.
+fixture_dir="$(mktemp -d "$PWD/.format-test.XXXXXXXX")"
 trap 'rm -rf -- "$fixture_dir"' EXIT
-cp .prettierrc.json "$fixture_dir/.prettierrc.json"
 cd "$fixture_dir"
 
 printf '{"value":1}\n' > 'selected file.json'
+cp 'selected file.json' selected.before
 printf '{"value":2}\n' > untouched.json
 cp untouched.json untouched.before
 bash "$format_task" 'selected file.json'
-prettier --check 'selected file.json'
+if cmp -s 'selected file.json' selected.before; then
+  echo 'FAIL: the selected file was not formatted.' >&2
+  exit 1
+fi
+"$formatter" fmt --config "$format_config" --check 'selected file.json'
 cmp untouched.json untouched.before
 echo 'PASS: explicit filenames, including spaces, format without changing other files.'
 
