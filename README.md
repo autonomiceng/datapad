@@ -22,7 +22,7 @@ mise run test
 
 This verifies the tool setup. Run `mise run pr:check` on a contribution branch after staging its new changelog fragment, or on a checked-out PR branch that already includes one. Clean `main` intentionally fails the local PR fragment requirement.
 
-The current gate checks formatting, EditorConfig rules, shell tasks, GitHub Actions and changelog fragments, and tests the tooling safeguards. Application tests and a runnable demo will arrive with the first application increment. Tool versions are pinned in `mise.toml`; Node runs Prettier and Python runs Towncrier and tooling tests.
+The current gate checks formatting, EditorConfig rules, shell tasks, GitHub Actions and changelog fragments, and tests the tooling safeguards. Application tests and a runnable demo will arrive with the first application increment. mise pins Bun, Node and the specialist tools; Bun installs the project-local Vite+ toolchain from `bun.lock`, Node runs its CLI, and Python runs Towncrier and tooling tests.
 
 To format edited files, name them explicitly: `mise run format -- README.md`. The command rejects directories and glob patterns. See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete task contract.
 

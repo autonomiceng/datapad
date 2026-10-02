@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 #MISE description="Format only explicitly named files; reject directories and glob patterns"
+#MISE depends=["deps:install"]
 set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if (( $# == 0 )); then
   echo 'Usage: mise run format -- path/to/file [path/to/other-file ...]' >&2
@@ -21,4 +24,4 @@ for file in "$@"; do
   fi
 done
 
-exec prettier --write -- "$@"
+exec "$repo_root/node_modules/.bin/vp" fmt --config "$repo_root/vite.config.ts" --write -- "$@"

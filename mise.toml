@@ -1,6 +1,6 @@
 [tools]
 node = "24.19.0"
-"npm:prettier" = "3.9.9"
+bun = "1.4.2"
 "aqua:rhysd/actionlint" = "1.7.12"
 "github:editorconfig-checker/editorconfig-checker" = { version = "4.0.2", rename_exe = "editorconfig-checker" }
 shellcheck = "0.11.0"
@@ -17,8 +17,13 @@ description = "Run all current checks and tests before opening or updating a PR"
 depends = ["check", "test"]
 
 [tasks."format:check"]
-description = "Check repository documentation and YAML/JSON configuration without rewriting them"
-run = "prettier --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.prettierrc.json' '.coderabbit.yaml'"
+description = "Check repository documentation and tooling configuration without rewriting them"
+depends = ["deps:install"]
+run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'package.json' 'vite.config.ts'"
+
+[tasks."deps:install"]
+description = "Install pinned project tools from the frozen Bun lockfile"
+run = "bun install --frozen-lockfile"
 
 [tasks."check:editorconfig"]
 description = "Validate text files against EditorConfig"

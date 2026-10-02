@@ -16,20 +16,23 @@ This verifies the tool setup. Run the full `mise run pr:check` on a contribution
 
 ## Checks and formatting
 
-| Task                                             | Purpose                                                                      |
-| ------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `mise run format -- <files...>`                  | Format explicitly named, intentionally edited files                          |
-| `mise run format:check`                          | Check foundation Markdown, YAML and formatting configuration without writing |
-| `mise run check`                                 | Run format, EditorConfig, shell, workflow and changelog checks               |
-| `mise run test`                                  | Exercise tooling safeguards using temporary fixtures                         |
-| `mise run pr:check`                              | Run all current checks and tests; also used by CI                            |
-| `mise run changelog:add -- <category> <summary>` | Create a uniquely named Towncrier fragment                                   |
-| `mise run changelog:preview`                     | Render draft release notes to stdout without changing files or the index     |
-| `mise run changelog:check`                       | Validate fragments, rendering and the applicable change policy               |
+| Task                                             | Purpose                                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `mise run deps:install`                          | Install pinned project tools from the frozen Bun lockfile                       |
+| `mise run format -- <files...>`                  | Format explicitly named, intentionally edited files                             |
+| `mise run format:check`                          | Check foundation Markdown, YAML, JSON and tooling configuration without writing |
+| `mise run check`                                 | Run format, EditorConfig, shell, workflow and changelog checks                  |
+| `mise run test`                                  | Exercise tooling safeguards using temporary fixtures                            |
+| `mise run pr:check`                              | Run all current checks and tests; also used by CI                               |
+| `mise run changelog:add -- <category> <summary>` | Create a uniquely named Towncrier fragment                                      |
+| `mise run changelog:preview`                     | Render draft release notes to stdout without changing files or the index        |
+| `mise run changelog:check`                       | Validate fragments, rendering and the applicable change policy                  |
 
 Run `pr:check` before opening or updating a PR and after resolving conflicts. Checks leave source files unchanged. The formatting task requires regular filenames, validates all inputs before writing, and rejects directory or glob arguments. Quote filenames; do not expand broad shell globs into the command. Inspect `git diff` after formatting and keep unrelated files unchanged.
 
-Prettier's version and configuration are pinned. Use the mise task rather than global installations, unpinned `npx` commands or editor defaults. Formatter upgrades, configuration changes and broad reformatting belong in a separate reviewed change. Keep one formatting policy when adding application tooling.
+Vite+ is pinned in `package.json`, and its Oxfmt formatting policy lives in the root `vite.config.ts`. Formatting tasks resolve the installed project-local CLI and configuration explicitly. Bun's exact `packageManager` version matches its mise pin, and `deps:install` uses `bun install --frozen-lockfile`. Tasks that need Vite+ depend on that install task, so the same setup runs locally and in CI. Use mise tasks rather than global installations, unpinned downloads or editor defaults. Formatter upgrades, configuration changes and broad reformatting belong in a separate reviewed change.
+
+mise owns the task graph and PR gate. Vite+ owns formatting and will supply JavaScript lint, frontend tests and builds as application code arrives; Bun owns dependency installs and future backend execution and tests. Node remains available for tool compatibility. ShellCheck, actionlint, EditorConfig and Towncrier cover distinct checks, and the Python changelog tests stay in the gate. Keep one formatting policy and one definition of each required check when adding application tooling.
 
 There is no application test suite yet. Add lint, type-check, build and application-test tasks when their code arrives, and wire every required task into `pr:check` in the same change. Expand formatting coverage with new source directories. Do not substitute a successful placeholder for a missing test suite. Local checks and CI use the same mise gate with the changelog contexts described below.
 
