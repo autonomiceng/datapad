@@ -1,0 +1,30 @@
+[tools]
+node = "24.19.0"
+"npm:prettier" = "3.9.9"
+"aqua:rhysd/actionlint" = "1.7.12"
+"github:editorconfig-checker/editorconfig-checker" = { version = "4.0.2", rename_exe = "editorconfig-checker" }
+shellcheck = "0.11.0"
+
+[tasks.check]
+description = "Check formatting, text conventions, task scripts and GitHub Actions without rewriting files"
+depends = ["format:check", "check:editorconfig", "check:workflows", "check:scripts"]
+
+[tasks."pr:check"]
+description = "Run all current checks and tests before opening or updating a PR"
+depends = ["check", "test"]
+
+[tasks."format:check"]
+description = "Check formatting of the foundation files without rewriting them"
+run = "prettier --check '*.md' '.github/**/*.{md,yml}' '.prettierrc.json'"
+
+[tasks."check:editorconfig"]
+description = "Validate text files against EditorConfig"
+run = "editorconfig-checker"
+
+[tasks."check:workflows"]
+description = "Validate GitHub Actions workflows"
+run = "actionlint"
+
+[tasks."check:scripts"]
+description = "Check the formatting task and its smoke tests"
+run = "shellcheck .mise/tasks/format .mise/tasks/test"

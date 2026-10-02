@@ -1,0 +1,33 @@
+.scratch/
+.agents/
+.devloop/
+.plans/
+.claude/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+mise.local.toml
+.mise.local.toml
+*.key
+*.pem
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+*.log
+
+# Runtime data belongs outside the public checkout
+data/
+private/
+imports/
+exports/
+backups/
+*.dump
+
+.DS_Store

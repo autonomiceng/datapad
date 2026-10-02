@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#MISE description="Format only explicitly named files; reject directories and glob patterns"
+set -euo pipefail
+
+if (( $# == 0 )); then
+  echo 'Usage: mise run format -- path/to/file [path/to/other-file ...]' >&2
+  exit 2
+fi
+
+# Validate every argument before letting the formatter write any file.
+for file in "$@"; do
+  case "$file" in
+    -* | /* | .. | ../* | */../* | */..)
+      echo "Use an explicit repository-relative filename: $file" >&2
+      exit 2
+      ;;
+  esac
+  if [[ ! -f "$file" || -L "$file" ]]; then
+    echo "Expected a regular file, not a directory, symlink or glob: $file" >&2
+    exit 2
+  fi
+done
+
+exec prettier --write -- "$@"

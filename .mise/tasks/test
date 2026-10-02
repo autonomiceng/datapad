@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#MISE description="Test formatting safeguards; application tests arrive with application code"
+set -euo pipefail
+
+format_task="$PWD/.mise/tasks/format"
+fixture_dir="$(mktemp -d "${TMPDIR:-/tmp}/datapad-format-test.XXXXXXXX")"
+trap 'rm -rf -- "$fixture_dir"' EXIT
+cp .prettierrc.json "$fixture_dir/.prettierrc.json"
+cd "$fixture_dir"
+
+printf '{"value":1}\n' > 'selected file.json'
+printf '{"value":2}\n' > untouched.json
+cp untouched.json untouched.before
+bash "$format_task" 'selected file.json'
+prettier --check 'selected file.json'
+cmp untouched.json untouched.before
+echo 'PASS: explicit filenames, including spaces, format without changing other files.'
+
+for invalid in . '*.json' --write ../outside.json; do
+  if bash "$format_task" "$invalid" >/dev/null 2>&1; then
+    echo "FAIL: accepted unsafe formatting argument: $invalid" >&2
+    exit 1
+  fi
+done
+if bash "$format_task" >/dev/null 2>&1; then
+  echo 'FAIL: accepted formatting without filenames.' >&2
+  exit 1
+fi
+echo 'PASS: broad formatting and option arguments are rejected.'
+
+if bash "$format_task" untouched.json missing.json >/dev/null 2>&1; then
+  echo 'FAIL: accepted a missing file.' >&2
+  exit 1
+fi
+cmp untouched.json untouched.before
+echo 'PASS: an invalid file prevents writes to every requested file.'
