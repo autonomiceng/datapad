@@ -1,0 +1,2034 @@
+{
+  "info": {
+    "title": "Datapad import review API",
+    "description": "Development documentation",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.2",
+  "paths": {
+    "/api/import-review/sources": {
+      "get": {
+        "operationId": "listImportReviewSources",
+        "summary": "List import sources",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 200,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 500000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 500000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "sourceId"
+                        ],
+                        "properties": {
+                          "sourceId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-review/sources/{sourceId}/imports": {
+      "get": {
+        "operationId": "listImportReviewImports",
+        "summary": "List imports under a source",
+        "parameters": [
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 200,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 500000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 500000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "sourceId",
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "sourceId": {
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                      "type": "string"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "schemaVersion",
+                          "sourceId",
+                          "sourceReference",
+                          "dataAsOf",
+                          "recordCounts"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "schemaVersion": {
+                            "const": 1,
+                            "type": "number"
+                          },
+                          "sourceId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                            "type": "string"
+                          },
+                          "sourceReference": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                            "type": "string"
+                          },
+                          "dataAsOf": {
+                            "type": "string"
+                          },
+                          "recordCounts": {
+                            "minItems": 4,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "selectionCode",
+                                "recordType",
+                                "selectedCount",
+                                "linkedCount",
+                                "excludedCount",
+                                "reportedSourceTotalCount",
+                                "exclusionReasons"
+                              ],
+                              "properties": {
+                                "selectionCode": {
+                                  "minLength": 1,
+                                  "maxLength": 64,
+                                  "pattern": "^[a-z][a-z0-9_]*$",
+                                  "type": "string"
+                                },
+                                "recordType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "customer",
+                                    "service",
+                                    "addon",
+                                    "domain"
+                                  ]
+                                },
+                                "selectedCount": {
+                                  "minimum": 0,
+                                  "maximum": 1000000000,
+                                  "type": "integer"
+                                },
+                                "linkedCount": {
+                                  "minimum": 0,
+                                  "maximum": 1000000000,
+                                  "type": "integer"
+                                },
+                                "excludedCount": {
+                                  "minimum": 0,
+                                  "maximum": 1000000000,
+                                  "type": "integer"
+                                },
+                                "reportedSourceTotalCount": {
+                                  "minimum": 0,
+                                  "maximum": 1000000000,
+                                  "type": "integer"
+                                },
+                                "exclusionReasons": {
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "reasonCode",
+                                      "count"
+                                    ],
+                                    "properties": {
+                                      "reasonCode": {
+                                        "minLength": 1,
+                                        "maxLength": 64,
+                                        "pattern": "^[a-z][a-z0-9_]*$",
+                                        "type": "string"
+                                      },
+                                      "count": {
+                                        "minimum": 0,
+                                        "maximum": 1000000000,
+                                        "type": "integer"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-review/imports/{importId}/customers": {
+      "get": {
+        "operationId": "listImportReviewCustomers",
+        "summary": "List customers in an import",
+        "parameters": [
+          {
+            "name": "importId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 200,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 500000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 500000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "importMetadata",
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "importMetadata": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "schemaVersion",
+                        "sourceId",
+                        "sourceReference",
+                        "dataAsOf",
+                        "recordCounts"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "schemaVersion": {
+                          "const": 1,
+                          "type": "number"
+                        },
+                        "sourceId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "sourceReference": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "dataAsOf": {
+                          "type": "string"
+                        },
+                        "recordCounts": {
+                          "minItems": 4,
+                          "maxItems": 4,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "selectionCode",
+                              "recordType",
+                              "selectedCount",
+                              "linkedCount",
+                              "excludedCount",
+                              "reportedSourceTotalCount",
+                              "exclusionReasons"
+                            ],
+                            "properties": {
+                              "selectionCode": {
+                                "minLength": 1,
+                                "maxLength": 64,
+                                "pattern": "^[a-z][a-z0-9_]*$",
+                                "type": "string"
+                              },
+                              "recordType": {
+                                "type": "string",
+                                "enum": [
+                                  "customer",
+                                  "service",
+                                  "addon",
+                                  "domain"
+                                ]
+                              },
+                              "selectedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "linkedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "excludedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "reportedSourceTotalCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "exclusionReasons": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "reasonCode",
+                                    "count"
+                                  ],
+                                  "properties": {
+                                    "reasonCode": {
+                                      "minLength": 1,
+                                      "maxLength": 64,
+                                      "pattern": "^[a-z][a-z0-9_]*$",
+                                      "type": "string"
+                                    },
+                                    "count": {
+                                      "minimum": 0,
+                                      "maximum": 1000000000,
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "recordType",
+                          "sourceRecordId",
+                          "status",
+                          "label",
+                          "statusObservation"
+                        ],
+                        "properties": {
+                          "recordType": {
+                            "const": "customer",
+                            "type": "string"
+                          },
+                          "sourceRecordId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                            "type": "string"
+                          },
+                          "status": {
+                            "maxLength": 256,
+                            "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "statusObservation": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "raw",
+                              "known"
+                            ],
+                            "properties": {
+                              "raw": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "known": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-review/imports/{importId}/customers/{customerId}": {
+      "get": {
+        "operationId": "getImportReviewCustomer",
+        "summary": "Read a customer and paginated related records",
+        "parameters": [
+          {
+            "name": "importId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 200,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 500000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 500000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "importMetadata",
+                    "customer",
+                    "services",
+                    "domains"
+                  ],
+                  "properties": {
+                    "importMetadata": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "schemaVersion",
+                        "sourceId",
+                        "sourceReference",
+                        "dataAsOf",
+                        "recordCounts"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "schemaVersion": {
+                          "const": 1,
+                          "type": "number"
+                        },
+                        "sourceId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "sourceReference": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "dataAsOf": {
+                          "type": "string"
+                        },
+                        "recordCounts": {
+                          "minItems": 4,
+                          "maxItems": 4,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "selectionCode",
+                              "recordType",
+                              "selectedCount",
+                              "linkedCount",
+                              "excludedCount",
+                              "reportedSourceTotalCount",
+                              "exclusionReasons"
+                            ],
+                            "properties": {
+                              "selectionCode": {
+                                "minLength": 1,
+                                "maxLength": 64,
+                                "pattern": "^[a-z][a-z0-9_]*$",
+                                "type": "string"
+                              },
+                              "recordType": {
+                                "type": "string",
+                                "enum": [
+                                  "customer",
+                                  "service",
+                                  "addon",
+                                  "domain"
+                                ]
+                              },
+                              "selectedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "linkedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "excludedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "reportedSourceTotalCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "exclusionReasons": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "reasonCode",
+                                    "count"
+                                  ],
+                                  "properties": {
+                                    "reasonCode": {
+                                      "minLength": 1,
+                                      "maxLength": 64,
+                                      "pattern": "^[a-z][a-z0-9_]*$",
+                                      "type": "string"
+                                    },
+                                    "count": {
+                                      "minimum": 0,
+                                      "maximum": 1000000000,
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "customer": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "recordType",
+                        "sourceRecordId",
+                        "status",
+                        "label",
+                        "statusObservation"
+                      ],
+                      "properties": {
+                        "recordType": {
+                          "const": "customer",
+                          "type": "string"
+                        },
+                        "sourceRecordId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "status": {
+                          "maxLength": 256,
+                          "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "statusObservation": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "raw",
+                            "known"
+                          ],
+                          "properties": {
+                            "raw": {
+                              "maxLength": 256,
+                              "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "known": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "services": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "items",
+                        "total",
+                        "limit",
+                        "offset"
+                      ],
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "recordType",
+                              "sourceRecordId",
+                              "customer",
+                              "attachedService",
+                              "productName",
+                              "hostname",
+                              "status",
+                              "cancellationRequested",
+                              "money",
+                              "dueDate",
+                              "nextInvoiceDate",
+                              "statusObservation",
+                              "dueDateObservation",
+                              "nextInvoiceDateObservation"
+                            ],
+                            "properties": {
+                              "recordType": {
+                                "type": "string",
+                                "enum": [
+                                  "service",
+                                  "addon"
+                                ]
+                              },
+                              "sourceRecordId": {
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                                "type": "string"
+                              },
+                              "customer": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "recordType",
+                                  "sourceRecordId"
+                                ],
+                                "properties": {
+                                  "recordType": {
+                                    "const": "customer",
+                                    "type": "string"
+                                  },
+                                  "sourceRecordId": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "attachedService": {
+                                "additionalProperties": false,
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "required": [
+                                  "recordType",
+                                  "sourceRecordId"
+                                ],
+                                "properties": {
+                                  "recordType": {
+                                    "const": "service",
+                                    "type": "string"
+                                  },
+                                  "sourceRecordId": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "productName": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "hostname": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "status": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "cancellationRequested": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "money": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "amountMinor",
+                                  "currency",
+                                  "cadence"
+                                ],
+                                "properties": {
+                                  "amountMinor": {
+                                    "maxLength": 20,
+                                    "pattern": "^-?(0|[1-9][0-9]*)$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "currency": {
+                                    "pattern": "^[A-Z]{3}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "cadence": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              },
+                              "dueDate": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "nextInvoiceDate": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "statusObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "known"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "known": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "dueDateObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "state",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "valid",
+                                      "unset",
+                                      "invalid"
+                                    ]
+                                  },
+                                  "value": {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              },
+                              "nextInvoiceDateObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "state",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "valid",
+                                      "unset",
+                                      "invalid"
+                                    ]
+                                  },
+                                  "value": {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "total": {
+                          "minimum": 0,
+                          "maximum": 1000000000,
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "domains": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "items",
+                        "total",
+                        "limit",
+                        "offset"
+                      ],
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "recordType",
+                              "sourceRecordId",
+                              "customer",
+                              "domainName",
+                              "status",
+                              "termYears",
+                              "money",
+                              "dueDate",
+                              "nextInvoiceDate",
+                              "expiryDate",
+                              "statusObservation",
+                              "dueDateObservation",
+                              "nextInvoiceDateObservation",
+                              "expiryDateObservation"
+                            ],
+                            "properties": {
+                              "recordType": {
+                                "const": "domain",
+                                "type": "string"
+                              },
+                              "sourceRecordId": {
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                                "type": "string"
+                              },
+                              "customer": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "recordType",
+                                  "sourceRecordId"
+                                ],
+                                "properties": {
+                                  "recordType": {
+                                    "const": "customer",
+                                    "type": "string"
+                                  },
+                                  "sourceRecordId": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "domainName": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "status": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "termYears": {
+                                "minimum": 1,
+                                "maximum": 100,
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "money": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "amountMinor",
+                                  "currency",
+                                  "cadence"
+                                ],
+                                "properties": {
+                                  "amountMinor": {
+                                    "maxLength": 20,
+                                    "pattern": "^-?(0|[1-9][0-9]*)$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "currency": {
+                                    "pattern": "^[A-Z]{3}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "cadence": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              },
+                              "dueDate": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "nextInvoiceDate": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "expiryDate": {
+                                "maxLength": 256,
+                                "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "statusObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "known"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "known": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "dueDateObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "state",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "valid",
+                                      "unset",
+                                      "invalid"
+                                    ]
+                                  },
+                                  "value": {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              },
+                              "nextInvoiceDateObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "state",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "valid",
+                                      "unset",
+                                      "invalid"
+                                    ]
+                                  },
+                                  "value": {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              },
+                              "expiryDateObservation": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "raw",
+                                  "state",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "raw": {
+                                    "maxLength": 256,
+                                    "pattern": "^(?:[\\u0001-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "valid",
+                                      "unset",
+                                      "invalid"
+                                    ]
+                                  },
+                                  "value": {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "total": {
+                          "minimum": 0,
+                          "maximum": 1000000000,
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-review/imports/{importId}/data-issues": {
+      "get": {
+        "operationId": "listDataIssues",
+        "summary": "List data issues in an import",
+        "parameters": [
+          {
+            "name": "importId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 200,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 500000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 500000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "importMetadata",
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "importMetadata": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "schemaVersion",
+                        "sourceId",
+                        "sourceReference",
+                        "dataAsOf",
+                        "recordCounts"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "schemaVersion": {
+                          "const": 1,
+                          "type": "number"
+                        },
+                        "sourceId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "sourceReference": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                          "type": "string"
+                        },
+                        "dataAsOf": {
+                          "type": "string"
+                        },
+                        "recordCounts": {
+                          "minItems": 4,
+                          "maxItems": 4,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "selectionCode",
+                              "recordType",
+                              "selectedCount",
+                              "linkedCount",
+                              "excludedCount",
+                              "reportedSourceTotalCount",
+                              "exclusionReasons"
+                            ],
+                            "properties": {
+                              "selectionCode": {
+                                "minLength": 1,
+                                "maxLength": 64,
+                                "pattern": "^[a-z][a-z0-9_]*$",
+                                "type": "string"
+                              },
+                              "recordType": {
+                                "type": "string",
+                                "enum": [
+                                  "customer",
+                                  "service",
+                                  "addon",
+                                  "domain"
+                                ]
+                              },
+                              "selectedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "linkedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "excludedCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "reportedSourceTotalCount": {
+                                "minimum": 0,
+                                "maximum": 1000000000,
+                                "type": "integer"
+                              },
+                              "exclusionReasons": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "reasonCode",
+                                    "count"
+                                  ],
+                                  "properties": {
+                                    "reasonCode": {
+                                      "minLength": 1,
+                                      "maxLength": 64,
+                                      "pattern": "^[a-z][a-z0-9_]*$",
+                                      "type": "string"
+                                    },
+                                    "count": {
+                                      "minimum": 0,
+                                      "maximum": 1000000000,
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "code",
+                          "recordType",
+                          "sourceRecordId",
+                          "field"
+                        ],
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "missing_related_record",
+                              "unrecognized_status",
+                              "invalid_date",
+                              "different_customer"
+                            ]
+                          },
+                          "recordType": {
+                            "type": "string",
+                            "enum": [
+                              "customer",
+                              "service",
+                              "addon",
+                              "domain"
+                            ]
+                          },
+                          "sourceRecordId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "customer",
+                              "attachedService",
+                              "status",
+                              "dueDate",
+                              "nextInvoiceDate",
+                              "expiryDate"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  }
+}
