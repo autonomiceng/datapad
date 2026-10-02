@@ -17,7 +17,7 @@ Short, direct, precise language. State the result, then the evidence. Avoid em d
 
 ## Commits
 
-Use Conventional Commits: `<type>(scope): <description>`. Describe the change's benefit. Attribute contributions accurately and follow the task's approval boundary before committing or publishing.
+Use Conventional Commits: `<type>(scope): <description>`. Describe the change's benefit. Agents use the maintainer-configured shared Git author and committer identity and preserve commit signing. Verify the effective identity and signing configuration before committing; never substitute a model-specific name/email, add model co-author trailers, or disable signing to work around a failure. Preserve existing contributor attribution when integrating their work. Follow the task's approval boundary before committing or publishing.
 
 ## Documentation and scratch
 
@@ -26,6 +26,8 @@ Keep durable documentation with the behavior it explains. Add an ADR for a conse
 ## Delegation
 
 Use the task's requested models and review process. Give parallel agents separate worktrees or explicit file ownership. One integrator owns shared manifests, migrations, CI and final integration. Independent code and spec reviews precede PR submission; the implementation author does not replace either review. Read the delivery sequence in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+For new modules or structural changes, follow the reviewed architecture and module contracts. Report missing architecture decisions to the integrator before implementing dependent interfaces or layout. Establish the application structure through its architecture plan when application work begins.
 
 ## Taste
 
@@ -38,4 +40,4 @@ Use the task's requested models and review process. Give parallel agents separat
 
 ## Finish
 
-Run `mise run pr:check` before opening or updating a PR. Put every required formatter, linter, type check, test and build behind a mise task and include it in that gate when its code arrives. Use `mise run format -- <files...>` only for files intentionally changed; inspect the diff afterwards. Formatter upgrades and broad reformatting need a separate reviewed change. Report exact commands, results and material gaps. Demonstrate application behavior from the reviewed revision and repeat the demo after feedback. A skipped or failed check remains visible. Follow explicit user instructions when they change the workflow.
+Run `mise run pr:check` before opening or updating a PR. Every PR needs a new benefit-focused changelog fragment, including Maintenance entries for internal improvements; see [CONTRIBUTING.md](CONTRIBUTING.md) for the task contract. Put every required formatter, linter, type check, test and build behind a mise task and include it in that gate when its code arrives. Use `mise run format -- <files...>` only for files intentionally changed; inspect the diff afterwards. Formatter upgrades and broad reformatting need a separate reviewed change. Report exact commands, results and material gaps. Demonstrate application behavior from the reviewed revision and repeat the demo after feedback. A skipped or failed check remains visible. Follow explicit user instructions when they change the workflow.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Test formatting safeguards; application tests arrive with application code"
+#MISE description="Test explicit-file formatting safeguards"
 set -euo pipefail
 
 format_task="$PWD/.mise/tasks/format"

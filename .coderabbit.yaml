@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  profile: quiet
+  request_changes_workflow: false
+  poem: false
+  sequence_diagrams: false
+  path_instructions:
+    - path: "**/*"
+      instructions: >-
+        Focus on concrete correctness failures, privacy or security exposure,
+        data integrity, regressions and missing tests for changed behavior.
+        Give a failure scenario and supporting evidence for each finding.
+        Check the approved scope and reviewed architecture or module contracts;
+        identify missing decisions rather than inventing interfaces.
+        Avoid formatter or style duplication and speculative abstractions.
+        Public code, fixtures and documentation must remain reusable and free
+        of private deployment details, credentials and production records.
+  tools:
+    # These checks already run in the required mise gate and CI.
+    shellcheck:
+      enabled: false
+    actionlint:
+      enabled: false

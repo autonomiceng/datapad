@@ -2,9 +2,11 @@
 
 Describe the problem and resulting behavior. Link the approved scope using a public-safe reference.
 
+Name the new changelog fragment and its benefit. Include internal improvements under Maintenance.
+
 ## Verification
 
-List commands, results and known limitations, including `mise run pr:check`.
+List commands, results and known limitations, including `mise run pr:check` and `mise run changelog:preview`. Identify the checked revision and reported comparison base.
 
 ## Review artifact
 

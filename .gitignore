@@ -21,6 +21,8 @@ coverage/
 playwright-report/
 test-results/
 *.log
+__pycache__/
+*.pyc
 
 # Runtime data belongs outside the public checkout
 data/

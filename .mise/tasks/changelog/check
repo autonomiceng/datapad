@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Validate release-note fragments and enforce the PR change policy"
+set -euo pipefail
+
+exec python scripts/check_changelog.py
