@@ -30,6 +30,10 @@ Run `mise run test` for application tests and tooling safeguards. On Linux, `mis
 
 Format intentionally edited files explicitly, for example `mise run format -- README.md`. Every PR adds a benefit-focused release-note fragment. Read [CONTRIBUTING.md](CONTRIBUTING.md) for commands, checks and delivery, and [AGENTS.md](AGENTS.md) for agent guidance.
 
+## Billing experiment
+
+The [Stripe billing proof](docs/billing-proof.md) provides operator tooling for testing invoice timing and payment recovery with synthetic sandbox customers. Its local checks run in the PR gate; actual Stripe acceptance requires separate private sandbox configuration. It adds no production billing to the portal.
+
 ## Public core and private deployments
 
 The public core contains reusable code, documentation and synthetic examples. Keep business-specific code, branding, configuration and migration mappings in a separate private repository. Store credentials, customer records and database exports outside both repositories. Public builds and checks work without private repositories or provider credentials.

@@ -16,7 +16,9 @@
     "@playwright/test": "1.63.0",
     "typescript": "7.0.2",
     "dependency-cruiser": "18.5.0",
-    "@swc/core": "1.16.13"
+    "@swc/core": "1.16.13",
+    "stripe": "23.0.0",
+    "@js-temporal/polyfill": "0.5.1"
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",

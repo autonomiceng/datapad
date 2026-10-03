@@ -38,6 +38,8 @@ mise owns the task graph and PR gate. Vite+ owns formatting, JavaScript lint, in
 
 Run `mise run test:app` for real PostgreSQL integration cases and the browser journey, `mise run app:check` for lint and type checks, and `mise run build` for the frontend. `check:architecture` enforces module boundaries, including type-only imports; the build check rejects server runtime in the browser bundle. `openapi:check` detects generated-contract drift; use `openapi:generate` for an intentional contract change. Every required check belongs in `pr:check` when its code arrives. Local checks and CI use the same mise gate with the changelog contexts below.
 
+The [billing proof](docs/billing-proof.md) has credential-free checks in `test:billing-proof`, included in the PR gate. Its actual Stripe acceptance uses `billing:proof` with explicit private configuration. Serve only its generated report with `billing:serve`; keep provider evidence and credentials outside Git.
+
 Before changing import-review modules, schemas or application structure, read [the module architecture and contract guide](docs/import-review.md). Review generated SQL from `mise run db:generate` and apply it explicitly with `mise run db:migrate`. Preserve migrations once released or depended on by real installations. A reviewed change may replace an unmerged baseline used only by disposable synthetic demos, with an explicit demo reset. Disposable demo reset is a separate operation.
 
 ## Deliver a change

@@ -1,5 +1,6 @@
 .scratch/
 .agents/
+skills-lock.json
 .devloop/
 .plans/
 .claude/
