@@ -19,7 +19,7 @@ depends = ["check", "test"]
 [tasks."format:check"]
 description = "Check repository documentation and tooling configuration without rewriting them"
 depends = ["deps:install"]
-run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
+run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
 
 [tasks."deps:install"]
 description = "Install pinned project tools from the frozen Bun lockfile"
@@ -39,7 +39,7 @@ run = "shellcheck .mise/tasks/format .mise/tasks/test/format .mise/tasks/changel
 
 [tasks.test]
 description = "Run tooling safeguards and isolated application tests"
-depends = ["test:format", "test:changelog", "test:app"]
+depends = ["test:format", "test:changelog", "test:app", "test:billing-proof"]
 
 [tasks."test:changelog"]
 description = "Test fragment policy, comparison context and read-only previews"
@@ -119,3 +119,22 @@ run = "bun scripts/check-architecture.ts"
 description = "Import a shipped synthetic import file into an explicit DATABASE_URL"
 depends = ["deps:install"]
 run = "bun scripts/import-records.ts"
+
+[tasks."billing:proof"]
+description = "Run the explicit Stripe sandbox proof with private local evidence"
+depends = ["deps:install"]
+run = "bun scripts/billing-proof/cli.ts"
+
+[tasks."test:billing-proof"]
+description = "Check billing proof calendar, grouping and recovery without Stripe credentials"
+depends = ["deps:install"]
+run = "bun test tests/billing-proof"
+
+[tasks."billing:serve"]
+description = "Serve only the generated sandbox report, with no payment actions"
+depends = ["deps:install"]
+run = "bun scripts/billing-proof/report.ts"
+
+[tasks."agents:stripe-skills"]
+description = "Install current official Stripe guidance locally for Codex and Claude"
+run = "npx --yes skills@1.7.0 add https://docs.stripe.com --skill stripe-best-practices upgrade-stripe --agent codex claude-code --yes"
