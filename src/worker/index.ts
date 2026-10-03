@@ -1,3 +1,4 @@
+import type { PendingInput } from "../billing/work-types";
 import type { InvoiceNotices, NoticeSweepInput } from "../notifications/types";
 import { PgBoss } from "pg-boss";
 import type {
@@ -20,7 +21,25 @@ type BillingWork =
   | { kind: "notice"; noticeId: string };
 
 const queue = "datapad-billing";
+interface BillingQueue {
+  on(event: "error", handler: () => void): unknown;
+  start(): Promise<unknown>;
+  createQueue: PgBoss["createQueue"];
+  send(
+    name: string,
+    work: BillingWork,
+    options: { singletonKey: string },
+  ): Promise<unknown>;
+  work(
+    name: string,
+    options: { batchSize: 1 },
+    handler: (jobs: Array<{ data: BillingWork }>) => Promise<void>,
+  ): Promise<unknown>;
+  stop: PgBoss["stop"];
+}
 interface BillingWorker {
+  /** Run one bounded pass step per kind; concurrent calls share the current sweep. */
+  sweep(): Promise<void>;
   enqueue(work: BillingWork): Promise<void>;
   stop(): Promise<void>;
 }
@@ -28,6 +47,8 @@ interface BillingWorker {
 /** Pending database obligations recover a lost enqueue or exhausted queue retry. */
 export async function createBillingWorker(options: {
   databaseUrl: string;
+  /** Optional existing queue client; the worker owns its start and graceful stop. */
+  queue?: BillingQueue;
   billing: Pick<
     BillingCommands,
     "pendingWork" | "issueInvoice" | "processEvent"
@@ -45,10 +66,12 @@ export async function createBillingWorker(options: {
   notices?: Pick<InvoiceNotices, "sweepNotices" | "processNotice">;
   onError?: () => void;
 }): Promise<BillingWorker> {
-  const boss = new PgBoss({
-    connectionString: options.databaseUrl,
-    schedule: false,
-  });
+  const boss: BillingQueue =
+    options.queue ??
+    new PgBoss({
+      connectionString: options.databaseUrl,
+      schedule: false,
+    });
   const report = () => options.onError?.();
   boss.on("error", report);
   let stopped = false;
@@ -59,6 +82,9 @@ export async function createBillingWorker(options: {
     through?: ReconciliationCursor | null;
   } = {};
   let noticeCursor: NoticeSweepInput = {};
+  let resolutionCursor: PendingInput = {};
+  let setupCursor: PendingInput = {};
+  let billingCursor: PendingInput = {};
   async function enqueue(work: BillingWork) {
     if (stopped) throw new Error("Billing worker stopped.");
     const singletonKey =
@@ -75,7 +101,7 @@ export async function createBillingWorker(options: {
                 : `payment_setup:${work.setupId}`;
     await boss.send(queue, work, { singletonKey });
   }
-  async function sweep() {
+  async function sweep(): Promise<void> {
     if (stopped || sweeping) return sweeping;
     sweeping = (async () => {
       if (options.scheduled) {
@@ -119,20 +145,54 @@ export async function createBillingWorker(options: {
           report();
         }
       }
-      for (const work of (await options.resolutions?.pendingResolutions(100)) ??
-        []) {
-        if (stopped) return;
-        await enqueue(work);
+      if (options.resolutions) {
+        try {
+          const page = await options.resolutions.pendingResolutions({
+            ...resolutionCursor,
+            limit: 100,
+          });
+          resolutionCursor = page.next
+            ? { after: page.next, through: page.through }
+            : {};
+          for (const work of page.work) {
+            if (stopped) return;
+            await enqueue(work).catch(report);
+          }
+        } catch {
+          report();
+        }
       }
-      for (const setupId of (await options.paymentSettings?.pendingSetups(
-        100,
-      )) ?? []) {
-        if (stopped) return;
-        await enqueue({ kind: "payment_setup", setupId });
+      if (options.paymentSettings) {
+        try {
+          const page = await options.paymentSettings.pendingSetups({
+            ...setupCursor,
+            limit: 100,
+          });
+          setupCursor = page.next
+            ? { after: page.next, through: page.through }
+            : {};
+          for (const work of page.work) {
+            if (stopped) return;
+            await enqueue(work).catch(report);
+          }
+        } catch {
+          report();
+        }
       }
-      for (const work of await options.billing.pendingWork(100)) {
-        if (stopped) return;
-        await enqueue(work);
+      try {
+        const page = await options.billing.pendingWork({
+          ...billingCursor,
+          limit: 100,
+        });
+        billingCursor = page.next
+          ? { after: page.next, through: page.through }
+          : {};
+        for (const work of page.work) {
+          if (stopped) return;
+          await enqueue(work).catch(report);
+        }
+      } catch {
+        report();
       }
     })();
     try {
@@ -151,7 +211,7 @@ export async function createBillingWorker(options: {
       retryDelayMax: 60,
       expireInSeconds: 300,
     });
-    await boss.work<BillingWork>(queue, { batchSize: 1 }, async ([job]) => {
+    await boss.work(queue, { batchSize: 1 }, async ([job]) => {
       const work = job.data;
       if (work.kind === "issue")
         await options.billing.issueInvoice(work.invoiceId);
@@ -180,6 +240,7 @@ export async function createBillingWorker(options: {
   }, 5000);
   return {
     enqueue,
+    sweep,
     async stop() {
       if (stopped) return;
       stopped = true;

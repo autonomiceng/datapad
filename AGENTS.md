@@ -36,6 +36,7 @@ Before adding modules, changing application structure or changing import-review 
 Before changing invoice persistence, provider effects, payment events or invoice UI, read [the billing architecture and contracts](docs/billing.md).
 
 Before changing tickets, proposals, approvals or support UI, read [the support contract](docs/support.md).
+Before changing operational controls or backup tooling, read [billing operations](docs/billing-operations.md) and [the restore contract](docs/restore.md).
 
 ## Taste
 

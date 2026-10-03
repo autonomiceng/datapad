@@ -40,7 +40,7 @@ Run `mise run test:app` for real PostgreSQL integration cases and the browser jo
 
 The [billing proof](docs/billing-proof.md) has credential-free checks in `test:billing-proof`, included in the PR gate. Its actual Stripe acceptance uses `billing:proof` with explicit private configuration. Serve only its generated report with `billing:serve`; keep provider evidence and credentials outside Git.
 
-The retained [invoice sandbox](docs/billing-demo.md) has database and webhook checks in `test:app` and provider boundary checks in `test:stripe`. Real hosted-payment acceptance uses `billing:demo` with explicit private sandbox configuration; it is separate from credential-free CI.
+The retained [invoice sandbox](docs/billing-demo.md) has database and webhook checks in `test:app` and provider boundary checks in `test:stripe`. Real hosted-payment acceptance uses `portal:billing` with explicit private sandbox configuration; it is separate from credential-free CI.
 
 [Invoice notice acceptance](docs/invoice-notices.md) uses `mise run test:portal:notices -- --config <private-config> --run-dir <private-run-directory>`. It sends a real sandbox invoice email only to the local test inbox and checks the staff preview and customer payment link.
 

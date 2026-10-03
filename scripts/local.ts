@@ -1,3 +1,4 @@
+import { bootstrapPortalEffects } from "./portal-effects-bootstrap";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -17,7 +18,6 @@ if (
     "dev",
     "test",
     "destroy",
-    "billing",
     "portal",
     "portal-billing",
     "portal-billing-test",
@@ -31,7 +31,7 @@ if (
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-collections-test, portal-notices-test, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-collections-test, portal-notices-test, portal-test or portal-destroy.",
   );
 }
 const portal =
@@ -46,7 +46,6 @@ const portal =
   mode === "portal-test" ||
   mode === "portal-destroy";
 const sandboxMode =
-  mode === "billing" ||
   mode === "portal-billing" ||
   mode === "portal-billing-test" ||
   mode === "portal-scheduled-test" ||
@@ -388,7 +387,6 @@ try {
       console.log(`Sample inbox: ${env.PORTAL_TEST_MAILPIT_URL}`);
     }
     if (sandbox) {
-      if (!portal) serverPort = await availableLoopbackPort();
       const listener = startStripeListener({
         secretKey: sandbox.key,
         forwardTo: `http://127.0.0.1:${serverPort}/api/billing/webhooks/stripe`,
@@ -426,18 +424,17 @@ try {
           env.PORTAL_SCHEDULE_TEST_CLOCK = acceptance.clockPath;
           env.PORTAL_SCHEDULE_TEST_PLAN = acceptance.planPath;
         }
-      } else {
-        env.BILLING_ISSUE_DATE = sandbox.issueDate;
-        await command([
-          process.execPath,
-          "scripts/billing-operator.ts",
-          "issue",
-        ]);
       }
     }
     env.NODE_ENV = mode === "dev" ? "development" : "production";
     env.ASSETS_DIR = mode === "dev" ? "" : "dist";
     const url = await startServer();
+    if (portal)
+      await bootstrapPortalEffects({
+        localOrigin: url,
+        origin: env.PORTAL_DEMO_ORIGIN!,
+        inbox: env.PORTAL_TEST_MAILPIT_URL!,
+      });
     if (testing) {
       env.TEST_BASE_URL = values.origin ?? url;
       await command([

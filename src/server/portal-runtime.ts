@@ -1,6 +1,9 @@
 import { createSupport } from "../support";
 import nodemailer from "nodemailer";
-import { createInvoiceNotices } from "../notifications";
+import {
+  createInvoiceNotices,
+  createInvoiceNoticeOperationsReader,
+} from "../notifications";
 import { createNoticeSmtp } from "./notice-smtp";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -16,7 +19,11 @@ import {
 } from "../customers";
 import { createServices, assertSyntheticServices } from "../services";
 import { portalServicePolicy } from "./portal-services";
-import { createBillingReader } from "../billing";
+import {
+  createBillingReader,
+  createBillingOperations,
+  createFinancialEffectGuard,
+} from "../billing";
 import { createPortalBilling } from "./portal-billing";
 import { createPortalSubscriptions } from "./portal-subscriptions";
 import type { BillingHttp } from "./billing-routes";
@@ -163,7 +170,10 @@ export async function createPortalRuntime(
     smtp: configuration.smtp,
     allowRecipient: allowNoticeRecipient,
   });
+  const deploymentKey =
+    configuration.billing?.deploymentKey ?? portalDeploymentKey;
   const invoiceNotices = createInvoiceNotices({
+    financialEffectGuard: createFinancialEffectGuard(deploymentKey),
     pool,
     deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
     customerAccess: customers,
@@ -181,6 +191,36 @@ export async function createPortalRuntime(
     businessNow: options.now,
   });
   await invoiceNotices.assertSyntheticData();
+  const billingOperations = createBillingOperations({
+    pool,
+    deploymentKey,
+    access: access.policy,
+    audit: access.audit,
+    notices: createInvoiceNoticeOperationsReader({ deploymentKey }),
+    reconciliation:
+      portalBilling.commands &&
+      portalBilling.resolutions &&
+      portalBilling.invoiceCollections
+        ? {
+            inspectCustomer: portalBilling.commands.inspectCustomer.bind(
+              portalBilling.commands,
+            ),
+            inspectInvoice: portalBilling.commands.inspectInvoice.bind(
+              portalBilling.commands,
+            ),
+            inspectSetup: portalBilling.paymentSettings.inspectSetup.bind(
+              portalBilling.paymentSettings,
+            ),
+            inspectResolution: portalBilling.resolutions.inspectResolution.bind(
+              portalBilling.resolutions,
+            ),
+            reconcileCollection:
+              portalBilling.invoiceCollections.reconcileCollection.bind(
+                portalBilling.invoiceCollections,
+              ),
+          }
+        : null,
+  });
   const billing: BillingHttp = {
     reader,
     webhook: portalBilling.webhook,
@@ -202,6 +242,11 @@ export async function createPortalRuntime(
   };
 
   return {
+    operations: {
+      access,
+      operations: billingOperations,
+      origin: configuration.origin,
+    },
     notices: { access, notices: invoiceNotices },
     invoiceNotices,
     paymentSettings: portalBilling.paymentSettingsHttp,

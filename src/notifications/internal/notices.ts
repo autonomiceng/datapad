@@ -393,7 +393,11 @@ export function createInvoiceNotices(
         (pending.through && !valid(pending.through))
       )
         throw new RangeError("Invalid notice cursor");
-      if (billing) {
+      const paused = await db.transaction(
+        async (tx) =>
+          (await options.financialEffectGuard.assertMayStart(tx)) === "paused",
+      );
+      if (billing && !paused) {
         const page = await billing.finalizedNoticePage({ limit, ...discovery });
         for (const invoice of page.invoices) await materialize(invoice);
         discovery = page.next
@@ -402,6 +406,7 @@ export function createInvoiceNotices(
       }
       const eligible = and(
         eq(invoiceNotices.deploymentKey, deploymentKey),
+        paused ? sql`${invoiceNotices.attemptedAt} is not null` : undefined,
         sql`(${invoiceNotices.state}='sending' or (${invoiceNotices.state}='pending' and (
           (${invoiceNotices.stage}<>'invoice' and ${invoiceNotices.windowEndAt}<=${businessNow().toISOString()}::timestamptz)
           or ((${invoiceNotices.reason} is null or ${invoiceNotices.reason}<>'initial_notice_needs_review')
@@ -565,6 +570,11 @@ export function createInvoiceNotices(
                         Date.parse(reminder.scheduledAt) <= business
                       )
                         await suppress(tx, reminder, "obsolete_after_delay");
+                  if (
+                    (await options.financialEffectGuard.assertMayStart(tx)) ===
+                    "paused"
+                  )
+                    return done("retry");
                   const stamped = await transition(tx, row, {
                     state: "sending",
                     reason: null,

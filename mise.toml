@@ -20,6 +20,7 @@ depends = [
   "app:check",
   "openapi:check",
   "check:architecture",
+  "check:restore",
 ]
 
 [tasks."pr:check"]
@@ -57,6 +58,7 @@ depends = [
   "test:billing-proof",
   "test:stripe",
   "test:documentation",
+  "test:restore",
 ]
 
 [tasks."test:changelog"]
@@ -177,11 +179,6 @@ description = "Verify Stripe adapter boundaries without provider credentials"
 depends = ["deps:install"]
 run = "bun test tests/stripe"
 
-[tasks."billing:demo"]
-description = "Issue a synthetic manual-payment invoice and run the sandbox app with webhook forwarding"
-depends = ["build"]
-run = "bun scripts/local.ts billing"
-
 [tasks."billing:refresh"]
 description = "Reconcile the approved synthetic invoice using explicit sandbox runtime configuration"
 depends = ["deps:install"]
@@ -226,3 +223,28 @@ run = "bun scripts/check-documentation.ts"
 description = "Verify sandbox invoice email delivery and staff preview in the local inbox"
 depends = ["build", "browser:install"]
 run = "bun scripts/local.ts portal-notices-test"
+
+[tasks."restore:rehearse"]
+description = "Restore an explicitly owned synthetic snapshot into an isolated read-only rehearsal"
+depends = ["deps:install"]
+run = "bun scripts/restore/cli.ts"
+
+[tasks."restore:inspect"]
+description = "Inspect an isolated restore through a SELECT-only connection"
+depends = ["deps:install"]
+run = "bun scripts/restore/inspect-cli.ts"
+
+[tasks."test:restore"]
+description = "Check snapshot consistency and isolated read-only restore with owned Docker fixtures"
+depends = ["deps:install"]
+run = "bun test tests/restore"
+
+[tasks."test:operations"]
+description = "Check operational authority and pause serialization against explicit TEST_DATABASE_URL"
+depends = ["deps:install"]
+run = "bun test tests/server/billing-operations.test.ts"
+
+[tasks."check:restore"]
+description = "Verify the isolated restore inspection dependency graph"
+depends = ["deps:install"]
+run = "bun scripts/restore/check-boundary.ts"

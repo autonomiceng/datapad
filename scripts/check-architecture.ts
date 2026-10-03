@@ -21,6 +21,8 @@ async function inspect(input: string): Promise<Report> {
   return JSON.parse(output) as Report;
 }
 const real = await inspect("src");
+const restore = await inspect("scripts/restore");
+real.summary.violations.push(...restore.summary.violations);
 if (real.summary.violations.length) {
   console.error(real.summary.violations);
   throw new Error("Application imports violate module ownership.");

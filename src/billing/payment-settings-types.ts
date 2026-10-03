@@ -1,3 +1,4 @@
+import type { PendingInput, PendingPage } from "./work-types";
 import type { Pool } from "pg";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { AccessResult, AuditWriter, HumanActor } from "../access/types";
@@ -43,6 +44,8 @@ export interface PaymentSettingsOptions {
 }
 /** Customer administrators alone may change settings; saving a card grants no collection consent. */
 export interface PaymentSettings {
+  /** Retrieves owned existing setup evidence without creating a mapping or session; caller supplies billing staff authority. */
+  inspectSetup(setupId: string): Promise<"complete" | "retry" | "needs_review">;
   /** Requires read_billing and returns persisted safe card/consent facts without provider I/O. */
   getPaymentSettings(
     actor: HumanActor,
@@ -76,8 +79,10 @@ export interface PaymentSettings {
   receiveSetupEvent(event: VerifiedPaymentSetupEvent): Promise<void>;
   /** Worker recovery holds the mapping/setup locks across provider I/O and never charges. Reuses the original key; uncertain recovery beyond 23 hours needs review. */
   processSetup(setupId: string): Promise<"complete" | "retry" | "needs_review">;
-  /** Reads due, non-exhausted setup work for this deployment; limits outside 1 through 100 throw. */
-  pendingSetups(limit?: number): Promise<string[]>;
+  /** Traverses due setup work by immutable acceptance time; retain through with next and restart completed passes. Limits outside 1 through 100 throw. */
+  pendingSetups(
+    input?: PendingInput,
+  ): Promise<PendingPage<{ kind: "payment_setup"; setupId: string }>>;
   /** Returns only mapping IDs backed by fully validated owned setup intentions. */
   assertSyntheticData(): Promise<ReadonlySet<string>>;
 }

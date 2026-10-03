@@ -1,6 +1,12 @@
+import { pendingPage } from "./pending-page";
+import { sql } from "drizzle-orm";
+import {
+  createFinancialEffectGuard,
+  FinancialEffectsPaused,
+} from "./effect-guard";
 import { randomUUID } from "node:crypto";
 import canonicalize from "canonicalize";
-import { and, asc, desc, eq, isNull, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, isNull, lte, ne, or } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Value } from "@sinclair/typebox/value";
 import { AuditRequestConflict } from "../../access";
@@ -363,6 +369,7 @@ export function createInvoiceResolutions(
   )
     throw new Error("Invalid resolution ownership");
   const reconciliationAudit = { audit, operatorId: workerId };
+  const guard = createFinancialEffectGuard(deploymentKey);
   const db = drizzle(pool);
   const context = createInvoiceContext({
     pool,
@@ -581,19 +588,28 @@ export function createInvoiceResolutions(
         await noteReview(connection, row, "collection_conflict");
         return "needs_review";
       }
-      if (!row.attemptedAt) {
-        const attemptedAt = at();
+      if (!row.responseAt) {
+        const attemptedAt = row.attemptedAt ?? at();
         await connection.transaction(async (tx) => {
           await tx
-            .update(resolutions)
-            .set({ attemptedAt })
-            .where(eq(resolutions.id, row!.id));
-          await audit.recordOperator(tx, {
-            operatorId: workerId,
-            customerId: row!.customerId,
-            targetId: row!.id,
-            action: "invoice.resolution_attempted",
-          });
+            .select({ id: resolutions.id })
+            .from(resolutions)
+            .where(eq(resolutions.id, row!.id))
+            .for("update");
+          if ((await guard.assertMayStart(tx)) === "paused")
+            throw new FinancialEffectsPaused();
+          if (!row!.attemptedAt) {
+            await tx
+              .update(resolutions)
+              .set({ attemptedAt })
+              .where(eq(resolutions.id, row!.id));
+            await audit.recordOperator(tx, {
+              operatorId: workerId,
+              customerId: row!.customerId,
+              targetId: row!.id,
+              action: "invoice.resolution_attempted",
+            });
+          }
         });
         row = { ...row, attemptedAt };
       }
@@ -649,6 +665,15 @@ export function createInvoiceResolutions(
       await noteReview(connection, row, "uncertain_outcome");
       return "needs_review";
     } catch (error) {
+      if (error instanceof FinancialEffectsPaused) {
+        await connection
+          .update(resolutions)
+          .set({
+            nextAttemptAt: new Date(now().getTime() + 30000).toISOString(),
+          })
+          .where(eq(resolutions.id, resolutionId));
+        return "retry";
+      }
       const latest = await context.load(connection, invoice.invoice.id);
       const resolution = await active(connection, invoice.invoice.id);
       if (!latest || !resolution) throw error;
@@ -996,6 +1021,39 @@ export function createInvoiceResolutions(
         },
       );
     },
+    async inspectResolution(id) {
+      if (!isUuid(id)) return "complete";
+      const [row] = await db
+        .select()
+        .from(resolutions)
+        .where(
+          and(
+            eq(resolutions.id, id),
+            eq(resolutions.deploymentKey, deploymentKey),
+          ),
+        );
+      if (!row) return "complete";
+      return context.locked<WorkResult>(
+        row.invoiceId,
+        "complete",
+        async (connection, invoice) => {
+          try {
+            await inspect(connection, invoice);
+            const current = await active(connection, invoice.invoice.id);
+            return current?.state === "needs_review"
+              ? "needs_review"
+              : current?.state === "pending"
+                ? "retry"
+                : "complete";
+          } catch (error) {
+            return error instanceof BillingProviderError &&
+              error.kind === "review"
+              ? "needs_review"
+              : "retry";
+          }
+        },
+      );
+    },
     async processResolution(id) {
       if (!isUuid(id)) return "complete";
       const [row] = await db
@@ -1014,29 +1072,41 @@ export function createInvoiceResolutions(
         (connection, invoice) => process(connection, invoice, id),
       );
     },
-    async pendingResolutions(limit = 100) {
-      if (!Number.isInteger(limit) || limit < 1 || limit > 100)
-        throw new RangeError("Invalid work limit");
-      const rows = await db
-        .select({ id: resolutions.id })
+    async pendingResolutions(input = {}) {
+      const paused = await db.transaction(
+        async (tx) => (await guard.assertMayStart(tx)) === "paused",
+      );
+      const candidates = db
+        .select({
+          id: sql`${resolutions.id}::text`.as("id"),
+          kind: sql`'resolution'::text`.as("kind"),
+          createdAt: sql`${resolutions.createdAt}`.as("created_at"),
+        })
         .from(resolutions)
         .where(
           and(
             eq(resolutions.deploymentKey, deploymentKey),
             eq(resolutions.state, "pending"),
+            paused ? sql`${resolutions.attemptedAt} is not null` : undefined,
             or(
               isNull(resolutions.nextAttemptAt),
               lte(resolutions.nextAttemptAt, at()),
             ),
           ),
-        )
-        .orderBy(
-          asc(resolutions.nextAttemptAt),
-          asc(resolutions.createdAt),
-          asc(resolutions.id),
-        )
-        .limit(limit);
-      return rows.map((row) => ({ kind: "resolution", resolutionId: row.id }));
+        );
+      const page = await pendingPage(
+        db,
+        candidates.getSQL(),
+        ["resolution"],
+        input,
+      );
+      return {
+        ...page,
+        work: page.work.map((row) => ({
+          kind: "resolution" as const,
+          resolutionId: row.id,
+        })),
+      };
     },
     async assertSyntheticData() {
       const rows = await db.select().from(resolutions);

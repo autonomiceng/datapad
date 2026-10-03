@@ -37,6 +37,7 @@ export async function startPortal(
       notices: runtime.notices,
       services: runtime.services,
       support: runtime.support,
+      operations: runtime.operations,
       accounts: runtime.accounts,
       assetsDir: process.env.ASSETS_DIR
         ? resolve(process.env.ASSETS_DIR)

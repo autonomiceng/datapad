@@ -1,6 +1,13 @@
+import { pendingPage } from "./pending-page";
+import type { PendingInput } from "../work-types";
+import { sql } from "drizzle-orm";
+import {
+  createFinancialEffectGuard,
+  FinancialEffectsPaused,
+} from "./effect-guard";
 import { randomUUID, createHash } from "node:crypto";
 import canonicalize from "canonicalize";
-import { and, asc, eq, isNull, or, lte, lt } from "drizzle-orm";
+import { and, eq, isNull, or, lte, lt } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PaymentSettingsOptions } from "../payment-settings-types";
 import {
@@ -89,6 +96,7 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
       now = () => new Date(),
     } = options,
     db = drizzle(pool);
+  const guard = createFinancialEffectGuard(deploymentKey);
   const scope = (id: string) =>
     and(eq(setups.id, id), eq(setups.deploymentKey, deploymentKey));
   function verify(
@@ -188,6 +196,7 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
   async function processSetup(
     id: string,
     refresh = false,
+    retrievalOnly = false,
   ): Promise<"complete" | "retry" | "needs_review"> {
     if (!isUuid(id)) throw new RangeError("Invalid setup ID");
     if (!provider || !providerOwnership) return "retry";
@@ -222,10 +231,10 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
             row.providerAccountId !== providerOwnership.accountId
           )
             review();
-          const providerCustomerId = await options.ensureCustomerReceipt(
-            connection,
-            mapping.id,
-          );
+          if (retrievalOnly && !mapping.providerCustomerId) return "retry";
+          const providerCustomerId = retrievalOnly
+            ? mapping.providerCustomerId!
+            : await options.ensureCustomerReceipt(connection, mapping.id);
           if (
             !providerCustomerId ||
             (mapping.providerCustomerId &&
@@ -240,6 +249,7 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
               (row.providerSessionId ?? row.pendingSessionId)!,
             );
           } else {
+            if (retrievalOnly && !row.createAttemptedAt) return "complete";
             const found = await provider.findSetup(expected);
             if (found.kind === "ambiguous") review();
             if (found.kind === "found") receipt = found.value;
@@ -250,34 +260,49 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
                   23 * 60 * 60 * 1000
               )
                 review();
-              if (!row.createAttemptedAt) {
-                row.createAttemptedAt = now().toISOString();
-                await connection
-                  .update(setups)
-                  .set({ createAttemptedAt: row.createAttemptedAt })
-                  .where(scope(id));
-              }
+              if (retrievalOnly) return "retry";
+              await connection.transaction(async (tx) => {
+                await tx
+                  .select({ id: setups.id })
+                  .from(setups)
+                  .where(scope(id))
+                  .for("update");
+                if ((await guard.assertMayStart(tx)) === "paused")
+                  throw new FinancialEffectsPaused();
+                if (!row.createAttemptedAt) {
+                  row.createAttemptedAt = now().toISOString();
+                  await tx
+                    .update(setups)
+                    .set({ createAttemptedAt: row.createAttemptedAt })
+                    .where(scope(id));
+                }
+              });
               receipt = await provider.createSetup(expected, {
                 idempotencyKey: `datapad:${deploymentKey}:payment-setup:${id}:create`,
               });
             }
           }
           verify(expected, receipt, row);
-          // Persist the verified Session identity even while customer action is pending.
-          await connection
-            .update(setups)
-            .set({
-              status: receipt.status === "expired" ? "expired" : "pending",
-              providerSessionId: receipt.providerSessionId,
-              providerSetupIntentId:
-                receipt.setupIntent?.providerSetupIntentId ?? null,
-              checkoutUrl:
-                receipt.status === "open" ? receipt.checkoutUrl : null,
-              lastCheckedAt: now().toISOString(),
-              attempts: 0,
-              nextAttemptAt: new Date(now().getTime() + 30000).toISOString(),
-            })
-            .where(scope(id));
+          const receiptUpdate = {
+            status: receipt.status === "expired" ? "expired" : "pending",
+            providerSessionId: receipt.providerSessionId,
+            providerSetupIntentId:
+              receipt.setupIntent?.providerSetupIntentId ?? null,
+            checkoutUrl: receipt.status === "open" ? receipt.checkoutUrl : null,
+            lastCheckedAt: now().toISOString(),
+            attempts: retrievalOnly ? row.attempts : 0,
+            nextAttemptAt: retrievalOnly
+              ? row.nextAttemptAt
+              : new Date(now().getTime() + 30000).toISOString(),
+          } satisfies Partial<typeof setups.$inferInsert>;
+          // Completed-session checks project only after card retrieval succeeds.
+          // A transient second lookup must leave the saved recovery fields intact.
+          if (
+            !retrievalOnly ||
+            receipt.status !== "complete" ||
+            receipt.setupIntent?.status !== "succeeded"
+          )
+            await connection.update(setups).set(receiptUpdate).where(scope(id));
           if (receipt.status === "expired") {
             await connection
               .update(setups)
@@ -341,6 +366,7 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
             await tx
               .update(setups)
               .set({
+                ...(retrievalOnly ? receiptUpdate : {}),
                 status: "verified",
                 providerPaymentMethodId: providerMethodId,
                 checkoutUrl: null,
@@ -350,10 +376,20 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
           });
           return "complete";
         } catch (error) {
-          const attempts = Math.min(5, row.attempts + 1);
+          if (error instanceof FinancialEffectsPaused) {
+            await connection
+              .update(setups)
+              .set({
+                nextAttemptAt: new Date(now().getTime() + 30000).toISOString(),
+              })
+              .where(scope(id));
+            return "retry";
+          }
           const definitive =
             error instanceof SetupReview ||
             (error instanceof BillingProviderError && error.kind === "review");
+          if (retrievalOnly && !definitive) return "retry";
+          const attempts = Math.min(5, row.attempts + 1);
           const needsReview = definitive || attempts >= 5;
           await connection
             .update(setups)
@@ -438,27 +474,44 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
       },
     );
   }
-  async function pendingSetups(limit = 100) {
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
-      throw new RangeError("Invalid setup batch size");
-    return (
-      await db
-        .select({ id: setups.id })
-        .from(setups)
-        .where(
-          and(
-            eq(setups.deploymentKey, deploymentKey),
-            eq(setups.status, "pending"),
-            lt(setups.attempts, 5),
-            or(
-              isNull(setups.nextAttemptAt),
-              lte(setups.nextAttemptAt, now().toISOString()),
-            ),
+  async function pendingSetups(input: PendingInput = {}) {
+    const paused = await db.transaction(
+      async (tx) => (await guard.assertMayStart(tx)) === "paused",
+    );
+    const candidates = db
+      .select({
+        id: sql`${setups.id}::text`.as("id"),
+        kind: sql`'payment_setup'::text`.as("kind"),
+        createdAt: sql`${setups.acceptedAt}`.as("created_at"),
+      })
+      .from(setups)
+      .where(
+        and(
+          eq(setups.deploymentKey, deploymentKey),
+          eq(setups.status, "pending"),
+          paused
+            ? sql`(${setups.createAttemptedAt} is not null or ${setups.providerSessionId} is not null or ${setups.pendingSessionId} is not null or exists (select 1 from ${billingCustomers} where ${billingCustomers.id}=${setups.billingCustomerId} and ${billingCustomers.createAttemptedAt} is not null and ${billingCustomers.providerCustomerId} is null))`
+            : undefined,
+          lt(setups.attempts, 5),
+          or(
+            isNull(setups.nextAttemptAt),
+            lte(setups.nextAttemptAt, now().toISOString()),
           ),
-        )
-        .orderBy(asc(setups.retrievalRequestedAt), asc(setups.id))
-        .limit(limit)
-    ).map((r) => r.id);
+        ),
+      );
+    const page = await pendingPage(
+      db,
+      candidates.getSQL(),
+      ["payment_setup"],
+      input,
+    );
+    return {
+      ...page,
+      work: page.work.map((row) => ({
+        kind: "payment_setup" as const,
+        setupId: row.id,
+      })),
+    };
   }
   async function assertSyntheticData() {
     const all = await db.select().from(setups);
@@ -553,6 +606,7 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
   return {
     response,
     processSetup,
+    inspectSetup: (id: string) => processSetup(id, true, true),
     receiveSetupEvent,
     pendingSetups,
     assertSyntheticData,

@@ -221,6 +221,9 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
   expect(Object.keys(contract.paths)).toEqual([
     ...Object.keys(operations),
     ...billingPaths,
+    "/api/billing/operations",
+    "/api/billing/operations/control",
+    "/api/billing/operations/check",
     "/api/customers/{customerId}/services",
     "/api/customers/{customerId}/services/{serviceId}",
     "/api/customers/{customerId}/services/{serviceId}/components/{componentId}/preference",

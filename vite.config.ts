@@ -46,7 +46,7 @@ export default defineConfig({
     overrides: [
       {
         files: [
-          "src/{access,customers,services,import-review,billing,notifications,support}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,*-types}.ts",
+          "src/{access,customers,services,import-review,billing,notifications,support}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,effect-guard,*-types}.ts",
         ],
         rules: {
           "jsdoc-js/require-jsdoc": [

@@ -1,3 +1,4 @@
+import { createFinancialEffectGuard } from "./effect-guard";
 import { createHash, randomUUID } from "node:crypto";
 import canonicalize from "canonicalize";
 import type { Pool } from "pg";
@@ -395,6 +396,7 @@ export function createInvoiceCollections(
     !workerId.trim()
   )
     throw new Error("Invalid collection ownership");
+  const guard = createFinancialEffectGuard(deploymentKey);
   const db = drizzle(pool);
   const context = createInvoiceContext({
     pool,
@@ -537,6 +539,7 @@ export function createInvoiceCollections(
     )
       return hold(connection, attempt, "retry_exhausted");
     const { inspection, ended } = inspected;
+    let paused = false;
     const reserved = await connection.transaction(async (tx) => {
       await lockSubscriptionCustomer(
         tx,
@@ -602,6 +605,16 @@ export function createInvoiceCollections(
           wallNow().getTime() - Date.parse(row.firstAttemptedAt) >= lifetime)
       ) {
         await reviewCollectionAttempt(tx, row, "retry_exhausted", wallNow());
+        return null;
+      }
+      if (row)
+        await tx
+          .select({ id: attempts.id })
+          .from(attempts)
+          .where(eq(attempts.id, row.id))
+          .for("update");
+      if ((await guard.assertMayStart(tx)) === "paused") {
+        paused = true;
         return null;
       }
       const at = wallNow().toISOString();
@@ -670,6 +683,7 @@ export function createInvoiceCollections(
       });
       return stamped;
     });
+    if (paused) return "retry";
     if (!reserved) {
       const row = await attemptFor(connection, invoiceId);
       if (row) return resultFor(row);
@@ -764,13 +778,16 @@ export function createInvoiceCollections(
         (through && !valid(through))
       )
         throw new RangeError("Invalid collection cursor");
+      const paused = await db.transaction(
+        async (tx) => (await guard.assertMayStart(tx)) === "paused",
+      );
       const selection = {
         createdAt: invoices.createdAt,
         invoiceId: invoices.id,
       };
       const eligible = sql`${invoices.deploymentKey}=${deploymentKey} and ${invoices.providerInvoiceId} is not null and (
         exists (select 1 from ${attempts} where ${attempts.invoiceId}=${invoices.id} and ${attempts.state} in ('pending','processing') and (${attempts.nextAttemptAt} is null or ${attempts.nextAttemptAt}<=${wallNow().toISOString()}::timestamptz or ${attempts.firstAttemptedAt}<=${new Date(wallNow().getTime() - lifetime).toISOString()}::timestamptz))
-        or (not exists (select 1 from ${attempts} where ${attempts.invoiceId}=${invoices.id}) and ${invoices.providerStatus}='open' and ${invoices.providerReceiptState}='verified' and not exists (select 1 from ${resolutions} where ${resolutions.invoiceId}=${invoices.id} and ${resolutions.state}<>'withdrawn') and exists (
+        or (${!paused} and not exists (select 1 from ${attempts} where ${attempts.invoiceId}=${invoices.id}) and ${invoices.providerStatus}='open' and ${invoices.providerReceiptState}='verified' and not exists (select 1 from ${resolutions} where ${resolutions.invoiceId}=${invoices.id} and ${resolutions.state}<>'withdrawn') and exists (
           select 1 from ${groups} where ${groups.invoiceId}=${invoices.id} and ${groups.paymentArrangement}='automatic' and ${groups.totalMinor}>0 and ${groups.enrollmentId} is not null and ${groups.enrollmentId}=(select ${enrollments.id} from ${enrollments} where ${enrollments.customerId}=${groups.customerId} and ${enrollments.deploymentKey}=${groups.deploymentKey} order by ${enrollments.version} desc limit 1) and ${groups.collectionMissedAt} is null and exists (
             select 1 from ${periods} where ${periods.invoiceGroupId}=${groups.id} and (${periods.chargeAt}<=${businessNow().toISOString()}::timestamptz or ${periods.dueEndAt}<=${wallNow().toISOString()}::timestamptz)
             and (${invoices.collectionNextCheckAt} is null or ${invoices.collectionNextCheckAt}<=${wallNow().toISOString()}::timestamptz or ${periods.dueEndAt}<=${businessNow().toISOString()}::timestamptz or ${periods.dueEndAt}<=${wallNow().toISOString()}::timestamptz)

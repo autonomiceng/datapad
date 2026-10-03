@@ -1,3 +1,4 @@
+import type { FinancialEffectGuard } from "../billing/effect-guard";
 import type { Pool } from "pg";
 import type { AccessResult, AuditWriter, HumanActor } from "../access/types";
 import type { Customers } from "../customers/types";
@@ -63,6 +64,7 @@ export interface NoticeSmtp {
   >;
 }
 export interface InvoiceNoticesOptions {
+  financialEffectGuard: FinancialEffectGuard;
   pool: Pool;
   deploymentKey: string;
   customerAccess: Pick<Customers, "authorizeCustomer" | "readProfile">;

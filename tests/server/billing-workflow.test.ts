@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
@@ -60,7 +61,10 @@ const clear = () =>
   pool.query(
     'TRUNCATE customers, "user", organization, verification, access_audit, access_commands CASCADE',
   );
-beforeEach(clear);
+beforeEach(async () => {
+  await clear();
+  await resumeEffects(pool, "billing-test");
+});
 afterAll(async () => {
   await clear();
   await Promise.all([pool.end(), lockPool.end()]);
@@ -303,7 +307,7 @@ test("billing authority, atomic audit and first-mapping concurrency prevent unap
       .rows,
   ).toEqual([{ total: 1 }]);
   expect((await s.billing.getInvoice(id))!.invoice.state).toBe("requested");
-  expect(await s.billing.pendingWork()).toEqual([]);
+  expect((await s.billing.pendingWork()).work).toEqual([]);
   expect(s.provider.invoices.size).toBe(0);
   s.setDate("2030-01-02T12:00:00Z");
   expect(
@@ -371,7 +375,7 @@ test("billing authority, atomic audit and first-mapping concurrency prevent unap
         .where(eq(auditEntries.action, "invoice.issue_requested"))
     ).length,
   ).toBe(1);
-  expect(await s.billing.pendingWork()).toEqual([
+  expect((await s.billing.pendingWork()).work).toEqual([
     { kind: "issue", invoiceId: id },
   ]);
   await db.delete(session).where(eq(session.id, s.actors.billing.sessionId));

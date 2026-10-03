@@ -1,0 +1,69 @@
+.operations-heading,
+.operation-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.operations-heading h2 {
+  margin: 0;
+}
+.operations-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+.operations-control label {
+  flex: 1 1 260px;
+}
+.operations-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.operation-row {
+  display: grid;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.operation-head > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.operation-row p {
+  margin: 0;
+}
+.status-tag.operation-review {
+  border-color: var(--danger);
+  background: var(--danger-surface);
+  color: var(--danger);
+}
+.operation-reason {
+  color: var(--danger);
+  font-size: var(--text-support);
+}
+.operation-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 8px 24px;
+  margin: 0;
+}
+.operation-times dt {
+  font-size: var(--text-support);
+  color: var(--muted);
+}
+.operation-times dd {
+  margin: 2px 0 0;
+}
+.operation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}

@@ -188,3 +188,6 @@ _Avoid_: Exception, readiness score
 - **Proposal:** a versioned description of intended work, cost and effects on data.
 - **Approval:** a customer administrator's recorded acceptance of one exact proposal and target version.
 - **Result:** staff's verified account of completed work or resolution without changes. It records what happened; it does not perform the work.
+  **Billing actions**: portal requests that may create or change payment accounts, invoices, payment setup or payment outcomes, and invoice emails. This includes manual staff actions. A global pause blocks new dispatch while outcome retrieval continues; requests already dispatched and customer payments on provider-hosted pages can still finish.
+
+**Check status**: retrieve and verify an already recorded billing effect without initiating a new financial write.

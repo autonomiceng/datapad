@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
@@ -36,7 +37,10 @@ const clear = () =>
   pool.query(
     'TRUNCATE customers, "user", organization, verification, access_audit, access_commands CASCADE',
   );
-beforeEach(clear);
+beforeEach(async () => {
+  await clear();
+  await resumeEffects(pool, "billing-test");
+});
 afterAll(async () => {
   await clear();
   await Promise.all([pool.end(), lockPool.end()]);
