@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "synthetic-garden",
+  "sourceReference": "garden-001",
+  "dataAsOf": "2026-10-01T12:00:00Z",
+  "recordCounts": [
+    {
+      "selectionCode": "customer_selection",
+      "recordType": "customer",
+      "selectedCount": 1,
+      "linkedCount": 1,
+      "excludedCount": 0,
+      "reportedSourceTotalCount": 2,
+      "exclusionReasons": []
+    },
+    {
+      "selectionCode": "service_selection",
+      "recordType": "service",
+      "selectedCount": 4,
+      "linkedCount": 0,
+      "excludedCount": 2,
+      "reportedSourceTotalCount": 6,
+      "exclusionReasons": [
+        {
+          "reasonCode": "outside_selection",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "selectionCode": "addon_selection",
+      "recordType": "addon",
+      "selectedCount": 1,
+      "linkedCount": 0,
+      "excludedCount": 0,
+      "reportedSourceTotalCount": 1,
+      "exclusionReasons": []
+    },
+    {
+      "selectionCode": "domain_selection",
+      "recordType": "domain",
+      "selectedCount": 1,
+      "linkedCount": 0,
+      "excludedCount": 0,
+      "reportedSourceTotalCount": 1,
+      "exclusionReasons": []
+    }
+  ],
+  "customers": [
+    {
+      "recordType": "customer",
+      "sourceRecordId": "customer-elm",
+      "status": "Active"
+    },
+    {
+      "recordType": "customer",
+      "sourceRecordId": "customer-birch",
+      "status": "Inactive"
+    }
+  ],
+  "services": [
+    {
+      "recordType": "service",
+      "sourceRecordId": "hosting-elm",
+      "customer": {
+        "recordType": "customer",
+        "sourceRecordId": "customer-elm"
+      },
+      "attachedService": null,
+      "productName": "Garden hosting",
+      "hostname": "elm.test",
+      "status": "Active",
+      "cancellationRequested": false,
+      "money": {
+        "amountMinor": "2300",
+        "currency": "USD",
+        "cadence": "Monthly"
+      },
+      "dueDate": "2026-10-12",
+      "nextInvoiceDate": "2026-11-12"
+    },
+    {
+      "recordType": "service",
+      "sourceRecordId": "hosting-free",
+      "customer": {
+        "recordType": "customer",
+        "sourceRecordId": "customer-elm"
+      },
+      "attachedService": null,
+      "productName": "Community hosting",
+      "hostname": "free.test",
+      "status": "Active",
+      "cancellationRequested": false,
+      "money": {
+        "amountMinor": "0",
+        "currency": "USD",
+        "cadence": "Free"
+      },
+      "dueDate": null,
+      "nextInvoiceDate": null
+    },
+    {
+      "recordType": "service",
+      "sourceRecordId": "hosting-paused",
+      "customer": {
+        "recordType": "customer",
+        "sourceRecordId": "customer-elm"
+      },
+      "attachedService": null,
+      "productName": "Garden hosting",
+      "hostname": "paused.test",
+      "status": "Suspended",
+      "cancellationRequested": true,
+      "money": {
+        "amountMinor": "2300",
+        "currency": "USD",
+        "cadence": "Monthly"
+      },
+      "dueDate": "2026-02-30",
+      "nextInvoiceDate": "2026-11-12"
+    },
+    {
+      "recordType": "addon",
+      "sourceRecordId": "hosting-elm",
+      "customer": {
+        "recordType": "customer",
+        "sourceRecordId": "customer-elm"
+      },
+      "attachedService": {
+        "recordType": "service",
+        "sourceRecordId": "hosting-elm"
+      },
+      "productName": "Storage add-on",
+      "hostname": null,
+      "status": "Active",
+      "cancellationRequested": null,
+      "money": {
+        "amountMinor": "-125",
+        "currency": "USD",
+        "cadence": "Monthly"
+      },
+      "dueDate": "2026-10-12",
+      "nextInvoiceDate": "2026-11-12"
+    },
+    {
+      "recordType": "service",
+      "sourceRecordId": "hosting-orphan",
+      "customer": {
+        "recordType": "customer",
+        "sourceRecordId": "customer-absent"
+      },
+      "attachedService": null,
+      "productName": "Garden hosting",
+      "hostname": "orphan.test",
+      "status": "Awaiting Review",
+      "cancellationRequested": null,
+      "money": {
+        "amountMinor": null,
+        "currency": null,
+        "cadence": null
+      },
+      "dueDate": "2026-10-12",
+      "nextInvoiceDate": "not-a-date"
+    }
+  ],
+  "domains": [
+    {
+      "recordType": "domain",
+      "sourceRecordId": "domain-elm",
+      "customer": {
+        "recordType": "customer",
+        "sourceRecordId": "customer-elm"
+      },
+      "domainName": "elm.test",
+      "status": "Grace",
+      "termYears": 3,
+      "money": {
+        "amountMinor": "7100",
+        "currency": "USD",
+        "cadence": "Three years"
+      },
+      "dueDate": "2026-10-15",
+      "nextInvoiceDate": "2029-10-15",
+      "expiryDate": "2026-10-20"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# Preserve imports as immutable observations
+
+Validate versioned import files into staging tables and expose scoped reads, preserving raw dates, statuses and typed customer and attached-service references alongside derived interpretations. Updating operational customer or service state directly would erase comparison evidence and imply billing or provisioning authority, so a later import never rewrites an earlier one or treats absence as cancellation. Canonical content digests make repeated imports harmless and changed content under the same source and source reference a conflict; the initial CLI and viewer admit only reviewed synthetic fixtures until real-data handling and access controls receive their own scope.

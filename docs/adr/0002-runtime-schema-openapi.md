@@ -1,0 +1,3 @@
+# Derive the HTTP contract from runtime schemas
+
+Elysia routes use browser-safe TypeBox request and response schemas to validate inputs and generate deterministic OpenAPI with stable operation IDs, including explicit success and error responses. Runtime schemas keep validation and documentation together; compiler-only type extraction would leave runtime validation as a separate contract to maintain. The browser uses inferred types and a small fetch helper instead of a generated SDK or framework client, accepting manual HTTP handling while keeping server runtime dependencies out of browser code.

@@ -12,29 +12,33 @@ mise install
 mise run test
 ```
 
-This verifies the tool setup. Run the full `mise run pr:check` on a contribution branch after staging its new changelog fragment, or on a checked-out PR branch that already includes one. Clean `main` intentionally fails the local PR fragment requirement.
+Install Docker with Compose for application tests and the local demo. On Linux, `mise run browser:deps` installs Chromium system libraries with administrator privileges; the test task installs the pinned browser.
+
+This verifies application behavior and tooling safeguards. Run the full `mise run pr:check` on a contribution branch after staging its new changelog fragment, or on a checked-out PR branch that already includes one. Clean `main` intentionally fails the local PR fragment requirement.
 
 ## Checks and formatting
 
-| Task                                             | Purpose                                                                         |
-| ------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `mise run deps:install`                          | Install pinned project tools from the frozen Bun lockfile                       |
-| `mise run format -- <files...>`                  | Format explicitly named, intentionally edited files                             |
-| `mise run format:check`                          | Check foundation Markdown, YAML, JSON and tooling configuration without writing |
-| `mise run check`                                 | Run format, EditorConfig, shell, workflow and changelog checks                  |
-| `mise run test`                                  | Exercise tooling safeguards using temporary fixtures                            |
-| `mise run pr:check`                              | Run all current checks and tests; also used by CI                               |
-| `mise run changelog:add -- <category> <summary>` | Create a uniquely named Towncrier fragment                                      |
-| `mise run changelog:preview`                     | Render draft release notes to stdout without changing files or the index        |
-| `mise run changelog:check`                       | Validate fragments, rendering and the applicable change policy                  |
+| Task                                             | Purpose                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| `mise run deps:install`                          | Install pinned project tools from the frozen Bun lockfile                 |
+| `mise run format -- <files...>`                  | Format explicitly named, intentionally edited files                       |
+| `mise run format:check`                          | Check source, documentation and tooling formatting without writing        |
+| `mise run check`                                 | Run formatting, application, architecture, contract and specialist checks |
+| `mise run test`                                  | Run application behavior and tooling safeguards                           |
+| `mise run pr:check`                              | Run all current checks and tests; also used by CI                         |
+| `mise run changelog:add -- <category> <summary>` | Create a uniquely named Towncrier fragment                                |
+| `mise run changelog:preview`                     | Render draft release notes to stdout without changing files or the index  |
+| `mise run changelog:check`                       | Validate fragments, rendering and the applicable change policy            |
 
 Run `pr:check` before opening or updating a PR and after resolving conflicts. Checks leave source files unchanged. The formatting task requires regular filenames, validates all inputs before writing, and rejects directory or glob arguments. Quote filenames; do not expand broad shell globs into the command. Inspect `git diff` after formatting and keep unrelated files unchanged.
 
 Vite+ is pinned in `package.json`, and its Oxfmt formatting policy lives in the root `vite.config.ts`. Formatting tasks resolve the installed project-local CLI and configuration explicitly. Bun's exact `packageManager` version matches its mise pin, and `deps:install` uses `bun install --frozen-lockfile`. Tasks that need Vite+ depend on that install task, so the same setup runs locally and in CI. Use mise tasks rather than global installations, unpinned downloads or editor defaults. Formatter upgrades, configuration changes and broad reformatting belong in a separate reviewed change.
 
-mise owns the task graph and PR gate. Vite+ owns formatting and will supply JavaScript lint, frontend tests and builds as application code arrives; Bun owns dependency installs and future backend execution and tests. Node remains available for tool compatibility. ShellCheck, actionlint, EditorConfig and Towncrier cover distinct checks, and the Python changelog tests stay in the gate. Keep one formatting policy and one definition of each required check when adding application tooling.
+mise owns the task graph and PR gate. Vite+ owns formatting, JavaScript lint, integrated type checking and frontend builds; Bun owns frozen installs, backend execution and backend tests. Playwright exercises the built viewer. Node remains available for tool compatibility. ShellCheck, actionlint, EditorConfig and Towncrier cover distinct checks, and the Python changelog tests stay in the gate. Keep one formatting policy and one definition of each required check when adding application tooling.
 
-There is no application test suite yet. Add lint, type-check, build and application-test tasks when their code arrives, and wire every required task into `pr:check` in the same change. Expand formatting coverage with new source directories. Do not substitute a successful placeholder for a missing test suite. Local checks and CI use the same mise gate with the changelog contexts described below.
+Run `mise run test:app` for real PostgreSQL integration cases and the browser journey, `mise run app:check` for lint and type checks, and `mise run build` for the frontend. `check:architecture` enforces module boundaries, including type-only imports; the build check rejects server runtime in the browser bundle. `openapi:check` detects generated-contract drift; use `openapi:generate` for an intentional contract change. Every required check belongs in `pr:check` when its code arrives. Local checks and CI use the same mise gate with the changelog contexts below.
+
+Before changing import-review modules, schemas or application structure, read [the module architecture and contract guide](docs/import-review.md). Review generated SQL from `mise run db:generate` and apply it explicitly with `mise run db:migrate`. Preserve migrations once released or depended on by real installations. A reviewed change may replace an unmerged baseline used only by disposable synthetic demos, with an explicit demo reset. Disposable demo reset is a separate operation.
 
 ## Deliver a change
 
@@ -62,13 +66,19 @@ The integrator supplies this brief before delegating work:
 - Delivery boundary: draft, commit, push, PR or merge, and the required owner approval.
 - Final report: changed behavior, exact check commands/results, demo or document artifact, and material risks.
 
-Review findings identify a concrete defect, a plausible failure and supporting evidence. Reviewers check the accepted scope and contracts; tooling handles formatting and style preferences. Keep private paths, identities and review transcripts out of public artifacts. Establish application directories through the reviewed architecture plan when application work begins.
+Review findings identify a concrete defect, a plausible failure and supporting evidence. Reviewers check the accepted scope and contracts; tooling handles formatting and style preferences. Keep private paths, identities and review transcripts out of public artifacts. Follow [the application architecture](docs/import-review.md) and raise missing decisions before changing dependent interfaces or directories.
+
+The independent code review also checks for unused code and exports, duplicate helpers, obsolete compatibility or migration scaffolding, and opportunities to simplify the implementation. Verify module ownership and dependency directions against the architecture. A cleanup finding should name the unnecessary complexity and a concrete simpler alternative; verify its resolution before merge. Do not require speculative abstractions or expand testing without a relevant risk.
+
+For interface changes, reviewers apply the [interface rules](AGENTS.md#interface) to the rendered desktop and narrow layouts. Check that simplifying the page preserves accessible navigation, warnings and access to secondary fields.
 
 Stop testing once the agreed checks pass. Broaden or repeat checks only for a relevant code change, failure or unresolved risk. Avoid coverage quotas, duplicate assertions across layers and tests that merely repeat implementation details. Billing, authorization and data integrity require verification proportionate to their consequences.
 
 ## Commit history and release notes
 
 Default to one focused PR and one squash-merged commit. Write the final commit title and body in plain language: who benefits, what they can now do, and any meaningful limits. Review corrections become part of that final change. Describe internal tooling benefits honestly without claiming a new customer feature.
+
+Finish corrections and remove superseded code in that unmerged PR. Do not defer known cleanup to another PR or retain compatibility aliases, extra migrations or obsolete abstractions solely for discarded review iterations. Regenerate an unreleased initial schema when only disposable demo data depends on it, following the explicit reset policy above. Preserve contracts and migration history used by released software or real installations.
 
 Keep several commits only when each delivers an independently useful change. Fold corrections into their respective commits with fixup/autosquash before final review, coordinate with anyone using the branch, and rerun `mise run pr:check` afterwards. Preserve merged main and release history.
 

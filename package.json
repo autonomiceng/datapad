@@ -6,10 +6,33 @@
   "packageManager": "bun@1.4.2",
   "devDependencies": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
-    "vite-plus": "1.0.0"
+    "vite-plus": "1.0.0",
+    "drizzle-kit": "0.31.11",
+    "@types/pg": "8.23.1",
+    "@types/bun": "1.4.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "@playwright/test": "1.63.0",
+    "typescript": "7.0.2",
+    "dependency-cruiser": "18.5.0",
+    "@swc/core": "1.16.13"
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
     "vitest": "5.0.1"
+  },
+  "dependencies": {
+    "elysia": "1.4.30",
+    "@elysia/openapi": "1.4.16",
+    "@elysia/static": "1.4.11",
+    "@sinclair/typebox": "0.34.52",
+    "drizzle-orm": "0.45.3",
+    "pg": "8.23.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@tanstack/react-router": "1.170.41",
+    "@tanstack/react-query": "5.104.1",
+    "canonicalize": "5.1.0"
   }
 }

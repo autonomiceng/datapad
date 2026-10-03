@@ -12,6 +12,8 @@ reviews:
         Give a failure scenario and supporting evidence for each finding.
         Check the approved scope and reviewed architecture or module contracts;
         identify missing decisions rather than inventing interfaces.
+        Apply the review expectations in AGENTS.md and CONTRIBUTING.md,
+        including cleanup within the PR and interface hierarchy.
         Avoid formatter or style duplication and speculative abstractions.
         Public code, fixtures and documentation must remain reusable and free
         of private deployment details, credentials and production records.
