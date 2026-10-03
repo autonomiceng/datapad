@@ -135,6 +135,8 @@ test("synthetic collection display keeps held payments separate from customer ac
         Object.assign(invoice, checkResponse);
       }
       json = { invoice };
+    } else if (path.endsWith("/notices")) {
+      json = { invoiceId, notices: [] };
     } else if (path.endsWith("/resolution-review")) {
       json = {
         invoiceId,

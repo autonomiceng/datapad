@@ -11,10 +11,10 @@ export default defineConfig({
           const normalized = id.replaceAll("\\", "/");
           if (
             /\/src\/(server|stripe|worker)\//.test(normalized) ||
-            (/\/src\/(import-review|billing|access|customers|services)\//.test(
+            (/\/src\/(import-review|billing|access|customers|services|notifications)\//.test(
               normalized,
             ) &&
-              !/\/src\/(import-review|billing|access|customers|services)\/contract\.ts$/.test(
+              !/\/src\/(import-review|billing|access|customers|services|notifications)\/contract\.ts$/.test(
                 normalized,
               )) ||
             /\/node_modules\/(?:elysia|@elysia|drizzle-orm|pg|pg-pool|pg-protocol|pg-boss|stripe|better-auth|@better-auth|nodemailer)\//.test(
@@ -46,7 +46,7 @@ export default defineConfig({
     overrides: [
       {
         files: [
-          "src/{access,customers,services,import-review,billing}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,*-types}.ts",
+          "src/{access,customers,services,import-review,billing,notifications}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,*-types}.ts",
         ],
         rules: {
           "jsdoc-js/require-jsdoc": [
@@ -79,7 +79,8 @@ export default defineConfig({
       },
       {
         files: [
-          "src/billing/internal/{workflow,subscriptions,scheduled,payment-settings,customer-receipt,resolutions,collection}.ts",
+          "src/billing/internal/{workflow,subscriptions,scheduled,payment-settings,customer-receipt,resolutions,collection,notices}.ts",
+          "src/notifications/internal/notices.ts",
         ],
         rules: {
           "jsdoc-js/require-jsdoc": [
@@ -88,7 +89,7 @@ export default defineConfig({
               enableFixer: false,
               require: { FunctionDeclaration: false },
               contexts: [
-                "FunctionDeclaration[id.name=/^create(BillingWorkflow|Subscriptions|ScheduledBilling|PaymentSettings|CustomerReceipt|InvoiceResolutions|InvoiceCollections)$/]",
+                "FunctionDeclaration[id.name=/^create(BillingWorkflow|Subscriptions|ScheduledBilling|PaymentSettings|CustomerReceipt|InvoiceResolutions|InvoiceCollections|InvoiceNoticeBilling|InvoiceNotices)$/]",
               ],
             },
           ],

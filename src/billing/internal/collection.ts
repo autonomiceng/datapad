@@ -388,7 +388,6 @@ export function createInvoiceCollections(
     wallNow = () => new Date(),
   } = options;
   const businessNow = options.businessNow ?? wallNow;
-  const reconciliationAudit = { audit, operatorId: workerId };
   if (
     !/^[A-Za-z0-9_-]{1,64}$/.test(deploymentKey) ||
     provider.ownership.deploymentKey !== deploymentKey ||
@@ -409,85 +408,8 @@ export function createInvoiceCollections(
       : row && ["pending", "processing"].includes(row.state)
         ? "retry"
         : "complete";
-  async function inspect(connection: NodePgDatabase, record: StoredInvoice) {
-    if (!record.invoice.providerInvoiceId)
-      throw new BillingProviderError("review", "provider_conflict");
-    const observedAt = wallNow();
-    const inspection = await provider.inspectCollection(
-      context.intent(record),
-      record.invoice.providerInvoiceId,
-    );
-    const ended = wallNow();
-    await connection.transaction(async (tx) => {
-      const current = (await context.load(tx, record.invoice.id))!;
-      context.verify(current, inspection.invoice);
-      await reconcileResolutionSnapshot(
-        tx,
-        current,
-        inspection,
-        ended,
-        reconciliationAudit,
-      );
-      await reconcileCollectionSnapshot(
-        tx,
-        current,
-        inspection,
-        ended,
-        observedAt,
-      );
-      await context.project(tx, current, inspection.invoice);
-    });
-    return { inspection, ended };
-  }
-  async function failedInspection(
-    connection: NodePgDatabase,
-    record: StoredInvoice,
-    error: unknown,
-  ) {
-    const safe =
-      error instanceof BillingProviderError
-        ? error
-        : new BillingProviderError("retryable", "retry_exhausted");
-    await connection.transaction(async (tx) => {
-      await reconcileResolutionFailure(
-        tx,
-        record.invoice.id,
-        safe,
-        reconciliationAudit,
-      );
-      await reconcileCollectionFailure(tx, record.invoice.id, safe, wallNow());
-      if (safe.receiptMismatch) await context.mismatch(tx, record, safe.reason);
-    });
-    return resultFor(await attemptFor(connection, record.invoice.id)) ===
-      "complete"
-      ? ("retry" as const)
-      : resultFor(await attemptFor(connection, record.invoice.id));
-  }
-  async function methodAvailable(
-    facts: NonNullable<Awaited<ReturnType<typeof collectionFacts>>>,
-    record: StoredInvoice,
-  ) {
-    if (!facts.ownedMethod || !record.customer.providerCustomerId) return false;
-    const { method, setup } = facts.ownedMethod;
-    const observed = await provider.retrieveSavedMethod(
-      paymentSetupIntent(setup, record.customer.providerCustomerId),
-      method.providerPaymentMethodId,
-    );
-    return (
-      observed.accountId === provider.ownership.accountId &&
-      observed.deploymentKey === deploymentKey &&
-      observed.livemode === false &&
-      observed.providerCustomerId === record.customer.providerCustomerId &&
-      observed.providerPaymentMethodId === method.providerPaymentMethodId &&
-      observed.type === "card" &&
-      observed.card !== null &&
-      Number.isInteger(observed.card.expiryMonth) &&
-      observed.card.expiryMonth >= 1 &&
-      observed.card.expiryMonth <= 12 &&
-      Number.isInteger(observed.card.expiryYear) &&
-      usableCard(observed.card, wallNow())
-    );
-  }
+  const { inspect, failedInspection, methodAvailable, read } =
+    createCollectionObservation(options);
   async function hold(
     connection: NodePgDatabase,
     row: Attempt,
@@ -820,93 +742,7 @@ export function createInvoiceCollections(
         invoiceId,
         null,
         async (connection, record) => {
-          const localAttempt =
-            check && !check.canManageBilling
-              ? await attemptFor(connection, invoiceId)
-              : null;
-          if (
-            localAttempt &&
-            ["pending", "processing"].includes(localAttempt.state)
-          )
-            return readCollectionProjection(
-              connection,
-              record,
-              businessNow(),
-              wallNow(),
-            );
-          const checkedAt = record.invoice.collectionCheckedAt
-            ? Date.parse(record.invoice.collectionCheckedAt)
-            : NaN;
-          const reuse =
-            check?.explicitCheck &&
-            record.invoice.collectionState !== null &&
-            record.invoice.collectionState !== "unknown" &&
-            checkedAt <= wallNow().getTime() &&
-            wallNow().getTime() - checkedAt <= 5000;
-          let unavailable = false;
-          if (record.invoice.providerInvoiceId && !reuse) {
-            try {
-              await inspect(connection, record);
-            } catch (error) {
-              await failedInspection(connection, record, error);
-              unavailable = true;
-            }
-          }
-          const current = (await context.load(connection, invoiceId))!;
-          const projection = await readCollectionProjection(
-            connection,
-            current,
-            businessNow(),
-            wallNow(),
-          );
-          if (
-            !unavailable &&
-            projection.disposition.kind === "defer" &&
-            projection.disposition.reason === "awaiting_collection" &&
-            !projection.attempt
-          ) {
-            const facts = await collectionFacts(connection, current);
-            if (
-              facts?.authorized &&
-              facts.ownedMethod &&
-              !facts.group.collectionMissedAt
-            ) {
-              try {
-                const available = await methodAvailable(facts, current);
-                const updated = await readCollectionProjection(
-                  connection,
-                  (await context.load(connection, invoiceId))!,
-                  businessNow(),
-                  wallNow(),
-                );
-                if (
-                  !available &&
-                  updated.disposition.kind === "defer" &&
-                  updated.disposition.reason === "awaiting_collection"
-                )
-                  return {
-                    ...updated,
-                    disposition: { kind: "payable", reason: "not_authorized" },
-                  };
-                return updated;
-              } catch (error) {
-                await failedInspection(connection, current, error);
-                return {
-                  ...projection,
-                  disposition: {
-                    kind: "defer",
-                    reason: "provider_unavailable",
-                  },
-                };
-              }
-            }
-          }
-          return unavailable && projection.disposition.kind !== "suppress"
-            ? {
-                ...projection,
-                disposition: { kind: "defer", reason: "provider_unavailable" },
-              }
-            : projection;
+          return read(connection, record, check);
         },
       ),
     async pendingCollections({
@@ -979,4 +815,228 @@ export function createInvoiceCollections(
         accountId: provider.ownership.accountId,
       }),
   };
+}
+
+/** Shared already-locked observation path. Callers own session locks and never wrap inspection in a SQL transaction. */
+export function createCollectionObservation(
+  options: InvoiceCollectionsOptions,
+) {
+  const {
+    pool,
+    deploymentKey,
+    provider,
+    audit,
+    workerId,
+    wallNow = () => new Date(),
+  } = options;
+  const businessNow = options.businessNow ?? wallNow;
+  const reconciliationAudit = { audit, operatorId: workerId };
+  const context = createInvoiceContext({
+    pool,
+    deploymentKey,
+    ownership: provider.ownership,
+    now: wallNow,
+  });
+  const resultFor = (row: Attempt | null): WorkResult =>
+    row?.state === "needs_review"
+      ? "needs_review"
+      : row && ["pending", "processing"].includes(row.state)
+        ? "retry"
+        : "complete";
+  async function inspect(connection: NodePgDatabase, record: StoredInvoice) {
+    if (!record.invoice.providerInvoiceId)
+      throw new BillingProviderError("review", "provider_conflict");
+    const observedAt = wallNow();
+    const inspection = await provider
+      .inspectCollection(
+        context.intent(record),
+        record.invoice.providerInvoiceId,
+      )
+      .catch((error: unknown) => {
+        throw error instanceof BillingProviderError
+          ? error
+          : new BillingProviderError("retryable", "retry_exhausted");
+      });
+    const ended = wallNow();
+    await connection.transaction(async (tx) => {
+      const current = (await context.load(tx, record.invoice.id))!;
+      context.verify(current, inspection.invoice);
+      await reconcileResolutionSnapshot(
+        tx,
+        current,
+        inspection,
+        ended,
+        reconciliationAudit,
+      );
+      await reconcileCollectionSnapshot(
+        tx,
+        current,
+        inspection,
+        ended,
+        observedAt,
+      );
+      await context.project(tx, current, inspection.invoice);
+    });
+    return { inspection, ended };
+  }
+  async function failedInspection(
+    connection: NodePgDatabase,
+    record: StoredInvoice,
+    error: unknown,
+  ) {
+    const safe =
+      error instanceof BillingProviderError
+        ? error
+        : new BillingProviderError("retryable", "retry_exhausted");
+    await connection.transaction(async (tx) => {
+      await reconcileResolutionFailure(
+        tx,
+        record.invoice.id,
+        safe,
+        reconciliationAudit,
+      );
+      await reconcileCollectionFailure(tx, record.invoice.id, safe, wallNow());
+      if (safe.receiptMismatch) await context.mismatch(tx, record, safe.reason);
+    });
+    return resultFor(await attemptFor(connection, record.invoice.id)) ===
+      "complete"
+      ? ("retry" as const)
+      : resultFor(await attemptFor(connection, record.invoice.id));
+  }
+  async function methodAvailable(
+    facts: NonNullable<Awaited<ReturnType<typeof collectionFacts>>>,
+    record: StoredInvoice,
+  ) {
+    if (!facts.ownedMethod || !record.customer.providerCustomerId) return false;
+    const { method, setup } = facts.ownedMethod;
+    const observed = await provider
+      .retrieveSavedMethod(
+        paymentSetupIntent(setup, record.customer.providerCustomerId),
+        method.providerPaymentMethodId,
+      )
+      .catch((error: unknown) => {
+        throw error instanceof BillingProviderError
+          ? error
+          : new BillingProviderError("retryable", "retry_exhausted");
+      });
+    return (
+      observed.accountId === provider.ownership.accountId &&
+      observed.deploymentKey === deploymentKey &&
+      observed.livemode === false &&
+      observed.providerCustomerId === record.customer.providerCustomerId &&
+      observed.providerPaymentMethodId === method.providerPaymentMethodId &&
+      observed.type === "card" &&
+      observed.card !== null &&
+      Number.isInteger(observed.card.expiryMonth) &&
+      observed.card.expiryMonth >= 1 &&
+      observed.card.expiryMonth <= 12 &&
+      Number.isInteger(observed.card.expiryYear) &&
+      usableCard(observed.card, wallNow())
+    );
+  }
+
+  async function read(
+    connection: NodePgDatabase,
+    record: StoredInvoice,
+    check?: { explicitCheck: true; canManageBilling: boolean },
+  ): Promise<InvoiceCollection> {
+    const invoiceId = record.invoice.id;
+    const localAttempt =
+      check && !check.canManageBilling
+        ? await attemptFor(connection, invoiceId)
+        : null;
+    if (localAttempt && ["pending", "processing"].includes(localAttempt.state))
+      return readCollectionProjection(
+        connection,
+        record,
+        businessNow(),
+        wallNow(),
+      );
+    const checkedAt = record.invoice.collectionCheckedAt
+      ? Date.parse(record.invoice.collectionCheckedAt)
+      : NaN;
+    const reuse =
+      check?.explicitCheck &&
+      record.invoice.collectionState !== null &&
+      record.invoice.collectionState !== "unknown" &&
+      checkedAt <= wallNow().getTime() &&
+      wallNow().getTime() - checkedAt <= 5000;
+    let unavailable = false;
+    if (record.invoice.providerInvoiceId && !reuse) {
+      try {
+        await inspect(connection, record);
+      } catch (error) {
+        if (!(error instanceof BillingProviderError)) throw error;
+        await failedInspection(connection, record, error);
+        unavailable = true;
+      }
+    }
+    const current = (await context.load(connection, invoiceId))!;
+    const projection = await readCollectionProjection(
+      connection,
+      current,
+      businessNow(),
+      wallNow(),
+    );
+    if (
+      !unavailable &&
+      projection.disposition.kind === "defer" &&
+      projection.disposition.reason === "awaiting_collection" &&
+      !projection.attempt
+    ) {
+      const facts = await collectionFacts(connection, current);
+      if (
+        facts?.authorized &&
+        facts.ownedMethod &&
+        !facts.group.collectionMissedAt
+      ) {
+        try {
+          const available = await methodAvailable(facts, current);
+          const updated = await readCollectionProjection(
+            connection,
+            (await context.load(connection, invoiceId))!,
+            businessNow(),
+            wallNow(),
+          );
+          if (
+            !available &&
+            updated.disposition.kind === "defer" &&
+            updated.disposition.reason === "awaiting_collection"
+          )
+            return {
+              ...updated,
+              disposition: { kind: "payable", reason: "not_authorized" },
+            };
+          return updated;
+        } catch (error) {
+          if (!(error instanceof BillingProviderError)) throw error;
+          await failedInspection(connection, current, error);
+          return {
+            ...projection,
+            disposition: {
+              kind: "defer",
+              reason: "provider_unavailable",
+            },
+          };
+        }
+      }
+    }
+    return unavailable && projection.disposition.kind !== "suppress"
+      ? {
+          ...projection,
+          disposition: { kind: "defer", reason: "provider_unavailable" },
+        }
+      : projection;
+  }
+  async function identity(tx: NodePgDatabase, record: StoredInvoice) {
+    const facts = await collectionFacts(tx, record);
+    return facts
+      ? {
+          groupId: facts.group.id,
+          enrollmentId: facts.group.enrollmentId,
+          paymentMethodId: facts.group.paymentMethodId,
+        }
+      : null;
+  }
+  return { inspect, failedInspection, methodAvailable, read, identity };
 }

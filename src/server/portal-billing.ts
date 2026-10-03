@@ -9,6 +9,7 @@ import {
   createScheduledBilling,
   createInvoiceResolutions,
   createInvoiceCollections,
+  createInvoiceNoticeBilling,
   type SyntheticScheduledInvoice,
   type BillingReader,
   type SyntheticInvoicePolicy,
@@ -295,7 +296,19 @@ export async function createPortalBilling(options: {
       };
     },
   };
+  const invoiceNoticeBilling =
+    provider && configuration
+      ? createInvoiceNoticeBilling({
+          pool,
+          deploymentKey: configuration.deploymentKey,
+          provider,
+          audit: access.audit,
+          workerId: "synthetic-invoice-notices",
+          businessNow: now,
+        })
+      : null;
   return {
+    invoiceNoticeBilling,
     paymentSettings: payments.paymentSettings,
     paymentSettingsHttp: payments.http,
     resolutions,

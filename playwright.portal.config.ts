@@ -12,6 +12,7 @@ export default defineConfig({
   testMatch: [
     "portal-browser/**/*.spec.ts",
     "portal-billing-browser/collection-display.spec.ts",
+    "portal-billing-browser/notices.spec.ts",
   ],
   workers: 1,
   retries: 0,

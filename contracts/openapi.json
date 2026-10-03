@@ -17214,6 +17214,419 @@
         }
       }
     },
+    "/api/customers/{customerId}/invoices/{invoiceId}/notices": {
+      "get": {
+        "operationId": "getInvoiceNotices",
+        "summary": "Inspect invoice notices and saved message content",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "invoiceId",
+                    "notices"
+                  ],
+                  "properties": {
+                    "invoiceId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "notices": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "stage",
+                          "state",
+                          "reason",
+                          "calendar",
+                          "scheduledAt",
+                          "attempts",
+                          "nextAttemptAt",
+                          "attemptedAt",
+                          "acceptedAt",
+                          "recipient",
+                          "profileVersion",
+                          "preview",
+                          "previewKind",
+                          "messageId"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "stage": {
+                            "type": "string",
+                            "enum": [
+                              "invoice",
+                              "before_due",
+                              "due",
+                              "overdue"
+                            ]
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "sending",
+                              "accepted",
+                              "suppressed",
+                              "needs_review"
+                            ]
+                          },
+                          "reason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "paid",
+                              "void",
+                              "awaiting_collection",
+                              "pending",
+                              "processing",
+                              "unknown",
+                              "stale",
+                              "provider_unavailable",
+                              "resolution_pending",
+                              "resolution_conflict",
+                              "collection_review",
+                              "not_payable",
+                              "manual",
+                              "before_charge",
+                              "not_authorized",
+                              "declined",
+                              "requires_action",
+                              "missed",
+                              "calendar_invalid",
+                              "billing_contact_missing",
+                              "billing_contact_changed",
+                              "recipient_not_allowed",
+                              "initial_notice_pending",
+                              "initial_notice_needs_review",
+                              "obsolete_after_delay",
+                              "obsolete",
+                              "uncertain_delivery",
+                              "evidence_expired_before_send",
+                              "smtp_transient",
+                              "smtp_rejected",
+                              "retry_exhausted",
+                              "content_changed"
+                            ]
+                          },
+                          "calendar": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "timeZone",
+                              "hour"
+                            ],
+                            "properties": {
+                              "timeZone": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "hour": {
+                                "minimum": 0,
+                                "maximum": 23,
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "scheduledAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "attempts": {
+                            "minimum": 0,
+                            "maximum": 3,
+                            "type": "integer"
+                          },
+                          "nextAttemptAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "attemptedAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "acceptedAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "recipient": {
+                            "format": "email",
+                            "maxLength": 254,
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "profileVersion": {
+                            "minimum": 1,
+                            "maximum": 2147483647,
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "preview": {
+                            "additionalProperties": false,
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "required": [
+                              "subject",
+                              "text",
+                              "html"
+                            ],
+                            "properties": {
+                              "subject": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "pattern": "^[^\\r\\n]*$",
+                                "type": "string"
+                              },
+                              "text": {
+                                "maxLength": 32768,
+                                "type": "string"
+                              },
+                              "html": {
+                                "maxLength": 65536,
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "previewKind": {
+                            "const": "stamped",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "messageId": {
+                            "minLength": 1,
+                            "maxLength": 254,
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/customers/{customerId}/payment-settings": {
       "get": {
         "operationId": "getCustomerPaymentSettings",
