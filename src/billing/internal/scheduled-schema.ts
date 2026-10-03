@@ -72,6 +72,7 @@ export const billingInvoiceGroups = pgTable(
     invoiceId: uuid("invoice_id"),
     enrollmentId: uuid("enrollment_id"),
     paymentMethodId: uuid("payment_method_id"),
+    collectionMissedAt: instant("collection_missed_at"),
   },
   (t) => [
     check(
@@ -108,6 +109,12 @@ export const billingInvoiceGroups = pgTable(
         billingPaymentMethods.billingCustomerId,
       ],
     }),
+    unique("invoice_group_collection_owner").on(
+      t.id,
+      t.customerId,
+      t.deploymentKey,
+      t.invoiceId,
+    ),
     unique("invoice_group_scope").on(t.id, t.customerId, t.deploymentKey),
     unique("invoice_group_date").on(
       t.customerId,

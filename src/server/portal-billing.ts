@@ -8,6 +8,7 @@ import {
   createBillingWorkflow,
   createScheduledBilling,
   createInvoiceResolutions,
+  createInvoiceCollections,
   type SyntheticScheduledInvoice,
   type BillingReader,
   type SyntheticInvoicePolicy,
@@ -48,6 +49,7 @@ export async function createPortalBilling(options: {
     Awaited<ReturnType<typeof createPortalSubscriptions>>,
     "allowSubscription" | "choices" | "calendar"
   >;
+  /** Business calendar only. Manual dates and provider effects use wall time. */
   now?: () => Date;
   configuration?: {
     deploymentKey: string;
@@ -195,8 +197,9 @@ export async function createPortalBilling(options: {
           pool,
           provider,
           resolutionProvider: provider,
+          collectionProvider: provider,
           deploymentKey: configuration.deploymentKey,
-          now,
+          businessNow: now,
           customers: createCustomerRegistry({
             operatorId: "synthetic-portal-invoices",
             audit: access.audit,
@@ -205,14 +208,6 @@ export async function createPortalBilling(options: {
         }
       : undefined;
   const commands = billingOptions ? createBilling(billingOptions) : undefined;
-  const workflow = billingOptions
-    ? createBillingWorkflow({
-        ...billingOptions,
-        customerAccess: customers,
-        audit: access.audit,
-        allowRequest,
-      })
-    : undefined;
   const scheduled =
     provider && configuration
       ? createScheduledBilling({
@@ -252,6 +247,27 @@ export async function createPortalBilling(options: {
         })
       : undefined;
   await resolutions?.assertSyntheticData();
+  const invoiceCollections =
+    provider && configuration
+      ? createInvoiceCollections({
+          pool,
+          deploymentKey: configuration.deploymentKey,
+          provider,
+          audit: access.audit,
+          workerId: "synthetic-invoice-collections",
+          businessNow: now,
+        })
+      : undefined;
+  await invoiceCollections?.assertSyntheticData();
+  const workflow = billingOptions
+    ? createBillingWorkflow({
+        ...billingOptions,
+        invoiceCollections,
+        customerAccess: customers,
+        audit: access.audit,
+        allowRequest,
+      })
+    : undefined;
   const http: InvoiceWorkflowHttp = {
     access,
     workflow,
@@ -265,9 +281,7 @@ export async function createPortalBilling(options: {
         false,
       );
       if (!authorization.ok) return authorization;
-      const issueDate = Temporal.Instant.from(
-        (now?.() ?? new Date()).toISOString(),
-      )
+      const issueDate = Temporal.Instant.from(new Date().toISOString())
         .toZonedDateTimeISO("UTC")
         .toPlainDate();
       return {
@@ -285,6 +299,7 @@ export async function createPortalBilling(options: {
     paymentSettings: payments.paymentSettings,
     paymentSettingsHttp: payments.http,
     resolutions,
+    invoiceCollections,
     scheduled,
     commands,
     http,

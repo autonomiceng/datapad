@@ -32,6 +32,7 @@ export async function createPortalRuntime(
   pool: Pool,
   options: {
     calendar?: import("../billing/subscriptions-contract").CalendarPolicy;
+    /** Subscription, schedule and collection calendar decisions only. */
     now?: () => Date;
   } = {},
 ) {
@@ -102,6 +103,7 @@ export async function createPortalRuntime(
   const reader = createBillingReader({
     pool,
     deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
+    businessNow: options.now,
   });
   customers = createCustomers({
     pool,
@@ -175,6 +177,7 @@ export async function createPortalRuntime(
       origin: configuration.origin,
     },
     invoiceResolutions: portalBilling.resolutions,
+    invoiceCollections: portalBilling.invoiceCollections,
     subscriptions: subscriptions.http,
     scheduled: {
       access,

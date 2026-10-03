@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Value } from "@sinclair/typebox/value";
+import canonicalize from "canonicalize";
 import { AuditRequestConflict } from "../../access";
 import type { AccessResult, HumanActor } from "../../access/types";
 import {
@@ -78,6 +79,7 @@ export function createBillingWorkflow(
     actor: HumanActor,
     customerId: string,
     invoiceId: string,
+    capability: "manage_billing" | "read_billing" = "manage_billing",
   ) {
     if (!isUuid(customerId) || !isUuid(invoiceId))
       return { ok: false, code: "not_found" } as const;
@@ -86,14 +88,24 @@ export function createBillingWorkflow(
         tx,
         actor,
         customerId,
-        "manage_billing",
+        capability,
         false,
       );
       if (!access.ok) return access;
       const row = await load(tx, customerId, invoiceId);
-      return row
-        ? ({ ok: true, value: row } as const)
-        : ({ ok: false, code: "not_found" } as const);
+      if (!row) return { ok: false, code: "not_found" } as const;
+      const canManageBilling =
+        capability === "manage_billing" ||
+        (
+          await customerAccess.authorizeCustomer(
+            tx,
+            actor,
+            customerId,
+            "manage_billing",
+            false,
+          )
+        ).ok;
+      return { ok: true, value: { ...row, canManageBilling } } as const;
     });
   }
   async function getPreparation(
@@ -318,13 +330,64 @@ export function createBillingWorkflow(
       }
     },
     async checkInvoice(actor, customerId, invoiceId) {
-      const access = await authorized(actor, customerId, invoiceId);
+      const access = await authorized(
+        actor,
+        customerId,
+        invoiceId,
+        "read_billing",
+      );
       if (!access.ok) return access;
-      await lifecycle.refreshInvoice(invoiceId);
+      const check = {
+        explicitCheck: true,
+        canManageBilling: access.value.canManageBilling,
+      } as const;
+      const collection = options.invoiceCollections
+        ? await options.invoiceCollections.getCollectionDisposition(
+            invoiceId,
+            check,
+          )
+        : null;
+      if (!options.invoiceCollections)
+        await lifecycle.refreshInvoice(invoiceId, check);
+      const current = await authorized(
+        actor,
+        customerId,
+        invoiceId,
+        "read_billing",
+      );
+      if (!current.ok) return current;
       const response = await reader.getInvoiceForCustomers(
         [customerId],
         invoiceId,
       );
+      // Method availability is fresh provider evidence that the SQL-only reader cannot infer.
+      // Reject an overlay if any persisted collection facts changed after the shared lock.
+      if (
+        response &&
+        collection?.checkedAt &&
+        collection.disposition.kind === "payable" &&
+        collection.disposition.reason === "not_authorized" &&
+        response.invoice.collection.disposition.kind === "defer" &&
+        response.invoice.collection.disposition.reason === "awaiting_collection"
+      ) {
+        const age = now().getTime() - Date.parse(collection.checkedAt);
+        if (
+          age >= 0 &&
+          age <= 5000 &&
+          canonicalize({
+            ...response.invoice.collection,
+            disposition: collection.disposition,
+          }) === canonicalize(collection)
+        ) {
+          response.invoice.collection = collection;
+          response.invoice.hostedInvoiceUrl =
+            current.value.invoice.hostedInvoiceUrl?.startsWith(
+              "https://invoice.stripe.com/",
+            )
+              ? current.value.invoice.hostedInvoiceUrl
+              : null;
+        }
+      }
       return response
         ? { ok: true, value: response }
         : { ok: false, code: "not_found" };

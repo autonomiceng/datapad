@@ -1,4 +1,7 @@
+import type { WorkResult, ReconciliationCursor } from "./work-types";
+export type { WorkResult, ReconciliationCursor } from "./work-types";
 import type { SyntheticScheduledInvoice } from "./scheduled-types";
+import type { InvoiceCollections } from "./collection-types";
 import type { AccessResult, AuditWriter, HumanActor } from "../access/types";
 import type { Customers } from "../customers/types";
 import type {
@@ -17,6 +20,7 @@ import type {
 import type {
   BillingProvider,
   InvoiceResolutionProvider,
+  InvoiceCollectionProvider,
   VerifiedInvoiceEvent,
 } from "./provider";
 import type {
@@ -27,20 +31,19 @@ import type {
 export interface BillingReaderOptions {
   pool: Pool;
   deploymentKey: string;
+  /** Calendar decisions only; provider evidence and effects use wall time. */
+  businessNow?: () => Date;
 }
 export interface BillingOptions extends BillingReaderOptions {
   provider: BillingProvider;
   resolutionProvider?: InvoiceResolutionProvider;
+  collectionProvider?: Pick<
+    InvoiceCollectionProvider,
+    "ownership" | "inspectCollection"
+  >;
   customers: CustomerRegistry;
-  /**
-   * Supply the clock for UTC issuance guards, retry eligibility and stored
-   * timestamps; defaults to wall time.
-   */
+  /** Wall clock for effects, observations, recovery and manual invoice dates. */
   now?: () => Date;
-}
-export interface ReconciliationCursor {
-  createdAt: string;
-  invoiceId: string;
 }
 export interface SyntheticInvoice {
   request: InvoiceRequest;
@@ -121,7 +124,6 @@ export type RequestResult =
 export type IssueResult =
   | { kind: "accepted" | "unchanged" }
   | { kind: "not_found" | "not_ready" | "past_due" | "needs_review" };
-export type WorkResult = "complete" | "retry" | "needs_review";
 export type PendingWork =
   | { kind: "issue"; invoiceId: string }
   | { kind: "event"; eventId: string };
@@ -144,16 +146,12 @@ export interface BillingCommands {
    * outcomes.
    */
   issueInvoice(invoiceId: string): Promise<WorkResult>;
-  /**
-   * Retrieve and project current provider state under invoice locks; this
-   * check does not authorize new issuance.
-   */
-  refreshInvoice(invoiceId: string): Promise<WorkResult>;
-  /**
-   * Persist a verified event retrieval obligation for one owned,
-   * issuance-requested invoice; repeated event IDs return duplicate and
-   * unrelated events are ignored.
-   */
+  /** Retrieves current provider state under invoice locks; explicit checks carry the caller's current billing authority and never authorize issuance. */
+  refreshInvoice(
+    invoiceId: string,
+    options?: { explicitCheck: true; canManageBilling: boolean },
+  ): Promise<WorkResult>;
+  /** Persists an owned invoice event retrieval obligation; repeated events are duplicate and unrelated events are ignored. */
   acceptEvent(
     event: VerifiedInvoiceEvent,
   ): Promise<"accepted" | "duplicate" | "ignored">;
@@ -172,6 +170,7 @@ export interface BillingCommands {
 export interface Billing extends BillingReader, BillingCommands {}
 
 export interface BillingWorkflowOptions extends BillingOptions {
+  invoiceCollections?: Pick<InvoiceCollections, "getCollectionDisposition">;
   customerAccess: Pick<Customers, "authorizeCustomer" | "readProfile">;
   audit: AuditWriter;
   allowRequest: SyntheticInvoicePolicy;
@@ -196,7 +195,7 @@ export interface BillingWorkflow {
     customerId: string,
     invoiceId: string,
   ): Promise<AccessResult<ConfirmIssueResponse>>;
-  /** Requires scoped manage_billing, retrieves the existing provider receipt outside the authority transaction, then returns the scoped projection. */
+  /** Requires scoped read_billing and rechecks access after retrieval; billing authority controls refreshes during an active payment attempt. Never initiates a charge. */
   checkInvoice(
     actor: HumanActor,
     customerId: string,

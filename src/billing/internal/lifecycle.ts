@@ -33,6 +33,11 @@ import {
   reconcileResolutionFailure,
 } from "./resolutions";
 import { billingSchedules, billingInvoiceGroups } from "./scheduled-schema";
+import { billingPaymentAttempts } from "./collection-schema";
+import {
+  reconcileCollectionSnapshot,
+  reconcileCollectionFailure,
+} from "./collection-observation";
 import { isUuid } from "./validate";
 import { createCustomerReceipt } from "./customer-receipt";
 
@@ -48,14 +53,27 @@ function review(reason: ReviewReason, receiptMismatch = false): never {
 export function createLifecycle(
   options: BillingOptions,
 ): Omit<BillingCommands, "requestInvoice"> {
-  const { pool, provider, deploymentKey, now = () => new Date() } = options;
-  if (
-    options.resolutionProvider &&
-    (options.resolutionProvider.ownership.accountId !==
-      provider.ownership.accountId ||
-      options.resolutionProvider.ownership.deploymentKey !== deploymentKey)
-  )
-    throw new Error("Resolution provider ownership differs from billing");
+  const {
+    pool,
+    provider,
+    deploymentKey,
+    now = () => new Date(),
+    businessNow = now,
+  } = options;
+  for (const inspectionProvider of [
+    options.resolutionProvider,
+    options.collectionProvider,
+  ]) {
+    if (
+      inspectionProvider &&
+      (inspectionProvider.ownership.accountId !==
+        provider.ownership.accountId ||
+        inspectionProvider.ownership.deploymentKey !== deploymentKey)
+    )
+      throw new Error(
+        "Collection inspection provider ownership differs from billing",
+      );
+  }
   const reconciliationAudit = {
     audit: createAuditWriter(),
     operatorId: "billing-reconciliation",
@@ -115,13 +133,24 @@ export function createLifecycle(
       ? null
       : new Date(now().getTime() + delays[attempts - 1]).toISOString();
     await connection.transaction(async (tx) => {
-      if (collectionInspection && definitive)
+      if (collectionInspection) {
+        const safeError =
+          error instanceof BillingProviderError
+            ? error
+            : new BillingProviderError("retryable", "retry_exhausted");
         await reconcileResolutionFailure(
           tx,
           record.invoice.id,
-          error,
+          safeError,
           reconciliationAudit,
         );
+        await reconcileCollectionFailure(
+          tx,
+          record.invoice.id,
+          safeError,
+          now(),
+        );
+      }
       if (eventId)
         await tx
           .update(stripeEvents)
@@ -221,9 +250,10 @@ export function createLifecycle(
         stamp = at();
         if (!schedule || group.customerId !== record.customer.customerId)
           review("ownership_mismatch");
-        if (Date.parse(stamp) < Date.parse(record.invoice.issueNotBefore))
+        const calendarNow = businessNow().getTime();
+        if (calendarNow < Date.parse(record.invoice.issueNotBefore))
           throw new IssuanceDeferred();
-        if (Date.parse(stamp) >= Date.parse(record.invoice.firstAttemptBefore))
+        if (calendarNow >= Date.parse(record.invoice.firstAttemptBefore))
           review("provider_conflict");
         if (schedule.issuancePaused) throw new IssuanceDeferred();
       } else if (
@@ -267,6 +297,19 @@ export function createLifecycle(
       () => stampEffect(connection, record, "customer"),
     );
   }
+  async function issuanceNow(connection: NodePgDatabase, invoiceId: string) {
+    if (!options.businessNow) return now();
+    const [group] = await connection
+      .select({ id: billingInvoiceGroups.id })
+      .from(billingInvoiceGroups)
+      .where(
+        and(
+          eq(billingInvoiceGroups.invoiceId, invoiceId),
+          eq(billingInvoiceGroups.deploymentKey, deploymentKey),
+        ),
+      );
+    return group ? businessNow() : now();
+  }
   async function issue(
     connection: NodePgDatabase,
     record: StoredInvoice,
@@ -280,7 +323,11 @@ export function createLifecycle(
       return "complete";
     if (invoice.state === "needs_review") return "needs_review";
     if (!due(invoice.nextAttemptAt)) return "retry";
-    if (now().getTime() < Date.parse(invoice.issueNotBefore)) return "retry";
+    if (
+      (await issuanceNow(connection, invoice.id)).getTime() <
+      Date.parse(invoice.issueNotBefore)
+    )
+      return "retry";
     try {
       await connection
         .update(invoices)
@@ -386,8 +433,19 @@ export function createLifecycle(
     record: StoredInvoice,
     providerId: string | null,
     eventId?: string,
+    check?: Parameters<BillingCommands["refreshInvoice"]>[1],
   ): Promise<WorkResult> {
     if (!providerId) return "complete";
+    if (
+      check?.explicitCheck &&
+      record.invoice.collectionCheckedAt &&
+      record.invoice.collectionState !== null &&
+      record.invoice.collectionState !== "unknown"
+    ) {
+      const age =
+        now().getTime() - Date.parse(record.invoice.collectionCheckedAt);
+      if (age >= 0 && age <= 5000) return "complete";
+    }
     let collectionInspection = false;
     try {
       const [resolution] = await connection
@@ -399,12 +457,43 @@ export function createLifecycle(
             sql`${billingInvoiceResolutions.state} <> 'withdrawn'`,
           ),
         );
-      if (resolution && !options.resolutionProvider)
+      const [attempt] = await connection
+        .select({ state: billingPaymentAttempts.state })
+        .from(billingPaymentAttempts)
+        .where(eq(billingPaymentAttempts.invoiceId, record.invoice.id));
+      // Customer checks cannot spend the worker's inspection failure budget.
+      if (
+        check?.explicitCheck &&
+        !check.canManageBilling &&
+        attempt &&
+        ["pending", "processing"].includes(attempt.state)
+      )
+        return "complete";
+      const [automaticGroup] = await connection
+        .select({ id: billingInvoiceGroups.id })
+        .from(billingInvoiceGroups)
+        .where(
+          and(
+            eq(billingInvoiceGroups.invoiceId, record.invoice.id),
+            eq(billingInvoiceGroups.deploymentKey, deploymentKey),
+            eq(billingInvoiceGroups.paymentArrangement, "automatic"),
+            sql`${billingInvoiceGroups.totalMinor} > 0`,
+          ),
+        );
+      const inspectionProvider =
+        options.collectionProvider ?? options.resolutionProvider;
+      collectionInspection = Boolean(
+        resolution ||
+        attempt ||
+        automaticGroup ||
+        (check?.explicitCheck && inspectionProvider),
+      );
+      if (collectionInspection && !inspectionProvider)
         throw new BillingProviderError("retryable", "retry_exhausted");
-      collectionInspection = Boolean(resolution && options.resolutionProvider);
+      const observedAt = now();
       const inspection =
-        resolution && options.resolutionProvider
-          ? await options.resolutionProvider.inspectCollection(
+        collectionInspection && inspectionProvider
+          ? await inspectionProvider.inspectCollection(
               intent(record),
               providerId,
             )
@@ -419,12 +508,20 @@ export function createLifecycle(
         if (!current) review("ownership_mismatch");
         if (inspection) {
           context.verify(current, snapshot);
+          const wallNow = now();
           await reconcileResolutionSnapshot(
             tx,
             current,
             inspection,
-            now(),
+            wallNow,
             reconciliationAudit,
+          );
+          await reconcileCollectionSnapshot(
+            tx,
+            current,
+            inspection,
+            wallNow,
+            observedAt,
           );
           try {
             await context.project(tx, current, snapshot);
@@ -475,9 +572,10 @@ export function createLifecycle(
         async (connection, { invoice }) => {
           if (invoice.state === "needs_review") return { kind: "needs_review" };
           if (invoice.issueRequestedAt) return { kind: "unchanged" };
-          if (now().getTime() < Date.parse(invoice.issueNotBefore))
+          const calendarNow = await issuanceNow(connection, id);
+          if (calendarNow.getTime() < Date.parse(invoice.issueNotBefore))
             return { kind: "not_ready" };
-          if (now().getTime() >= Date.parse(invoice.firstAttemptBefore))
+          if (calendarNow.getTime() >= Date.parse(invoice.firstAttemptBefore))
             return { kind: "past_due" };
           await connection
             .update(invoices)
@@ -487,9 +585,15 @@ export function createLifecycle(
         },
       ),
     issueInvoice: (id) => locked<WorkResult>(id, "complete", issue),
-    refreshInvoice: (id) =>
+    refreshInvoice: (id, check) =>
       locked<WorkResult>(id, "complete", (connection, record) =>
-        refresh(connection, record, record.invoice.providerInvoiceId),
+        refresh(
+          connection,
+          record,
+          record.invoice.providerInvoiceId,
+          undefined,
+          check,
+        ),
       ),
     async acceptEvent(event) {
       if (
@@ -596,13 +700,13 @@ export function createLifecycle(
           and(
             eq(invoices.deploymentKey, deploymentKey),
             isNotNull(invoices.issueRequestedAt),
-            lte(invoices.issueNotBefore, at()),
+            sql`${invoices.issueNotBefore} <= case when ${billingInvoiceGroups.id} is null then ${at()}::timestamptz else ${businessNow().toISOString()}::timestamptz end`,
             inArray(invoices.state, ["preparing", "draft"]),
             or(
               isNull(billingInvoiceGroups.id),
               isNull(billingSchedules.customerId),
               eq(billingSchedules.issuancePaused, false),
-              lte(invoices.firstAttemptBefore, at()),
+              sql`${invoices.firstAttemptBefore} <= case when ${billingInvoiceGroups.id} is null then ${at()}::timestamptz else ${businessNow().toISOString()}::timestamptz end`,
               sql`case
                 when ${billingCustomers.providerCustomerId} is null then ${billingCustomers.createAttemptedAt} is not null
                 when ${invoices.providerInvoiceId} is null then ${invoices.createAttemptedAt} is not null

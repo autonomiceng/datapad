@@ -3,6 +3,10 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { openSandbox, availableLoopbackPort } from "./billing-sandbox";
+import {
+  prepareCollectionsAcceptance,
+  collectionsPhase,
+} from "./collections-acceptance";
 import { prepareScheduledAcceptance } from "./scheduled-acceptance";
 import { startStripeListener } from "./stripe-listener";
 
@@ -20,12 +24,13 @@ if (
     "portal-scheduled-test",
     "portal-resolutions-test",
     "portal-payment-settings-test",
+    "portal-collections-test",
     "portal-test",
     "portal-destroy",
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-collections-test, portal-test or portal-destroy.",
   );
 }
 const portal =
@@ -35,6 +40,7 @@ const portal =
   mode === "portal-scheduled-test" ||
   mode === "portal-resolutions-test" ||
   mode === "portal-payment-settings-test" ||
+  mode === "portal-collections-test" ||
   mode === "portal-test" ||
   mode === "portal-destroy";
 const sandboxMode =
@@ -43,21 +49,25 @@ const sandboxMode =
   mode === "portal-billing-test" ||
   mode === "portal-scheduled-test" ||
   mode === "portal-resolutions-test" ||
-  mode === "portal-payment-settings-test";
+  mode === "portal-payment-settings-test" ||
+  mode === "portal-collections-test";
 const isolated = mode === "test" || mode === "portal-test";
 const scheduledTesting = mode === "portal-scheduled-test";
 const resolutionsTesting = mode === "portal-resolutions-test";
+const collectionsTesting = mode === "portal-collections-test";
 const paymentSettingsTesting = mode === "portal-payment-settings-test";
 const testing =
   isolated ||
   mode === "portal-billing-test" ||
   scheduledTesting ||
   resolutionsTesting ||
-  paymentSettingsTesting;
+  paymentSettingsTesting ||
+  collectionsTesting;
 const { values } = parseArgs({
   args: process.argv.slice(3),
   options: {
     config: { type: "string" },
+    phase: { type: "string" },
     "run-dir": { type: "string" },
     origin: { type: "string" },
     port: { type: "string" },
@@ -66,6 +76,8 @@ const { values } = parseArgs({
   },
   strict: true,
 });
+if (values.phase && !collectionsTesting)
+  throw new Error("--phase requires collection acceptance.");
 if (sandboxMode && (!values.config || !values["run-dir"]))
   throw new Error("Billing requires --config and --run-dir outside Git.");
 if (!sandboxMode && (values.config || values["run-dir"]))
@@ -74,7 +86,8 @@ if (
   (values.origin || values["inbox-origin"]) &&
   mode !== "portal" &&
   mode !== "portal-billing" &&
-  !paymentSettingsTesting
+  !paymentSettingsTesting &&
+  !collectionsTesting
 )
   throw new Error(
     "An external origin requires a portal demo or hosted setup acceptance.",
@@ -87,7 +100,12 @@ if (
     !Number.isInteger(requestedPort) ||
     requestedPort! < 1 ||
     requestedPort! > 65535 ||
-    !(mode === "portal" || mode === "portal-billing" || paymentSettingsTesting))
+    !(
+      mode === "portal" ||
+      mode === "portal-billing" ||
+      paymentSettingsTesting ||
+      collectionsTesting
+    ))
 )
   throw new Error(
     "A portal listening port must be an integer from 1 to 65535.",
@@ -108,7 +126,8 @@ const lock = resolve(
   mode === "portal-billing-test" ||
     scheduledTesting ||
     resolutionsTesting ||
-    paymentSettingsTesting
+    paymentSettingsTesting ||
+    collectionsTesting
     ? ".scratch/billing-test.lock"
     : sandboxMode
       ? ".scratch/billing-run.lock"
@@ -197,11 +216,13 @@ async function startServer(): Promise<string> {
   const child = Bun.spawn(
     [
       process.execPath,
-      scheduledTesting
-        ? "tests/portal-scheduled-entry.ts"
-        : portal
-          ? "src/server/portal-index.ts"
-          : "src/server/index.ts",
+      collectionsTesting
+        ? "tests/portal-collections-entry.ts"
+        : scheduledTesting
+          ? "tests/portal-scheduled-entry.ts"
+          : portal
+            ? "src/server/portal-index.ts"
+            : "src/server/index.ts",
     ],
     {
       cwd: root,
@@ -329,9 +350,14 @@ try {
       delete env.PORTAL_SCHEDULE_TEST_PLAN;
       delete env.PORTAL_RESOLUTION_TEST_ARTIFACTS;
       delete env.PORTAL_PAYMENT_SETTINGS_TEST_ARTIFACTS;
+      for (const key of Object.keys(env)) {
+        if (key.startsWith("PORTAL_COLLECTIONS_")) delete env[key];
+      }
       env.PORTAL_DEMO_TIME_ZONE =
         values["time-zone"] ??
-        (scheduledTesting ? "America/Los_Angeles" : "UTC");
+        (scheduledTesting || collectionsTesting
+          ? "America/Los_Angeles"
+          : "UTC");
       for (const key of Object.keys(env)) {
         if (key.startsWith("STRIPE_") || key.startsWith("BILLING_"))
           delete env[key];
@@ -365,6 +391,18 @@ try {
       env.BILLING_DEPLOYMENT_KEY = sandbox.deploymentKey;
       if (portal) {
         env.PORTAL_BILLING_SANDBOX = "true";
+        if (collectionsTesting) {
+          const phase = collectionsPhase(values.phase);
+          const acceptance = await prepareCollectionsAcceptance(
+            sandbox.directory,
+            env.PORTAL_DEMO_TIME_ZONE!,
+            phase,
+          );
+          env.PORTAL_COLLECTIONS_TEST_PHASE = phase;
+          env.PORTAL_COLLECTIONS_TEST_PLAN = acceptance.planPath;
+          env.PORTAL_COLLECTIONS_TEST_CLOCK = acceptance.clockPath;
+          env.PORTAL_COLLECTIONS_TEST_ARTIFACTS = sandbox.directory;
+        }
         if (paymentSettingsTesting)
           env.PORTAL_PAYMENT_SETTINGS_TEST_ARTIFACTS = sandbox.directory;
         if (resolutionsTesting)
@@ -397,15 +435,17 @@ try {
         ...(portal
           ? [
               "--config",
-              scheduledTesting
-                ? "playwright.scheduled.config.ts"
-                : resolutionsTesting
-                  ? "playwright.resolutions.config.ts"
-                  : paymentSettingsTesting
-                    ? "playwright.payment-settings.config.ts"
-                    : mode === "portal-billing-test"
-                      ? "playwright.billing.config.ts"
-                      : "playwright.portal.config.ts",
+              collectionsTesting
+                ? "playwright.collections.config.ts"
+                : scheduledTesting
+                  ? "playwright.scheduled.config.ts"
+                  : resolutionsTesting
+                    ? "playwright.resolutions.config.ts"
+                    : paymentSettingsTesting
+                      ? "playwright.payment-settings.config.ts"
+                      : mode === "portal-billing-test"
+                        ? "playwright.billing.config.ts"
+                        : "playwright.portal.config.ts",
             ]
           : []),
       ]);

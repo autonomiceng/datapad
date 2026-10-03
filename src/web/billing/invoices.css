@@ -106,6 +106,19 @@
   line-height: 1.25;
   font-variant-numeric: tabular-nums;
 }
+.invoice-header h2,
+.invoice-statuses {
+  grid-column: 1 / -1;
+}
+.invoice-statuses {
+  margin-top: 12px;
+}
+.invoice-statuses > div {
+  flex: 1 1 140px;
+}
+.invoice-statuses dd > p {
+  margin-top: 8px;
+}
 .invoice-currency,
 .invoice-note,
 .invoice-reference,
@@ -130,10 +143,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-}
-.invoice-payment a {
-  gap: 6px;
-  text-decoration: none;
 }
 .secondary-button.invoice-pay {
   border-color: var(--accent);

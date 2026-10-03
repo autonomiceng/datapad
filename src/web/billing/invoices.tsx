@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearch } from "@tanstack/react-router";
 import type {
   InvoiceDetail,
@@ -7,9 +7,17 @@ import type {
   InvoicesResponse,
   InvoiceState,
   ReviewReason,
+  InvoicePreparationResponse,
 } from "../../billing/contract";
-import { useSession } from "../accounts/api";
-import { date, instant, invoiceStateLabels, money } from "./format";
+import { command, useSession } from "../accounts/api";
+import type { CustomerResponse } from "../../customers/contract";
+import {
+  collectionDisplay,
+  date,
+  instant,
+  invoiceStateLabels,
+  money,
+} from "./format";
 import "./invoices.css";
 import { RecordedResolution } from "./resolutions";
 
@@ -226,7 +234,10 @@ export function Invoices() {
               ))}
             {detail.data && (
               <>
-                <Invoice invoice={detail.data.invoice} />
+                <Invoice
+                  key={detail.data.invoice.id}
+                  invoice={detail.data.invoice}
+                />
                 {session.data?.staffRoles.includes("billing") && (
                   <Link
                     className="secondary-button"
@@ -260,15 +271,84 @@ export function Invoice({
   invoice: InvoiceDetail;
   showResolution?: boolean;
 }) {
+  const client = useQueryClient();
+  const session = useSession();
+  const userId = session.data?.user?.id;
+  const detailKey = ["invoice", userId, invoice.id];
+  const preparationKey = [
+    "invoice-preparation",
+    userId,
+    invoice.customer.id,
+    invoice.id,
+  ];
+  const payment = useMutation({
+    mutationFn: () =>
+      command<InvoiceResponse>(
+        `/api/customers/${encodeURIComponent(invoice.customer.id)}/invoices/${encodeURIComponent(invoice.id)}/check`,
+        {},
+      ),
+    retry: false,
+    onSuccess: async (response) => {
+      await Promise.all([
+        client.cancelQueries({ queryKey: detailKey }),
+        client.cancelQueries({ queryKey: preparationKey }),
+      ]);
+      client.setQueryData(detailKey, response);
+      client.setQueryData<InvoicePreparationResponse>(
+        preparationKey,
+        (current) =>
+          current ? { ...current, invoice: response.invoice } : undefined,
+      );
+      void client.invalidateQueries({ queryKey: ["invoices", userId] });
+      const url = paymentUrl(response.invoice);
+      if (url) window.location.assign(url);
+    },
+  });
+  const collection = collectionDisplay(invoice.collection);
+  const disposition = invoice.collection.disposition;
+  const canPay =
+    invoice.state === "open" &&
+    invoice.providerReceipt.state === "verified" &&
+    (disposition.kind === "payable" ||
+      (disposition.kind === "defer" &&
+        ["stale", "unknown"].includes(disposition.reason)));
   return (
     <>
       <header className="invoice-header">
         <h2>{invoice.billTo.legalName}</h2>
-        <Status state={invoice.state} />
         <p className="invoice-total">
           {money(invoice.totalMinor, invoice.currency)}{" "}
           <span className="invoice-currency">{invoice.currency}</span>
         </p>
+        <dl className="invoice-facts invoice-statuses">
+          <div>
+            <dt>Invoice status</dt>
+            <dd>
+              <Status state={invoice.state} />
+            </dd>
+          </div>
+          {collection.label && (
+            <div>
+              <dt>Payment collection</dt>
+              <dd>
+                <span
+                  className={`status-tag${collection.review ? " invoice-status-needs_review" : ""}`}
+                >
+                  {collection.label}
+                </span>
+                {collection.note && (
+                  <p
+                    className={
+                      collection.review ? "invoice-review" : "invoice-note"
+                    }
+                  >
+                    {collection.note}
+                  </p>
+                )}
+              </dd>
+            </div>
+          )}
+        </dl>
       </header>
       {invoice.state === "needs_review" &&
       invoice.providerReceipt.state !== "mismatch" ? (
@@ -303,6 +383,26 @@ export function Invoice({
         />
       )}
       <dl className="invoice-facts">
+        {invoice.collection.chargeAt && (
+          <div>
+            <dt>Scheduled automatic payment</dt>
+            <dd>
+              <time dateTime={invoice.collection.chargeAt}>
+                {instant(invoice.collection.chargeAt)}
+              </time>
+            </dd>
+          </div>
+        )}
+        {invoice.collection.checkedAt && collection.label && (
+          <div>
+            <dt>Payment collection checked</dt>
+            <dd>
+              <time dateTime={invoice.collection.checkedAt}>
+                {instant(invoice.collection.checkedAt)}
+              </time>
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Billing contact</dt>
           <dd>{invoice.billTo.billingEmail ?? "Not recorded"}</dd>
@@ -336,30 +436,35 @@ export function Invoice({
           </dd>
         </div>
       </dl>
-      {invoice.providerReceipt.state === "verified" &&
-        invoice.hostedInvoiceUrl && (
-          <div className="invoice-payment">
-            <a
-              className={
-                invoice.state === "open"
-                  ? "secondary-button invoice-pay"
-                  : "secondary-button"
-              }
-              href={invoice.hostedInvoiceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {invoice.state === "open" ? "Pay invoice" : "View invoice"}
-              <span aria-hidden="true">↗</span>
-              <span className="sr-only"> on Stripe, opens a new tab</span>
-            </a>
-            {invoice.state === "open" && (
-              <p className="invoice-note">
-                Stripe test mode. No real money moves.
-              </p>
-            )}
-          </div>
+      {canPay && (
+        <div className="invoice-payment">
+          <button
+            type="button"
+            className="secondary-button invoice-pay"
+            disabled={payment.isPending}
+            aria-busy={payment.isPending}
+            onClick={() => payment.mutate()}
+          >
+            Pay invoice
+          </button>
+          <p className="invoice-note">Stripe test mode. No real money moves.</p>
+        </div>
+      )}
+      {payment.isError && (
+        <p className="invoice-review" role="alert">
+          {payment.error.message}
+        </p>
+      )}
+      {payment.isSuccess &&
+        payment.data.invoice.collection.disposition.kind === "payable" &&
+        !paymentUrl(payment.data.invoice) && (
+          <p className="invoice-review" role="alert">
+            The payment link could not be verified. Please try again later.
+          </p>
         )}
+      {invoice.collection.chargeAt && (
+        <PaymentSettingsLink customerId={invoice.customer.id} />
+      )}
       <table className="invoice-lines">
         <thead>
           <tr>
@@ -384,5 +489,55 @@ export function Invoice({
       </table>
       <p className="invoice-reference">Invoice ID {invoice.id}</p>
     </>
+  );
+}
+
+function paymentUrl(invoice: InvoiceDetail): string | null {
+  if (
+    invoice.collection.disposition.kind !== "payable" ||
+    invoice.state !== "open" ||
+    invoice.providerReceipt.state !== "verified" ||
+    !invoice.hostedInvoiceUrl
+  )
+    return null;
+  try {
+    const url = new URL(invoice.hostedInvoiceUrl);
+    return url.protocol === "https:" &&
+      url.host === "invoice.stripe.com" &&
+      !url.username &&
+      !url.password
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function PaymentSettingsLink({ customerId }: { customerId: string }) {
+  const session = useSession();
+  const userId = session.data?.user?.id;
+  const customer = useQuery({
+    queryKey: ["accounts", userId, "customer", customerId],
+    queryFn: () =>
+      read<CustomerResponse>(
+        `/api/customers/${encodeURIComponent(customerId)}`,
+      ),
+    enabled: Boolean(userId),
+    retry: false,
+  });
+  if (
+    session.isError ||
+    customer.isError ||
+    customer.data?.customer.role !== "administrator"
+  )
+    return null;
+  return (
+    <Link
+      to="/customers/$customerId/payment-settings"
+      params={{ customerId }}
+      search={{}}
+    >
+      Payment settings
+    </Link>
   );
 }

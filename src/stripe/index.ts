@@ -6,8 +6,12 @@ import {
   type BillingProvider,
   type PaymentSettingsProvider,
   type CollectionInspection,
+  type CollectionPayOutcome,
+  type CollectionPayReceipt,
+  type CollectionPayRequest,
   type CustomerIntent,
   type InvoiceIntent,
+  type InvoiceCollectionProvider,
   type InvoiceResolutionProvider,
   type LineIntent,
   type Lookup,
@@ -46,6 +50,7 @@ const invoiceEvents = new Set([
   "invoice.finalization_failed",
   "invoice.paid",
   "invoice.payment_failed",
+  "invoice.payment_action_required",
   "invoice.voided",
   "invoice.marked_uncollectible",
 ]);
@@ -102,7 +107,10 @@ async function safe<T>(operation: () => Promise<T>): Promise<T> {
 export async function createStripeBillingProvider(
   options: StripeBillingOptions,
 ): Promise<
-  BillingProvider & InvoiceResolutionProvider & PaymentSettingsProvider
+  BillingProvider &
+    InvoiceResolutionProvider &
+    PaymentSettingsProvider &
+    InvoiceCollectionProvider
 > {
   if (
     !/^(sk|rk)_test_/.test(options.apiKey) ||
@@ -236,10 +244,10 @@ export async function createStripeBillingProvider(
       providerLineId: value.parent.invoice_item_details.invoice_item,
     };
   }
-  async function invoiceSnapshot(
+  function invoiceHeader(
     intent: InvoiceIntent,
     value: Stripe.Invoice,
-  ): Promise<ProviderInvoice> {
+  ): Omit<ProviderInvoice, "lines"> {
     checkMetadata(value.metadata, metadata(intent), true);
     if (
       value.livemode ||
@@ -260,28 +268,6 @@ export async function createStripeBillingProvider(
       !["draft", "open", "paid", "void", "uncollectible"].includes(value.status)
     )
       throw review("invoice_mismatch", true);
-    const actualLines = await pages((cursor) =>
-      stripe.invoices.listLineItems(value.id, {
-        limit: 100,
-        ...(cursor ? { starting_after: cursor } : {}),
-      }),
-    );
-    if (!actualLines) throw review("invoice_mismatch");
-    const lines = actualLines.map((line) =>
-      lineSnapshot(intent, value.id, line),
-    );
-    if (
-      new Set(lines.map((line) => line.lineId)).size !== lines.length ||
-      new Set(lines.map((line) => line.providerLineId)).size !== lines.length ||
-      value.total !==
-        lines.reduce((total, line) => total + line.amountMinor, 0) ||
-      value.subtotal !== value.total ||
-      (value.status !== "draft" &&
-        (lines.length !== intent.lines.length ||
-          value.total !== intent.totalMinor))
-    ) {
-      throw review("invoice_mismatch", true);
-    }
     let hostedInvoiceUrl = value.hosted_invoice_url;
     if (hostedInvoiceUrl) {
       let url: URL;
@@ -336,12 +322,108 @@ export async function createStripeBillingProvider(
       providerInvoiceId: value.id,
       livemode: false,
       status,
-      lines: lines.sort((a, b) => a.position - b.position),
       hostedInvoiceUrl,
       finalizedAt: finalized ? new Date(finalized * 1000).toISOString() : null,
       collectionMethod: "send_invoice",
       autoAdvance: false,
     };
+  }
+  async function invoiceSnapshot(
+    intent: InvoiceIntent,
+    value: Stripe.Invoice,
+  ): Promise<ProviderInvoice> {
+    const header = invoiceHeader(intent, value);
+    const actualLines = await pages((cursor) =>
+      stripe.invoices.listLineItems(value.id, {
+        limit: 100,
+        ...(cursor ? { starting_after: cursor } : {}),
+      }),
+    );
+    if (!actualLines) throw review("invoice_mismatch");
+    const lines = actualLines.map((line) =>
+      lineSnapshot(intent, value.id, line),
+    );
+    if (
+      new Set(lines.map((line) => line.lineId)).size !== lines.length ||
+      new Set(lines.map((line) => line.providerLineId)).size !== lines.length ||
+      value.total !==
+        lines.reduce((total, line) => total + line.amountMinor, 0) ||
+      value.subtotal !== value.total ||
+      (value.status !== "draft" &&
+        (lines.length !== intent.lines.length ||
+          value.total !== intent.totalMinor))
+    ) {
+      throw review("invoice_mismatch", true);
+    }
+    return { ...header, lines: lines.sort((a, b) => a.position - b.position) };
+  }
+  /** Normalize only the pay response. No read may occur before the caller persists this receipt. */
+  function collectionPayReceipt(
+    intent: InvoiceIntent,
+    request: CollectionPayRequest,
+    value: Stripe.Invoice,
+  ): CollectionPayReceipt {
+    if (
+      value.id !== request.providerInvoiceId ||
+      value.object !== "invoice" ||
+      value.livemode !== false
+    )
+      throw review("ownership_mismatch", true);
+    const header = invoiceHeader(intent, value);
+    if (
+      header.recipientName !== intent.recipientName ||
+      header.recipientEmail !== `${intent.customerId}@billing.test` ||
+      header.totalMinor !== intent.totalMinor ||
+      value.subtotal !== value.total
+    )
+      throw review("invoice_mismatch", true);
+    const receipt: CollectionPayReceipt = {
+      ...ownership,
+      invoiceId: header.invoiceId,
+      providerInvoiceId: header.providerInvoiceId,
+      providerCustomerId: header.providerCustomerId,
+      status: header.status,
+      payment: null,
+    };
+    // The default allocation identifies invoice pay's PI. A truncated/unexpanded response cannot supply correlation.
+    const payments = value.payments;
+    if (!payments || payments.object !== "list" || payments.has_more !== false)
+      return receipt;
+    const candidates = payments.data.filter(
+      (payment) => payment.is_default === true,
+    );
+    if (candidates.length !== 1) return receipt;
+    const allocation = candidates[0];
+    const payment =
+      allocation.payment?.type === "payment_intent"
+        ? allocation.payment.payment_intent
+        : null;
+    if (!payment || typeof payment === "string") return receipt;
+    if (
+      allocation.object !== "invoice_payment" ||
+      !allocation.id.startsWith("inpay_") ||
+      allocation.livemode !== false ||
+      objectId(allocation.invoice) !== value.id ||
+      allocation.currency !== "usd" ||
+      payment.object !== "payment_intent" ||
+      !payment.id.startsWith("pi_") ||
+      payment.livemode !== false ||
+      objectId(payment.customer) !== intent.providerCustomerId ||
+      payment.currency !== "usd"
+    )
+      throw review("ownership_mismatch", true);
+    if (
+      objectId(payment.payment_method) !== request.providerPaymentMethodId ||
+      !["open", "paid"].includes(allocation.status) ||
+      !["processing", "succeeded", "requires_action"].includes(payment.status)
+    )
+      return receipt;
+    receipt.payment = {
+      invoicePaymentId: allocation.id,
+      paymentIntentId: payment.id,
+      providerPaymentMethodId: request.providerPaymentMethodId,
+    };
+    return receipt;
   }
   async function find<
     T extends { metadata: Stripe.Metadata | null; id: string },
@@ -557,6 +639,8 @@ export async function createStripeBillingProvider(
           payments.push({
             invoicePaymentId: value.id,
             paymentIntentId: id,
+            providerPaymentMethodId:
+              objectId(current.payment_method ?? null) ?? null,
             status,
             paidMinor: paid,
             intentState: state,
@@ -597,6 +681,63 @@ export async function createStripeBillingProvider(
           ...finalAmounts,
           collectionState: unknown ? "unknown" : active ? "active" : "idle",
           payments,
+        };
+      }),
+    payInvoice: (intent, request, effect) =>
+      safe<CollectionPayOutcome>(async () => {
+        checkIntent(intent);
+        if (
+          !request.providerInvoiceId.startsWith("in_") ||
+          !request.providerPaymentMethodId.startsWith("pm_") ||
+          request.offSession !== true
+        )
+          throw review("provider_conflict");
+        let value: Stripe.Invoice;
+        try {
+          value = await stripe.invoices.pay(
+            request.providerInvoiceId,
+            {
+              payment_method: request.providerPaymentMethodId,
+              off_session: true,
+              expand: ["payments.data.payment.payment_intent"],
+            },
+            { idempotencyKey: effect.idempotencyKey },
+          );
+        } catch (error) {
+          // SDK 23 constructs StripeCardError from HTTP 402 even for a non-card error.
+          if (
+            !(error instanceof Stripe.errors.StripeCardError) ||
+            error.rawType !== "card_error"
+          ) {
+            if (
+              error instanceof Stripe.errors.StripeError &&
+              (error.statusCode ?? 0) >= 400 &&
+              (error.statusCode ?? 0) < 500 &&
+              !(error instanceof Stripe.errors.StripeRateLimitError)
+            )
+              throw review("provider_conflict");
+            throw error;
+          }
+          const actionCodes = [
+            "authentication_required",
+            "invoice_payment_intent_requires_action",
+            "payment_intent_action_required",
+          ];
+          const requiresAction =
+            actionCodes.includes(error.code ?? "") ||
+            actionCodes.includes(error.decline_code ?? "") ||
+            error.payment_intent?.status === "requires_action";
+          // Error PaymentIntents are correlation hints, never owned payment evidence.
+          const id = objectId(error.payment_intent ?? null);
+          return {
+            kind: requiresAction ? "requires_action" : "declined",
+            paymentIntentId:
+              typeof id === "string" && id.startsWith("pi_") ? id : null,
+          };
+        }
+        return {
+          kind: "response",
+          receipt: collectionPayReceipt(intent, request, value),
         };
       }),
     settleExternally: (intent, invoiceId, effect) =>

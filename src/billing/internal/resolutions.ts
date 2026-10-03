@@ -29,6 +29,25 @@ import {
 } from "./resolutions-schema";
 import { isUuid } from "./validate";
 import { invoices } from "./invoice-schema";
+import { billingPaymentAttempts } from "./collection-schema";
+import {
+  reconcileCollectionSnapshot,
+  reconcileCollectionFailure,
+} from "./collection-observation";
+
+/** The caller holds the customer and invoice session locks. A locally uncertain send still holds P6 even if Stripe currently looks idle. */
+async function collectionHolds(tx: NodePgDatabase, invoiceId: string) {
+  const [attempt] = await tx
+    .select({ state: billingPaymentAttempts.state })
+    .from(billingPaymentAttempts)
+    .where(eq(billingPaymentAttempts.invoiceId, invoiceId));
+  return (
+    attempt !== undefined &&
+    ["pending", "processing", "requires_action", "needs_review"].includes(
+      attempt.state,
+    )
+  );
+}
 
 type Resolution = typeof resolutions.$inferSelect;
 type ReconciliationAudit = {
@@ -409,6 +428,7 @@ export function createInvoiceResolutions(
     if (!row.invoice.providerInvoiceId)
       throw new BillingProviderError("review", "provider_conflict");
     try {
+      const observedAt = now();
       const inspection = await provider.inspectCollection(
         context.intent(row),
         row.invoice.providerInvoiceId,
@@ -426,6 +446,13 @@ export function createInvoiceResolutions(
           now(),
           reconciliationAudit,
         );
+        await reconcileCollectionSnapshot(
+          tx,
+          current,
+          inspection,
+          now(),
+          observedAt,
+        );
         try {
           await context.project(tx, current, inspection.invoice);
         } catch (error) {
@@ -440,7 +467,7 @@ export function createInvoiceResolutions(
       });
       return inspection;
     } catch (error) {
-      if (error instanceof BillingProviderError && error.kind === "review") {
+      if (error instanceof BillingProviderError) {
         await connection.transaction(async (tx) => {
           await reconcileResolutionFailure(
             tx,
@@ -448,6 +475,7 @@ export function createInvoiceResolutions(
             error,
             reconciliationAudit,
           );
+          await reconcileCollectionFailure(tx, row.invoice.id, error, now());
           if (error.receiptMismatch) {
             const current = await context.load(tx, row.invoice.id);
             if (current) await context.mismatch(tx, current, error.reason);
@@ -547,6 +575,10 @@ export function createInvoiceResolutions(
         now().getTime() - Date.parse(row.attemptedAt) >= 23 * 60 * 60 * 1000
       ) {
         await noteReview(connection, row, "uncertain_outcome");
+        return "needs_review";
+      }
+      if (await collectionHolds(connection, invoice.invoice.id)) {
+        await noteReview(connection, row, "collection_conflict");
         return "needs_review";
       }
       if (!row.attemptedAt) {
@@ -656,6 +688,7 @@ export function createInvoiceResolutions(
               invoice.invoice.collectionRemainingMinor !== input.amountMinor
             )
               return { ok: false, code: "conflict" };
+            const held = await collectionHolds(tx, invoiceId);
             const [row] = await tx
               .insert(resolutions)
               .values({
@@ -668,7 +701,8 @@ export function createInvoiceResolutions(
                 actorId: actor.userId,
                 sessionId: actor.sessionId,
                 kind: "external_payment",
-                state: "pending",
+                state: held ? "needs_review" : "pending",
+                reviewReason: held ? "collection_conflict" : null,
                 amountMinor: input.amountMinor,
                 receivedDate: input.receivedDate,
                 method: input.method,
@@ -701,7 +735,11 @@ export function createInvoiceResolutions(
         customerId,
         invoiceId,
         async (connection, invoice) => {
-          if (!editable(invoice) || (await active(connection, invoiceId)))
+          if (
+            !editable(invoice) ||
+            (await active(connection, invoiceId)) ||
+            (await collectionHolds(connection, invoiceId))
+          )
             return { ok: false, code: "conflict" };
           const inspection = await inspect(connection, invoice);
           if (
@@ -827,7 +865,8 @@ export function createInvoiceResolutions(
           const row = (await active(connection, invoiceId))!;
           if (
             !editable((await context.load(connection, invoiceId))!) ||
-            conflict(row, inspection)
+            conflict(row, inspection) ||
+            (await collectionHolds(connection, invoiceId))
           )
             return { ok: false, code: "conflict" };
           return connection.transaction(
@@ -903,6 +942,8 @@ export function createInvoiceResolutions(
               const row = await active(tx, invoiceId);
               const current = await context.load(tx, invoiceId);
               const actions: ResolutionReviewResponse["actions"] = [];
+              const collectionHeld = await collectionHolds(tx, invoiceId);
+              if (collectionHeld) blockers.push("collection_conflict");
               if (row) {
                 blockers.push("existing_resolution");
                 if (row.reviewReason) blockers.push(row.reviewReason);
@@ -914,20 +955,24 @@ export function createInvoiceResolutions(
                   current &&
                   editable(current) &&
                   inspection &&
-                  !conflict(row, inspection)
+                  !conflict(row, inspection) &&
+                  !collectionHeld
                 )
                   actions.push("reconcile");
               } else if (inspection) {
                 if (!current || !editable(current)) blockers.push("terminal");
-                else if (inspection.collectionState !== "idle")
+                else if (inspection.collectionState !== "idle") {
                   blockers.push("collection_conflict");
-                else if (inspection.remainingMinor > 0) {
+                  if (inspection.remainingMinor > 0)
+                    actions.push("record_external_payment");
+                } else if (inspection.remainingMinor > 0) {
                   actions.push("record_external_payment");
                   if (
                     inspection.paidMinor === 0 &&
                     inspection.paidOffStripeMinor === 0 &&
                     inspection.overpaidMinor === 0 &&
-                    electronic(inspection).length === 0
+                    electronic(inspection).length === 0 &&
+                    !collectionHeld
                   )
                     actions.push("void");
                 }

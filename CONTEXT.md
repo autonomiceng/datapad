@@ -167,3 +167,9 @@ _Avoid_: Exception, readiness score
 **Automatic-payment enrollment**: An immutable version of a customer's permission to charge one saved method for selected subscriptions and effective periods.
 
 **Enrollment scope**: The subscription, commercial revision and service periods covered by an automatic-payment enrollment.
+
+**Payment collection**: Obtaining payment for an issued invoice, separately from preparing or issuing it.
+
+**Payment attempt**: One recorded intention to collect an invoice automatically, including its outcome and recovery evidence. Repeating an uncertain request with the same key recovers this attempt.
+
+**Missed automatic payment**: The due-day collection window ended before an automatic attempt was made. The customer still needs to pay an unpaid invoice.

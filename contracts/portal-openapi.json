@@ -2711,6 +2711,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "collection",
                         "resolution",
                         "calendar",
                         "providerReceipt",
@@ -2731,6 +2732,159 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "collection": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "chargeAt",
+                            "checkedAt",
+                            "disposition",
+                            "attempt"
+                          ],
+                          "properties": {
+                            "chargeAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "checkedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "disposition": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "suppress",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "paid",
+                                        "void"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "defer",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "awaiting_collection",
+                                        "pending",
+                                        "processing",
+                                        "unknown",
+                                        "stale",
+                                        "provider_unavailable",
+                                        "resolution_pending",
+                                        "resolution_conflict",
+                                        "collection_review",
+                                        "not_payable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "payable",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "before_charge",
+                                        "not_authorized",
+                                        "declined",
+                                        "requires_action",
+                                        "missed"
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "attempt": {
+                              "additionalProperties": false,
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "required": [
+                                "state",
+                                "attemptedAt",
+                                "reason"
+                              ],
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pending",
+                                    "processing",
+                                    "failed",
+                                    "requires_action",
+                                    "succeeded",
+                                    "needs_review"
+                                  ]
+                                },
+                                "attemptedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "declined",
+                                    "authentication_required",
+                                    "provider_unavailable",
+                                    "consent_changed",
+                                    "method_unavailable",
+                                    "resolution_conflict",
+                                    "amount_changed",
+                                    "competing_payment",
+                                    "provider_mismatch",
+                                    "uncertain_outcome",
+                                    "retry_exhausted"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
                         "resolution": {
                           "additionalProperties": false,
                           "type": [
@@ -5998,6 +6152,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "collection",
                         "resolution",
                         "calendar",
                         "providerReceipt",
@@ -6018,6 +6173,159 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "collection": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "chargeAt",
+                            "checkedAt",
+                            "disposition",
+                            "attempt"
+                          ],
+                          "properties": {
+                            "chargeAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "checkedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "disposition": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "suppress",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "paid",
+                                        "void"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "defer",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "awaiting_collection",
+                                        "pending",
+                                        "processing",
+                                        "unknown",
+                                        "stale",
+                                        "provider_unavailable",
+                                        "resolution_pending",
+                                        "resolution_conflict",
+                                        "collection_review",
+                                        "not_payable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "payable",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "before_charge",
+                                        "not_authorized",
+                                        "declined",
+                                        "requires_action",
+                                        "missed"
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "attempt": {
+                              "additionalProperties": false,
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "required": [
+                                "state",
+                                "attemptedAt",
+                                "reason"
+                              ],
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pending",
+                                    "processing",
+                                    "failed",
+                                    "requires_action",
+                                    "succeeded",
+                                    "needs_review"
+                                  ]
+                                },
+                                "attemptedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "declined",
+                                    "authentication_required",
+                                    "provider_unavailable",
+                                    "consent_changed",
+                                    "method_unavailable",
+                                    "resolution_conflict",
+                                    "amount_changed",
+                                    "competing_payment",
+                                    "provider_mismatch",
+                                    "uncertain_outcome",
+                                    "retry_exhausted"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
                         "resolution": {
                           "additionalProperties": false,
                           "type": [
@@ -6502,6 +6810,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "collection",
                         "resolution",
                         "calendar",
                         "providerReceipt",
@@ -6522,6 +6831,159 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "collection": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "chargeAt",
+                            "checkedAt",
+                            "disposition",
+                            "attempt"
+                          ],
+                          "properties": {
+                            "chargeAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "checkedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "disposition": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "suppress",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "paid",
+                                        "void"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "defer",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "awaiting_collection",
+                                        "pending",
+                                        "processing",
+                                        "unknown",
+                                        "stale",
+                                        "provider_unavailable",
+                                        "resolution_pending",
+                                        "resolution_conflict",
+                                        "collection_review",
+                                        "not_payable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "payable",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "before_charge",
+                                        "not_authorized",
+                                        "declined",
+                                        "requires_action",
+                                        "missed"
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "attempt": {
+                              "additionalProperties": false,
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "required": [
+                                "state",
+                                "attemptedAt",
+                                "reason"
+                              ],
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pending",
+                                    "processing",
+                                    "failed",
+                                    "requires_action",
+                                    "succeeded",
+                                    "needs_review"
+                                  ]
+                                },
+                                "attemptedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "declined",
+                                    "authentication_required",
+                                    "provider_unavailable",
+                                    "consent_changed",
+                                    "method_unavailable",
+                                    "resolution_conflict",
+                                    "amount_changed",
+                                    "competing_payment",
+                                    "provider_mismatch",
+                                    "uncertain_outcome",
+                                    "retry_exhausted"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
                         "resolution": {
                           "additionalProperties": false,
                           "type": [
@@ -7195,6 +7657,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "collection",
                         "resolution",
                         "calendar",
                         "providerReceipt",
@@ -7215,6 +7678,159 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "collection": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "chargeAt",
+                            "checkedAt",
+                            "disposition",
+                            "attempt"
+                          ],
+                          "properties": {
+                            "chargeAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "checkedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "disposition": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "suppress",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "paid",
+                                        "void"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "defer",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "awaiting_collection",
+                                        "pending",
+                                        "processing",
+                                        "unknown",
+                                        "stale",
+                                        "provider_unavailable",
+                                        "resolution_pending",
+                                        "resolution_conflict",
+                                        "collection_review",
+                                        "not_payable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "payable",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "before_charge",
+                                        "not_authorized",
+                                        "declined",
+                                        "requires_action",
+                                        "missed"
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "attempt": {
+                              "additionalProperties": false,
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "required": [
+                                "state",
+                                "attemptedAt",
+                                "reason"
+                              ],
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pending",
+                                    "processing",
+                                    "failed",
+                                    "requires_action",
+                                    "succeeded",
+                                    "needs_review"
+                                  ]
+                                },
+                                "attemptedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "declined",
+                                    "authentication_required",
+                                    "provider_unavailable",
+                                    "consent_changed",
+                                    "method_unavailable",
+                                    "resolution_conflict",
+                                    "amount_changed",
+                                    "competing_payment",
+                                    "provider_mismatch",
+                                    "uncertain_outcome",
+                                    "retry_exhausted"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
                         "resolution": {
                           "additionalProperties": false,
                           "type": [
@@ -8101,7 +8717,7 @@
     "/api/customers/{customerId}/invoices/{invoiceId}/check": {
       "post": {
         "operationId": "checkCustomerInvoice",
-        "summary": "Retrieve the existing invoice status",
+        "summary": "Check invoice status and payment availability",
         "parameters": [
           {
             "name": "customerId",
@@ -8150,6 +8766,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "collection",
                         "resolution",
                         "calendar",
                         "providerReceipt",
@@ -8170,6 +8787,159 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "collection": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "chargeAt",
+                            "checkedAt",
+                            "disposition",
+                            "attempt"
+                          ],
+                          "properties": {
+                            "chargeAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "checkedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "disposition": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "suppress",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "paid",
+                                        "void"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "defer",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "awaiting_collection",
+                                        "pending",
+                                        "processing",
+                                        "unknown",
+                                        "stale",
+                                        "provider_unavailable",
+                                        "resolution_pending",
+                                        "resolution_conflict",
+                                        "collection_review",
+                                        "not_payable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "const": "payable",
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "before_charge",
+                                        "not_authorized",
+                                        "declined",
+                                        "requires_action",
+                                        "missed"
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "attempt": {
+                              "additionalProperties": false,
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "required": [
+                                "state",
+                                "attemptedAt",
+                                "reason"
+                              ],
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pending",
+                                    "processing",
+                                    "failed",
+                                    "requires_action",
+                                    "succeeded",
+                                    "needs_review"
+                                  ]
+                                },
+                                "attemptedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "declined",
+                                    "authentication_required",
+                                    "provider_unavailable",
+                                    "consent_changed",
+                                    "method_unavailable",
+                                    "resolution_conflict",
+                                    "amount_changed",
+                                    "competing_payment",
+                                    "provider_mismatch",
+                                    "uncertain_outcome",
+                                    "retry_exhausted"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
                         "resolution": {
                           "additionalProperties": false,
                           "type": [

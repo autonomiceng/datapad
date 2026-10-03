@@ -457,6 +457,7 @@ test("unattempted withdrawal preserves facts and processing-cleared recovery req
     {
       invoicePaymentId: "inpay_intervening",
       paymentIntentId: "pi_intervening",
+      providerPaymentMethodId: null,
       status: "paid",
       paidMinor: 200,
       intentState: "succeeded",
@@ -480,6 +481,7 @@ test("unattempted withdrawal preserves facts and processing-cleared recovery req
   evidence.payments.push({
     invoicePaymentId: "inpay_pending",
     paymentIntentId: "pi_pending",
+    providerPaymentMethodId: null,
     status: "open",
     paidMinor: null,
     intentState: "processing",
@@ -580,6 +582,7 @@ test("hosted-payment races and late events preserve receipt facts, terminal stat
     {
       invoicePaymentId: "inpay_old",
       paymentIntentId: "pi_old",
+      providerPaymentMethodId: null,
       status: "paid",
       paidMinor: 200,
       intentState: "succeeded",
@@ -592,6 +595,7 @@ test("hosted-payment races and late events preserve receipt facts, terminal stat
   evidence.payments.push({
     invoicePaymentId: "inpay_late",
     paymentIntentId: "pi_late",
+    providerPaymentMethodId: null,
     status: "paid",
     paidMinor: 1000,
     intentState: "succeeded",
@@ -776,6 +780,7 @@ test("hosted-payment races and late events preserve receipt facts, terminal stat
     raceEvidence.payments.push({
       invoicePaymentId: "inpay_race",
       paymentIntentId: "pi_race",
+      providerPaymentMethodId: null,
       status: "paid",
       paidMinor: 1200,
       intentState: "succeeded",

@@ -33,11 +33,16 @@ import {
 } from "./validate";
 import { billingInvoiceGroups } from "./scheduled-schema";
 import { billingInvoiceResolutions } from "./resolutions-schema";
+import {
+  assertSyntheticCollectionData,
+  readCollectionProjection,
+} from "./collection";
 import type { SyntheticScheduledInvoice } from "../scheduled-types";
 
 export function createReader({
   pool,
   deploymentKey,
+  businessNow = () => new Date(),
 }: BillingReaderOptions): BillingReader {
   const db = drizzle(pool);
   const instant = (value: string | null) =>
@@ -98,6 +103,8 @@ export function createReader({
     const [row] = await db
       .select({
         ...selection,
+        storedInvoice: invoices,
+        storedCustomer: billingCustomers,
         calendar: invoices.calendar,
         hostedInvoiceUrl: invoices.hostedInvoiceUrl,
         receiptState: invoices.providerReceiptState,
@@ -114,17 +121,30 @@ export function createReader({
       )
       .where(and(scope, customerScope, eq(invoices.id, invoiceId)));
     if (!row) return null;
-    const lines = await db
-      .select({
-        id: invoiceLines.id,
-        position: invoiceLines.position,
-        description: invoiceLines.description,
-        amountMinor: invoiceLines.amountMinor,
-        originRef: invoiceLines.originRef,
-      })
+    const storedLines = await db
+      .select()
       .from(invoiceLines)
       .where(eq(invoiceLines.invoiceId, invoiceId))
       .orderBy(asc(invoiceLines.position));
+    const collection = await readCollectionProjection(
+      db,
+      {
+        invoice: row.storedInvoice,
+        customer: row.storedCustomer,
+        lines: storedLines,
+      },
+      businessNow(),
+      new Date(),
+    );
+    const lines = storedLines.map(
+      ({ id, position, description, amountMinor, originRef }) => ({
+        id,
+        position,
+        description,
+        amountMinor,
+        originRef,
+      }),
+    );
     const [resolution] = await db
       .select({
         id: billingInvoiceResolutions.id,
@@ -150,11 +170,17 @@ export function createReader({
     const visible = ["open", "paid", "void", "uncollectible"].includes(
       row.state,
     );
-    const { receiptState, ...detail } = row;
+    const {
+      receiptState,
+      storedInvoice: _storedInvoice,
+      storedCustomer: _storedCustomer,
+      ...detail
+    } = row;
     const url = row.hostedInvoiceUrl;
     return {
       invoice: {
         ...detail,
+        collection,
         resolution: resolution
           ? {
               ...resolution,
@@ -170,6 +196,7 @@ export function createReader({
         issuedAt: instant(row.issuedAt),
         lines,
         hostedInvoiceUrl:
+          collection.disposition.kind === "payable" &&
           !resolutionHoldsPayment &&
           receiptState === "verified" &&
           visible &&
@@ -194,6 +221,7 @@ export function createReader({
     const fail = () => {
       throw new Error("Billing data is outside the reviewed synthetic dataset");
     };
+    await assertSyntheticCollectionData({ pool, deploymentKey, accountId });
     const customers = await db.select().from(billingCustomers);
     const rows = await db.select().from(invoices);
     const lines = await db

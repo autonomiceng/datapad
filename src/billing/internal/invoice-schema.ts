@@ -94,13 +94,21 @@ export const invoices = pgTable(
     finalizeAttemptedAt: instant("finalize_attempted_at"),
     lastCheckedAt: instant("last_checked_at"),
     collectionCheckedAt: instant("collection_checked_at"),
+    collectionNextCheckAt: instant("collection_next_check_at"),
     collectionRemainingMinor: integer("collection_remaining_minor"),
+    collectionState: text("collection_state").$type<
+      "idle" | "active" | "unknown"
+    >(),
     reviewReason: text("review_reason").$type<ReviewReason>(),
     attempts: integer("attempts").notNull().default(0),
     nextAttemptAt: instant("next_attempt_at"),
     createdAt: instant("created_at").notNull(),
   },
   (table) => [
+    check(
+      "invoice_collection_state",
+      sql`${table.collectionState} is null or ${table.collectionState} in ('idle','active','unknown')`,
+    ),
     uniqueIndex("invoice_origin").on(table.deploymentKey, table.originKey),
     unique("invoice_customer_scope").on(
       table.id,
