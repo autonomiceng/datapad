@@ -30,6 +30,7 @@ export interface CustomerAccessTarget {
 export type CustomerCapability =
   | "read"
   | "manage_profile"
+  | "manage_services"
   | "read_members"
   | "manage_members"
   | "read_billing";
@@ -60,21 +61,50 @@ export interface AccessPolicy {
     mutation: boolean,
   ): Promise<AccessResult<undefined>>;
 }
-export interface AuditEntry {
+interface AuditEntryIdentity {
   requestId: string;
   actor: HumanActor;
   customerId: string;
-  action: "customer.profile.updated";
   targetId: string;
-  changedFields: Array<"displayName" | "legalName" | "billingEmail">;
 }
+export type AuditEntry = AuditEntryIdentity &
+  (
+    | {
+        action: "customer.profile.updated";
+        changedFields: Array<"displayName" | "legalName" | "billingEmail">;
+      }
+    | {
+        action: "service.component_preference.updated";
+        changedFields: Array<"requestedSetting">;
+      }
+    | {
+        action: "service.addon.attached";
+        changedFields: Array<"attachedServiceId">;
+      }
+  );
 export interface AuditWriter {
+  getServicesBootstrap(
+    tx: NodePgDatabase,
+    bootstrapKey: string,
+  ): Promise<{ manifestDigest: string } | null>;
+  recordServicesBootstrap(
+    tx: NodePgDatabase,
+    input: {
+      operatorId: string;
+      bootstrapKey: string;
+      manifestDigest: string;
+    },
+  ): Promise<void>;
+
   recordOperator(
     tx: NodePgDatabase,
     entry: {
       operatorId: string;
       customerId: string;
-      action: "customer.created" | "customer.organization.bound";
+      action:
+        | "customer.created"
+        | "customer.organization.bound"
+        | "service.created";
       targetId: string;
     },
   ): Promise<void>;

@@ -3138,6 +3138,2252 @@
           }
         }
       }
+    },
+    "/api/customers/{customerId}/services": {
+      "get": {
+        "operationId": "listCustomerServices",
+        "summary": "List customer services",
+        "tags": [
+          "Services"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 100,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 1000000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "services",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "services": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "name",
+                          "packageName",
+                          "version",
+                          "attachedService"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "hosting",
+                              "addon",
+                              "domain_registration"
+                            ]
+                          },
+                          "name": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "packageName": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "maximum": 2147483647,
+                            "type": "integer"
+                          },
+                          "attachedService": {
+                            "additionalProperties": false,
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "minimum": 0,
+                      "maximum": 1000000,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/services/{serviceId}": {
+      "get": {
+        "operationId": "getCustomerService",
+        "summary": "Read a customer service",
+        "tags": [
+          "Services"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "service"
+                  ],
+                  "properties": {
+                    "service": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "name",
+                        "packageName",
+                        "version",
+                        "attachedService",
+                        "canManage",
+                        "includedComponents",
+                        "hostingAccounts",
+                        "components",
+                        "websites",
+                        "registration",
+                        "addons"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "hosting",
+                            "addon",
+                            "domain_registration"
+                          ]
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "packageName": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "attachedService": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "name": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "includedComponents": {
+                          "maxItems": 3,
+                          "uniqueItems": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "web",
+                              "email",
+                              "dns"
+                            ]
+                          }
+                        },
+                        "hostingAccounts": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "label",
+                              "providerLabel",
+                              "loginUrl"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "label": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "providerLabel": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "loginUrl": {
+                                "format": "uri",
+                                "maxLength": 2048,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "components": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "kind",
+                              "delivery",
+                              "providerLabel",
+                              "manager",
+                              "requestedSetting",
+                              "providerState",
+                              "checkedAt",
+                              "version",
+                              "reviewReason",
+                              "domains"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "web",
+                                  "email",
+                                  "dns"
+                                ]
+                              },
+                              "delivery": {
+                                "type": "string",
+                                "enum": [
+                                  "hosted",
+                                  "external"
+                                ]
+                              },
+                              "providerLabel": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "manager": {
+                                "type": "string",
+                                "enum": [
+                                  "staff",
+                                  "customer"
+                                ]
+                              },
+                              "requestedSetting": {
+                                "anyOf": [
+                                  {
+                                    "const": "enabled",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "disabled",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "providerState": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "enabled",
+                                      "disabled"
+                                    ]
+                                  },
+                                  {
+                                    "const": "unknown",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "checkedAt": {
+                                "format": "date-time",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "reviewReason": {
+                                "anyOf": [
+                                  {
+                                    "const": "requested_state_differs",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "running_without_entitlement",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "domains": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "maxLength": 253,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "websites": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "componentId",
+                              "primaryHostname",
+                              "aliases"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "componentId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "primaryHostname": {
+                                "minLength": 1,
+                                "maxLength": 253,
+                                "type": "string"
+                              },
+                              "aliases": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "maxLength": 253,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "registration": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "registeredName",
+                            "registrarLabel",
+                            "manager",
+                            "expiresOn",
+                            "renewalResponsibility"
+                          ],
+                          "properties": {
+                            "registeredName": {
+                              "minLength": 1,
+                              "maxLength": 253,
+                              "type": "string"
+                            },
+                            "registrarLabel": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "manager": {
+                              "type": "string",
+                              "enum": [
+                                "staff",
+                                "customer"
+                              ]
+                            },
+                            "expiresOn": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "renewalResponsibility": {
+                              "type": "string",
+                              "enum": [
+                                "customer",
+                                "staff",
+                                "unknown"
+                              ]
+                            }
+                          }
+                        },
+                        "addons": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "kind",
+                              "name",
+                              "packageName",
+                              "version",
+                              "attachedService"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "hosting",
+                                  "addon",
+                                  "domain_registration"
+                                ]
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "packageName": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "attachedService": {
+                                "additionalProperties": false,
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/services/{serviceId}/components/{componentId}/preference": {
+      "patch": {
+        "operationId": "setComponentPreference",
+        "summary": "Set a service component preference",
+        "tags": [
+          "Services"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "expectedVersion",
+                  "requestedSetting"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "type": "integer"
+                  },
+                  "requestedSetting": {
+                    "type": "string",
+                    "enum": [
+                      "enabled",
+                      "disabled"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "service"
+                  ],
+                  "properties": {
+                    "service": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "name",
+                        "packageName",
+                        "version",
+                        "attachedService",
+                        "canManage",
+                        "includedComponents",
+                        "hostingAccounts",
+                        "components",
+                        "websites",
+                        "registration",
+                        "addons"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "hosting",
+                            "addon",
+                            "domain_registration"
+                          ]
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "packageName": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "attachedService": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "name": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "includedComponents": {
+                          "maxItems": 3,
+                          "uniqueItems": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "web",
+                              "email",
+                              "dns"
+                            ]
+                          }
+                        },
+                        "hostingAccounts": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "label",
+                              "providerLabel",
+                              "loginUrl"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "label": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "providerLabel": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "loginUrl": {
+                                "format": "uri",
+                                "maxLength": 2048,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "components": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "kind",
+                              "delivery",
+                              "providerLabel",
+                              "manager",
+                              "requestedSetting",
+                              "providerState",
+                              "checkedAt",
+                              "version",
+                              "reviewReason",
+                              "domains"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "web",
+                                  "email",
+                                  "dns"
+                                ]
+                              },
+                              "delivery": {
+                                "type": "string",
+                                "enum": [
+                                  "hosted",
+                                  "external"
+                                ]
+                              },
+                              "providerLabel": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "manager": {
+                                "type": "string",
+                                "enum": [
+                                  "staff",
+                                  "customer"
+                                ]
+                              },
+                              "requestedSetting": {
+                                "anyOf": [
+                                  {
+                                    "const": "enabled",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "disabled",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "providerState": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "enabled",
+                                      "disabled"
+                                    ]
+                                  },
+                                  {
+                                    "const": "unknown",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "checkedAt": {
+                                "format": "date-time",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "reviewReason": {
+                                "anyOf": [
+                                  {
+                                    "const": "requested_state_differs",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "running_without_entitlement",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "domains": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "maxLength": 253,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "websites": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "componentId",
+                              "primaryHostname",
+                              "aliases"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "componentId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "primaryHostname": {
+                                "minLength": 1,
+                                "maxLength": 253,
+                                "type": "string"
+                              },
+                              "aliases": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "maxLength": 253,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "registration": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "registeredName",
+                            "registrarLabel",
+                            "manager",
+                            "expiresOn",
+                            "renewalResponsibility"
+                          ],
+                          "properties": {
+                            "registeredName": {
+                              "minLength": 1,
+                              "maxLength": 253,
+                              "type": "string"
+                            },
+                            "registrarLabel": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "manager": {
+                              "type": "string",
+                              "enum": [
+                                "staff",
+                                "customer"
+                              ]
+                            },
+                            "expiresOn": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "renewalResponsibility": {
+                              "type": "string",
+                              "enum": [
+                                "customer",
+                                "staff",
+                                "unknown"
+                              ]
+                            }
+                          }
+                        },
+                        "addons": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "kind",
+                              "name",
+                              "packageName",
+                              "version",
+                              "attachedService"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "hosting",
+                                  "addon",
+                                  "domain_registration"
+                                ]
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "packageName": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "attachedService": {
+                                "additionalProperties": false,
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/addons/{addonId}/attach": {
+      "post": {
+        "operationId": "attachAddon",
+        "summary": "Attach or detach a customer add-on",
+        "tags": [
+          "Services"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "addonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "expectedVersion",
+                  "attachedServiceId"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "type": "integer"
+                  },
+                  "attachedServiceId": {
+                    "format": "uuid",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "service"
+                  ],
+                  "properties": {
+                    "service": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "name",
+                        "packageName",
+                        "version",
+                        "attachedService",
+                        "canManage",
+                        "includedComponents",
+                        "hostingAccounts",
+                        "components",
+                        "websites",
+                        "registration",
+                        "addons"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "hosting",
+                            "addon",
+                            "domain_registration"
+                          ]
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "packageName": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "attachedService": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "name": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "includedComponents": {
+                          "maxItems": 3,
+                          "uniqueItems": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "web",
+                              "email",
+                              "dns"
+                            ]
+                          }
+                        },
+                        "hostingAccounts": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "label",
+                              "providerLabel",
+                              "loginUrl"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "label": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "providerLabel": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "loginUrl": {
+                                "format": "uri",
+                                "maxLength": 2048,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "components": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "kind",
+                              "delivery",
+                              "providerLabel",
+                              "manager",
+                              "requestedSetting",
+                              "providerState",
+                              "checkedAt",
+                              "version",
+                              "reviewReason",
+                              "domains"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "web",
+                                  "email",
+                                  "dns"
+                                ]
+                              },
+                              "delivery": {
+                                "type": "string",
+                                "enum": [
+                                  "hosted",
+                                  "external"
+                                ]
+                              },
+                              "providerLabel": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "manager": {
+                                "type": "string",
+                                "enum": [
+                                  "staff",
+                                  "customer"
+                                ]
+                              },
+                              "requestedSetting": {
+                                "anyOf": [
+                                  {
+                                    "const": "enabled",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "disabled",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "providerState": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "enabled",
+                                      "disabled"
+                                    ]
+                                  },
+                                  {
+                                    "const": "unknown",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "checkedAt": {
+                                "format": "date-time",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "reviewReason": {
+                                "anyOf": [
+                                  {
+                                    "const": "requested_state_differs",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "running_without_entitlement",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "domains": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "maxLength": 253,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "websites": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "componentId",
+                              "primaryHostname",
+                              "aliases"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "componentId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "primaryHostname": {
+                                "minLength": 1,
+                                "maxLength": 253,
+                                "type": "string"
+                              },
+                              "aliases": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "maxLength": 253,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "registration": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "registeredName",
+                            "registrarLabel",
+                            "manager",
+                            "expiresOn",
+                            "renewalResponsibility"
+                          ],
+                          "properties": {
+                            "registeredName": {
+                              "minLength": 1,
+                              "maxLength": 253,
+                              "type": "string"
+                            },
+                            "registrarLabel": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "manager": {
+                              "type": "string",
+                              "enum": [
+                                "staff",
+                                "customer"
+                              ]
+                            },
+                            "expiresOn": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "renewalResponsibility": {
+                              "type": "string",
+                              "enum": [
+                                "customer",
+                                "staff",
+                                "unknown"
+                              ]
+                            }
+                          }
+                        },
+                        "addons": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "kind",
+                              "name",
+                              "packageName",
+                              "version",
+                              "attachedService"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "hosting",
+                                  "addon",
+                                  "domain_registration"
+                                ]
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "packageName": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "attachedService": {
+                                "additionalProperties": false,
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

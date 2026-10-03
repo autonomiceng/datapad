@@ -105,6 +105,8 @@ export function createPolicy(pool: Pool): AccessPolicy {
         (capability === "read_billing" &&
           (administrator || roles.includes("billing") || role !== null)) ||
         (capability === "manage_profile" && administrator) ||
+        (capability === "manage_services" &&
+          (administrator || roles.includes("support"))) ||
         ((capability === "read_members" || capability === "manage_members") &&
           target.organizationId !== null &&
           (administrator || role === "administrator"));

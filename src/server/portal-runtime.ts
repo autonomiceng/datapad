@@ -11,6 +11,8 @@ import {
   assertSyntheticCustomers,
   type Customers,
 } from "../customers";
+import { createServices, assertSyntheticServices } from "../services";
+import { portalServicePolicy } from "./portal-services";
 import { createBillingReader } from "../billing";
 import type { BillingHttp } from "./billing-routes";
 import {
@@ -100,6 +102,21 @@ export async function createPortalRuntime(pool: Pool) {
     providerProfile: reader.providerProfile,
     allowProfile: allowPortalProfile,
   });
+  const elm = await customers.getOrganizationTarget("sample-elm");
+  const birch = await customers.getOrganizationTarget("sample-birch");
+  if (!elm || !birch) throw new Error("Missing sample customer access");
+  const servicePolicy = portalServicePolicy({
+    elm: elm.customerId,
+    birch: birch.customerId,
+  });
+  await assertSyntheticServices(pool, servicePolicy);
+  const services = createServices({
+    pool,
+    authorizeCustomer: customers.authorizeCustomer.bind(customers),
+    audit: access.audit,
+    allowRecord: servicePolicy.allowRecord,
+    providerLinks: {},
+  });
   await reader.assertSyntheticData([]);
   const billing: BillingHttp = {
     reader,
@@ -120,6 +137,7 @@ export async function createPortalRuntime(pool: Pool) {
     },
   };
   return {
+    services: { services, access, origin: configuration.origin },
     billing,
     accounts: {
       routes: { access, customers, origin: configuration.origin },

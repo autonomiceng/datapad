@@ -173,6 +173,17 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
   const exported = await exportOpenApi();
   expect(exported).toBe(await exportOpenApi());
   const contract = JSON.parse(exported);
+  const requestedSetting =
+    contract.paths["/api/customers/{customerId}/services/{serviceId}"].get
+      .responses["200"].content["application/json"].schema.properties.service
+      .properties.components.items.properties.requestedSetting;
+  expect(requestedSetting).toEqual({
+    anyOf: [
+      { const: "enabled", type: "string" },
+      { const: "disabled", type: "string" },
+      { type: "null" },
+    ],
+  });
   const live = await app.handle(request("/api/openapi/json"));
   expect(live.status).toBe(200);
   expect(live.headers.get("cache-control")).toBe("no-store");
@@ -199,6 +210,10 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
   expect(Object.keys(contract.paths)).toEqual([
     ...Object.keys(operations),
     ...billingPaths,
+    "/api/customers/{customerId}/services",
+    "/api/customers/{customerId}/services/{serviceId}",
+    "/api/customers/{customerId}/services/{serviceId}/components/{componentId}/preference",
+    "/api/customers/{customerId}/addons/{addonId}/attach",
   ]);
   expect(contract.paths[billingPaths[0]].get.operationId).toBe("listInvoices");
   expect(contract.paths[billingPaths[1]].get.operationId).toBe("getInvoice");

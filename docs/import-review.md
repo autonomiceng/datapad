@@ -20,6 +20,8 @@ This is the reusable architecture for the import-review slice. Read it before ad
 
 `mise run check:architecture` checks every application source, including type-only imports, for resolved imports, cycles and boundary violations. The build check also rejects server and import-review implementation code in the browser bundle. Introduce directories when they carry behavior, and raise an undecided interface or structural change before implementing consumers.
 
+The [customer services architecture](services.md) owns operational service records and preferences in `src/services`. It consumes the public customer authorization and audit interfaces. Its schema stays private except for a schema-only service reference for foreign keys. The browser imports only its contract, HTTP uses its facade, and service code cannot import billing, provider adapters or import observations.
+
 ## Import semantics
 
 A v1 `ImportFile` declares its schema version, source ID, source reference, Data as of, record counts and customer/service/domain arrays. Every property is required. Unset scalar values use `null`; empty collections use `[]`. Unknown fields, including contact details, notes and secrets, reject the input. Validation performs no coercion, injected defaults or cleanup. Strings must contain valid Unicode scalar values and cannot contain NUL. Pagination offsets support all derived data issues in a maximum-size import.

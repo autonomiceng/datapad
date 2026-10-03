@@ -32,7 +32,7 @@ Format intentionally edited files explicitly, for example `mise run format -- RE
 
 ## Customer accounts
 
-Run `mise run portal:demo` for the [authenticated account demo](docs/accounts-demo.md). Sign in through the local sample inbox, edit a profile as staff, invite a member and check customer access boundaries. The [account architecture](docs/accounts.md) explains permissions, stable customer identities and preserved invoice history. The demo includes no live billing, external email or production customer data. Google/Microsoft provider sign-in awaits credentialed verification.
+Run `mise run portal:demo` for the [authenticated account demo](docs/accounts-demo.md). Sign in through the local sample inbox, edit a profile as staff, invite a member and check customer access boundaries. Open Services to inspect hosting, registrations, websites and aliases; staff can record independent web/email/DNS preferences and attach or detach add-ons. These operations change portal records without sending provider commands. See the [services guide](docs/services.md). The [account architecture](docs/accounts.md) explains permissions, stable customer identities and preserved invoice history. The demo includes no live billing, external email or production customer data. Google/Microsoft provider sign-in awaits credentialed verification.
 
 ## Invoice sandbox
 

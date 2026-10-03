@@ -87,6 +87,10 @@ _Avoid_: Exception, readiness score
 
 **Component**: An independently configurable capability within a service package, such as web, email or DNS hosting.
 
+**Delivery**: Whether a component is hosted with the service provider or uses an external provider. This does not determine its manager or whether the package includes it.
+
+**Domain registration**: An operational service that records a registered domain, registrar, expiry and renewal responsibility. It exists independently of web, email and DNS hosting. The import-review record type remains Domain.
+
 **Requested setting**: What a customer or authorized staff member wants enabled or disabled.
 
 **Provider state**: What the provider is confirmed to be delivering, with when it was last checked. The requested setting can be known while the provider state is unknown.

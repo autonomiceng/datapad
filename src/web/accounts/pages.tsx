@@ -399,6 +399,11 @@ export function CustomerPage({ customerId }: { customerId: string }) {
         {customer && customer.role && (
           <p className="account-note">Your role: {roleLabels[customer.role]}</p>
         )}
+        {customer && (
+          <Link to="/customers/$customerId/services" params={{ customerId }}>
+            Services
+          </Link>
+        )}
       </header>
       {detail.isPending && (
         <p className="panel state-panel" role="status">

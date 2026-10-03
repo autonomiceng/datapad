@@ -6,6 +6,7 @@ export default defineConfig({
     "./src/billing/internal/schema.ts",
     "./src/access/internal/schema.ts",
     "./src/customers/internal/schema.ts",
+    "./src/services/internal/schema.ts",
   ],
   out: "./drizzle",
 });

@@ -13,8 +13,9 @@ module.exports = {
       severity: "error",
       from: { path: web },
       to: {
-        path: "^src/(server|import-review|billing|stripe|worker|access|customers)/",
-        pathNot: "^src/(import-review|billing|access|customers)/contract\\.ts$",
+        path: "^src/(server|import-review|billing|stripe|worker|access|customers|services)/",
+        pathNot:
+          "^src/(import-review|billing|access|customers|services)/contract\\.ts$",
       },
     },
     {
@@ -41,17 +42,19 @@ module.exports = {
       name: "http-no-sql",
       severity: "error",
       from: {
-        path: "^src/server/(app|billing-routes|account-routes|portal-app)\\.ts$",
+        path: "^src/server/(app|billing-routes|account-routes|service-routes|portal-app)\\.ts$",
       },
       to: {
-        path: "(src/(import-review|billing|access|customers)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
+        path: "(src/(import-review|billing|access|customers|services)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
       },
     },
     {
       name: "import-review-no-adapters",
       severity: "error",
       from: { path: "^src/import-review/" },
-      to: { path: "^(src/(server|web|billing|stripe|worker)/|scripts/)" },
+      to: {
+        path: "^(src/(server|web|billing|stripe|worker|services)/|scripts/)",
+      },
     },
     {
       name: "pure-no-persistence",
@@ -67,18 +70,19 @@ module.exports = {
       name: "contract-browser-safe",
       severity: "error",
       from: {
-        path: "^src/(import-review|billing|access|customers)/contract\\.ts$",
+        path: "^src/(import-review|billing|access|customers|services)/contract\\.ts$",
       },
       to: {
         path: "^src/",
-        pathNot: "^src/(import-review|billing|access|customers)/contract\\.ts$",
+        pathNot:
+          "^src/(import-review|billing|access|customers|services)/contract\\.ts$",
       },
     },
     {
       name: "contract-no-node",
       severity: "error",
       from: {
-        path: "^src/(import-review|billing|access|customers)/contract\\.ts$",
+        path: "^src/(import-review|billing|access|customers|services)/contract\\.ts$",
       },
       to: { dependencyTypes: ["core"] },
     },
@@ -121,7 +125,21 @@ module.exports = {
       severity: "error",
       from: { path: "^src/access/" },
       to: {
-        path: "^(src/(server|web|billing|stripe|worker|import-review|customers)/|scripts/)",
+        path: "^(src/(server|web|billing|stripe|worker|import-review|customers|services)/|scripts/)",
+      },
+    },
+    {
+      name: "services-private",
+      severity: "error",
+      from: { pathNot: "^(src/services/|drizzle\\.config\\.ts$)" },
+      to: { path: "^src/services/internal/" },
+    },
+    {
+      name: "services-no-adapters",
+      severity: "error",
+      from: { path: "^src/services/" },
+      to: {
+        path: "^(src/(server|web|billing|stripe|worker|import-review)/|scripts/|node_modules/(better-auth|@better-auth|stripe|pg-boss)/)",
       },
     },
     {
