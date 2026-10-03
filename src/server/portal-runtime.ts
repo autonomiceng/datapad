@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import { createInvoiceNotices } from "../notifications";
+import { createNoticeSmtp } from "./notice-smtp";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
@@ -32,7 +34,7 @@ export async function createPortalRuntime(
   pool: Pool,
   options: {
     calendar?: import("../billing/subscriptions-contract").CalendarPolicy;
-    /** Subscription, schedule and collection calendar decisions only. */
+    /** Subscription, schedule, collection and notice calendar decisions only. */
     now?: () => Date;
   } = {},
 ) {
@@ -148,6 +150,30 @@ export async function createPortalRuntime(
     customerIds: { elm: elm.customerId, birch: birch.customerId },
     origin: configuration.origin,
   });
+  const allowNoticeRecipient = (recipient: string) =>
+    portalCustomers.some((customer) => customer.billingEmail === recipient);
+  const noticeSmtp = createNoticeSmtp({
+    smtp: configuration.smtp,
+    allowRecipient: allowNoticeRecipient,
+  });
+  const invoiceNotices = createInvoiceNotices({
+    pool,
+    deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
+    customerAccess: customers,
+    billing: portalBilling.invoiceNoticeBilling,
+    billingReader: reader,
+    smtp: noticeSmtp,
+    audit: access.audit,
+    workerId: "synthetic-invoice-notices",
+    allowRecipient: allowNoticeRecipient,
+    noticeCalendar: {
+      timeZone: (options.calendar ?? configuration.calendar).timeZone,
+      hour: 9,
+    },
+    portalOrigin: configuration.origin,
+    businessNow: options.now,
+  });
+  await invoiceNotices.assertSyntheticData();
   const billing: BillingHttp = {
     reader,
     webhook: portalBilling.webhook,
@@ -169,6 +195,8 @@ export async function createPortalRuntime(
   };
 
   return {
+    notices: { access, notices: invoiceNotices },
+    invoiceNotices,
     paymentSettings: portalBilling.paymentSettingsHttp,
     paymentSettingsWork: portalBilling.paymentSettings,
     resolutions: {
@@ -206,6 +234,7 @@ export async function createPortalRuntime(
     },
     inbox: configuration.inbox,
     close: async () => {
+      noticeSmtp.close();
       transport.close();
       await lockPool.end();
     },

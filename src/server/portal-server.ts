@@ -34,6 +34,7 @@ export async function startPortal(
       scheduled: runtime.scheduled,
       paymentSettings: runtime.paymentSettings,
       resolutions: runtime.resolutions,
+      notices: runtime.notices,
       services: runtime.services,
       accounts: runtime.accounts,
       assetsDir: process.env.ASSETS_DIR
@@ -61,6 +62,7 @@ export async function startPortal(
         paymentSettings: runtime.paymentSettingsWork,
         resolutions: runtime.invoiceResolutions,
         collections: runtime.invoiceCollections,
+        notices: runtime.invoiceNotices,
       });
     await acceptance?.({ invoiceCollections: runtime.invoiceCollections });
     console.log(`Listening on http://127.0.0.1:${app.server!.port}`);

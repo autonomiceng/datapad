@@ -18,6 +18,7 @@ import {
 } from "./payment-settings-routes";
 import { scheduledRoutes, type ScheduledHttp } from "./scheduled-routes";
 import { resolutionRoutes, type ResolutionHttp } from "./resolution-routes";
+import { noticeRoutes, type NoticeHttp } from "./notice-routes";
 import { billingRoutes, type BillingHttp } from "./billing-routes";
 import {
   CustomerObservationSchema,
@@ -83,6 +84,7 @@ export function createApp({
   scheduled,
   paymentSettings,
   resolutions,
+  notices,
   accounts,
 }: {
   importReview: ImportReviewReader;
@@ -94,6 +96,7 @@ export function createApp({
   scheduled?: ScheduledHttp;
   paymentSettings?: PaymentSettingsHttp;
   resolutions?: ResolutionHttp;
+  notices?: NoticeHttp;
   accounts?: {
     routes: Parameters<typeof accountRoutes>[0];
     authHandler: (request: Request) => Promise<Response>;
@@ -265,6 +268,7 @@ export function createApp({
     .use(subscriptionRoutes(subscriptions))
     .use(scheduledRoutes(scheduled))
     .use(resolutionRoutes(resolutions))
+    .use(noticeRoutes(notices))
     .use(paymentSettingsRoutes(paymentSettings));
   if (accounts) {
     app.use(accountRoutes(accounts.routes));

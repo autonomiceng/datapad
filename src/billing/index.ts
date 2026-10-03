@@ -53,3 +53,6 @@ export type * from "./resolutions-types";
 
 export { createInvoiceCollections } from "./internal/collection";
 export type * from "./collection-types";
+
+export { createInvoiceNoticeBilling } from "./internal/notices";
+export type * from "./notice-types";

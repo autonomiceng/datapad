@@ -212,6 +212,20 @@ export interface AuditWriter {
             | "invoice.resolution_confirmed"
             | "invoice.resolution_needs_review";
         }
+      | {
+          action:
+            | "invoice.notice_attempted"
+            | "invoice.notice_accepted"
+            | "invoice.notice_suppressed"
+            | "invoice.notice_needs_review";
+          invoiceId: string;
+          noticeId: string;
+          stage: "invoice" | "before_due" | "due" | "overdue";
+          reason: string | null;
+          attempts: number;
+          recipientSource: "billing_contact";
+          profileVersion: number | null;
+        }
       | { action: "invoice_group.sealed"; requestId: string }
       | {
           action: "invoice.collection_attempted";

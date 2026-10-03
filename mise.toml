@@ -29,7 +29,7 @@ depends = ["check", "test"]
 [tasks."format:check"]
 description = "Check repository documentation and tooling configuration without rewriting them"
 depends = ["deps:install"]
-run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts playwright.portal.config.ts playwright.billing.config.ts playwright.scheduled.config.ts playwright.resolutions.config.ts playwright.payment-settings.config.ts playwright.collections.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
+run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts playwright.portal.config.ts playwright.billing.config.ts playwright.scheduled.config.ts playwright.resolutions.config.ts playwright.payment-settings.config.ts playwright.collections.config.ts playwright.notices.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
 
 [tasks."deps:install"]
 description = "Install pinned project tools from the frozen Bun lockfile"
@@ -221,3 +221,8 @@ run = "bun scripts/local.ts portal-collections-test"
 description = "Verify public documentation rules and helper exclusions"
 depends = ["deps:install"]
 run = "bun scripts/check-documentation.ts"
+
+[tasks."test:portal:notices"]
+description = "Verify sandbox invoice email delivery and staff preview in the local inbox"
+depends = ["build", "browser:install"]
+run = "bun scripts/local.ts portal-notices-test"

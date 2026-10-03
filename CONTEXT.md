@@ -173,3 +173,10 @@ _Avoid_: Exception, readiness score
 **Payment attempt**: One recorded intention to collect an invoice automatically, including its outcome and recovery evidence. Repeating an uncertain request with the same key recovers this attempt.
 
 **Missed automatic payment**: The due-day collection window ended before an automatic attempt was made. The customer still needs to pay an unpaid invoice.
+
+## Invoice notices
+
+- **Invoice notice**: an invoice email or payment reminder with a recorded recipient, delivery state and message content.
+- **Reminder**: an invoice notice scheduled before, on or after the payment due date.
+- **Accepted**: the mail server accepted the message. This does not prove that a person received or read it.
+- **Uncertain delivery**: the portal cannot establish whether the mail server accepted an attempted message. Staff review is required before any further delivery decision.

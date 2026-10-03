@@ -1,3 +1,4 @@
+import type { InvoiceNotices, NoticeSweepInput } from "../notifications/types";
 import { PgBoss } from "pg-boss";
 import type {
   ScheduledBilling,
@@ -15,7 +16,8 @@ type BillingWork =
   | PendingWork
   | { kind: "resolution"; resolutionId: string }
   | { kind: "payment_setup"; setupId: string }
-  | { kind: "collection"; invoiceId: string };
+  | { kind: "collection"; invoiceId: string }
+  | { kind: "notice"; noticeId: string };
 
 const queue = "datapad-billing";
 interface BillingWorker {
@@ -40,6 +42,7 @@ export async function createBillingWorker(options: {
     InvoiceCollections,
     "pendingCollections" | "collectDueInvoice"
   >;
+  notices?: Pick<InvoiceNotices, "sweepNotices" | "processNotice">;
   onError?: () => void;
 }): Promise<BillingWorker> {
   const boss = new PgBoss({
@@ -55,6 +58,7 @@ export async function createBillingWorker(options: {
     after?: ReconciliationCursor | null;
     through?: ReconciliationCursor | null;
   } = {};
+  let noticeCursor: NoticeSweepInput = {};
   async function enqueue(work: BillingWork) {
     if (stopped) throw new Error("Billing worker stopped.");
     const singletonKey =
@@ -64,9 +68,11 @@ export async function createBillingWorker(options: {
           ? `event:${work.eventId}`
           : work.kind === "collection"
             ? `collection:${work.invoiceId}`
-            : work.kind === "resolution"
-              ? `resolution:${work.resolutionId}`
-              : `payment_setup:${work.setupId}`;
+            : work.kind === "notice"
+              ? `notice:${work.noticeId}`
+              : work.kind === "resolution"
+                ? `resolution:${work.resolutionId}`
+                : `payment_setup:${work.setupId}`;
     await boss.send(queue, work, { singletonKey });
   }
   async function sweep() {
@@ -96,6 +102,18 @@ export async function createBillingWorker(options: {
           for (const invoiceId of page.invoiceIds) {
             if (stopped) return;
             await enqueue({ kind: "collection", invoiceId }).catch(report);
+          }
+        } catch {
+          report();
+        }
+      }
+      if (options.notices) {
+        try {
+          const page = await options.notices.sweepNotices(noticeCursor);
+          noticeCursor = { discovery: page.discovery, pending: page.pending };
+          for (const noticeId of page.noticeIds) {
+            if (stopped) return;
+            await enqueue({ kind: "notice", noticeId }).catch(report);
           }
         } catch {
           report();
@@ -139,6 +157,8 @@ export async function createBillingWorker(options: {
         await options.billing.issueInvoice(work.invoiceId);
       else if (work.kind === "event")
         await options.billing.processEvent(work.eventId);
+      else if (work.kind === "notice" && options.notices)
+        await options.notices.processNotice(work.noticeId);
       else if (work.kind === "collection" && options.collections)
         await options.collections.collectDueInvoice(work.invoiceId);
       else if (work.kind === "resolution" && options.resolutions)

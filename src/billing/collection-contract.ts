@@ -23,37 +23,36 @@ export const CollectionReasonSchema = Type.Union([
   Type.Literal("uncertain_outcome"),
   Type.Literal("retry_exhausted"),
 ]);
+const suppressReason = Type.Union([Type.Literal("paid"), Type.Literal("void")]);
+const deferReason = Type.Union([
+  Type.Literal("awaiting_collection"),
+  Type.Literal("pending"),
+  Type.Literal("processing"),
+  Type.Literal("unknown"),
+  Type.Literal("stale"),
+  Type.Literal("provider_unavailable"),
+  Type.Literal("resolution_pending"),
+  Type.Literal("resolution_conflict"),
+  Type.Literal("collection_review"),
+  Type.Literal("not_payable"),
+]);
+const payableReason = Type.Union([
+  Type.Literal("manual"),
+  Type.Literal("before_charge"),
+  Type.Literal("not_authorized"),
+  Type.Literal("declined"),
+  Type.Literal("requires_action"),
+  Type.Literal("missed"),
+]);
+export const CollectionDispositionReasonSchema = Type.Union([
+  ...suppressReason.anyOf,
+  ...deferReason.anyOf,
+  ...payableReason.anyOf,
+]);
 export const CollectionDispositionSchema = Type.Union([
-  object({
-    kind: Type.Literal("suppress"),
-    reason: Type.Union([Type.Literal("paid"), Type.Literal("void")]),
-  }),
-  object({
-    kind: Type.Literal("defer"),
-    reason: Type.Union([
-      Type.Literal("awaiting_collection"),
-      Type.Literal("pending"),
-      Type.Literal("processing"),
-      Type.Literal("unknown"),
-      Type.Literal("stale"),
-      Type.Literal("provider_unavailable"),
-      Type.Literal("resolution_pending"),
-      Type.Literal("resolution_conflict"),
-      Type.Literal("collection_review"),
-      Type.Literal("not_payable"),
-    ]),
-  }),
-  object({
-    kind: Type.Literal("payable"),
-    reason: Type.Union([
-      Type.Literal("manual"),
-      Type.Literal("before_charge"),
-      Type.Literal("not_authorized"),
-      Type.Literal("declined"),
-      Type.Literal("requires_action"),
-      Type.Literal("missed"),
-    ]),
-  }),
+  object({ kind: Type.Literal("suppress"), reason: suppressReason }),
+  object({ kind: Type.Literal("defer"), reason: deferReason }),
+  object({ kind: Type.Literal("payable"), reason: payableReason }),
 ]);
 export const InvoiceCollectionSchema = object({
   chargeAt: instant,

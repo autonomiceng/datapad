@@ -19,6 +19,7 @@ import {
 } from "../accounts/api";
 import { Invoice } from "./invoices";
 import { date, money } from "./format";
+import { InvoiceNotices } from "./notices";
 import { InvoiceResolutions } from "./resolutions";
 import "./workflow.css";
 
@@ -435,7 +436,8 @@ function Review({
               </button>
             )}
             <p className="account-note">
-              Stripe sandbox uses a placeholder address; no email is sent.
+              Stripe uses a placeholder address. Invoice emails stay in the
+              local test inbox.
             </p>
           </div>
           <InvoiceResolutions
@@ -444,6 +446,7 @@ function Review({
             invoiceId={invoiceId}
             currency={preparation.data.invoice.currency}
           />
+          <InvoiceNotices customerId={customerId} invoiceId={invoiceId} />
         </>
       )}
     </section>

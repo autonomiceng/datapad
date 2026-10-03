@@ -13,9 +13,9 @@ module.exports = {
       severity: "error",
       from: { path: web },
       to: {
-        path: "^src/(server|import-review|billing|stripe|worker|access|customers|services)/",
+        path: "^src/(server|import-review|billing|stripe|worker|access|customers|services|notifications)/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services|notifications)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
     },
     {
@@ -42,10 +42,10 @@ module.exports = {
       name: "http-no-sql",
       severity: "error",
       from: {
-        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|subscription-routes|scheduled-routes|resolution-routes|payment-settings-routes|portal-app)\\.ts$",
+        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|subscription-routes|scheduled-routes|resolution-routes|payment-settings-routes|notice-routes|portal-app)\\.ts$",
       },
       to: {
-        path: "(src/(import-review|billing|access|customers|services)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
+        path: "(src/(import-review|billing|access|customers|services|notifications)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
       },
     },
     {
@@ -70,19 +70,19 @@ module.exports = {
       name: "contract-browser-safe",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services|notifications)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
       to: {
         path: "^src/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services|notifications)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
     },
     {
       name: "contract-no-node",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services|notifications)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
       to: { dependencyTypes: ["core"] },
     },
@@ -97,7 +97,7 @@ module.exports = {
       severity: "error",
       from: { path: "^src/billing/" },
       to: {
-        path: "^(src/(server|web|stripe|worker|import-review)/|scripts/|node_modules/(stripe|pg-boss)/)",
+        path: "^(src/(server|web|stripe|worker|import-review|notifications)/|scripts/|node_modules/(stripe|pg-boss)/)",
       },
     },
     {
@@ -141,6 +141,26 @@ module.exports = {
       to: {
         path: "^(src/(server|web|billing|stripe|worker|import-review)/|scripts/|node_modules/(better-auth|@better-auth|stripe|pg-boss)/)",
       },
+    },
+    {
+      name: "notifications-private",
+      severity: "error",
+      from: { pathNot: "^(src/notifications/|drizzle\\.config\\.ts$)" },
+      to: { path: "^src/notifications/internal/" },
+    },
+    {
+      name: "notifications-no-adapters",
+      severity: "error",
+      from: { path: "^src/notifications/" },
+      to: {
+        path: "^(src/(server|web|stripe|worker|import-review|services)/|scripts/|node_modules/(stripe|pg-boss|nodemailer)/)",
+      },
+    },
+    {
+      name: "billing-schema-only",
+      severity: "error",
+      from: { pathNot: "^src/notifications/internal/schema\\.ts$" },
+      to: { path: "^src/billing/schema\\.ts$" },
     },
     {
       name: "stripe-no-composition",

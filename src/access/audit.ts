@@ -87,6 +87,15 @@ export function createAuditWriter(): AuditWriter {
         targetId: entry.targetId,
         details: {
           operator: true,
+          ...("noticeId" in entry
+            ? {
+                noticeId: entry.noticeId,
+                stage: entry.stage,
+                attempts: entry.attempts,
+                recipientSource: entry.recipientSource,
+                profileVersion: entry.profileVersion,
+              }
+            : {}),
           ...("invoiceId" in entry ? { invoiceId: entry.invoiceId } : {}),
           ...("attemptId" in entry ? { attemptId: entry.attemptId } : {}),
           ...(entry.action === "invoice.collection_attempted"

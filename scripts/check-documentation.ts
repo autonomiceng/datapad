@@ -5,6 +5,11 @@ import { join, resolve } from "node:path";
 const contractPath = "src/access/types.ts";
 const fixtures = [
   {
+    path: "src/notifications/internal/notices.ts",
+    source: "export function createInvoiceNotices() {}",
+    rule: "require-jsdoc",
+  },
+  {
     path: contractPath,
     source: "export interface Example { read(): Promise<void>; }",
     rule: "require-jsdoc",
@@ -61,7 +66,12 @@ try {
     resolve(workspace, "node_modules"),
     join(directory, "node_modules"),
   );
-  for (const folder of ["src/access", "src/billing/internal", "tests"])
+  for (const folder of [
+    "src/access",
+    "src/billing/internal",
+    "src/notifications/internal",
+    "tests",
+  ])
     await mkdir(join(directory, folder), { recursive: true });
   for (const fixture of fixtures) {
     await writeFile(join(directory, fixture.path), fixture.source);

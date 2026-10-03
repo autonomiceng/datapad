@@ -25,12 +25,13 @@ if (
     "portal-resolutions-test",
     "portal-payment-settings-test",
     "portal-collections-test",
+    "portal-notices-test",
     "portal-test",
     "portal-destroy",
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-collections-test, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-collections-test, portal-notices-test, portal-test or portal-destroy.",
   );
 }
 const portal =
@@ -41,6 +42,7 @@ const portal =
   mode === "portal-resolutions-test" ||
   mode === "portal-payment-settings-test" ||
   mode === "portal-collections-test" ||
+  mode === "portal-notices-test" ||
   mode === "portal-test" ||
   mode === "portal-destroy";
 const sandboxMode =
@@ -50,10 +52,12 @@ const sandboxMode =
   mode === "portal-scheduled-test" ||
   mode === "portal-resolutions-test" ||
   mode === "portal-payment-settings-test" ||
-  mode === "portal-collections-test";
+  mode === "portal-collections-test" ||
+  mode === "portal-notices-test";
 const isolated = mode === "test" || mode === "portal-test";
 const scheduledTesting = mode === "portal-scheduled-test";
 const resolutionsTesting = mode === "portal-resolutions-test";
+const noticesTesting = mode === "portal-notices-test";
 const collectionsTesting = mode === "portal-collections-test";
 const paymentSettingsTesting = mode === "portal-payment-settings-test";
 const testing =
@@ -62,7 +66,8 @@ const testing =
   scheduledTesting ||
   resolutionsTesting ||
   paymentSettingsTesting ||
-  collectionsTesting;
+  collectionsTesting ||
+  noticesTesting;
 const { values } = parseArgs({
   args: process.argv.slice(3),
   options: {
@@ -87,7 +92,8 @@ if (
   mode !== "portal" &&
   mode !== "portal-billing" &&
   !paymentSettingsTesting &&
-  !collectionsTesting
+  !collectionsTesting &&
+  !noticesTesting
 )
   throw new Error(
     "An external origin requires a portal demo or hosted setup acceptance.",
@@ -104,7 +110,8 @@ if (
       mode === "portal" ||
       mode === "portal-billing" ||
       paymentSettingsTesting ||
-      collectionsTesting
+      collectionsTesting ||
+      noticesTesting
     ))
 )
   throw new Error(
@@ -127,7 +134,8 @@ const lock = resolve(
     scheduledTesting ||
     resolutionsTesting ||
     paymentSettingsTesting ||
-    collectionsTesting
+    collectionsTesting ||
+    noticesTesting
     ? ".scratch/billing-test.lock"
     : sandboxMode
       ? ".scratch/billing-run.lock"
@@ -348,6 +356,7 @@ try {
       delete env.PORTAL_BILLING_SANDBOX;
       delete env.PORTAL_SCHEDULE_TEST_CLOCK;
       delete env.PORTAL_SCHEDULE_TEST_PLAN;
+      delete env.PORTAL_NOTICE_TEST_ARTIFACTS;
       delete env.PORTAL_RESOLUTION_TEST_ARTIFACTS;
       delete env.PORTAL_PAYMENT_SETTINGS_TEST_ARTIFACTS;
       for (const key of Object.keys(env)) {
@@ -403,6 +412,8 @@ try {
           env.PORTAL_COLLECTIONS_TEST_CLOCK = acceptance.clockPath;
           env.PORTAL_COLLECTIONS_TEST_ARTIFACTS = sandbox.directory;
         }
+        if (noticesTesting)
+          env.PORTAL_NOTICE_TEST_ARTIFACTS = sandbox.directory;
         if (paymentSettingsTesting)
           env.PORTAL_PAYMENT_SETTINGS_TEST_ARTIFACTS = sandbox.directory;
         if (resolutionsTesting)
@@ -435,17 +446,19 @@ try {
         ...(portal
           ? [
               "--config",
-              collectionsTesting
-                ? "playwright.collections.config.ts"
-                : scheduledTesting
-                  ? "playwright.scheduled.config.ts"
-                  : resolutionsTesting
-                    ? "playwright.resolutions.config.ts"
-                    : paymentSettingsTesting
-                      ? "playwright.payment-settings.config.ts"
-                      : mode === "portal-billing-test"
-                        ? "playwright.billing.config.ts"
-                        : "playwright.portal.config.ts",
+              noticesTesting
+                ? "playwright.notices.config.ts"
+                : collectionsTesting
+                  ? "playwright.collections.config.ts"
+                  : scheduledTesting
+                    ? "playwright.scheduled.config.ts"
+                    : resolutionsTesting
+                      ? "playwright.resolutions.config.ts"
+                      : paymentSettingsTesting
+                        ? "playwright.payment-settings.config.ts"
+                        : mode === "portal-billing-test"
+                          ? "playwright.billing.config.ts"
+                          : "playwright.portal.config.ts",
             ]
           : []),
       ]);

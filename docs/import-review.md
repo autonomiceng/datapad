@@ -107,3 +107,5 @@ For demo databases created before the terminology alignment, stop demo/dev and r
 Use synthetic IDs, invented observations and `.test` domains in code, tests and review artifacts. The slice includes no source exporter/connectivity, financial reconciliation, billing writes, provisioning, authentication or production deployment. Access to real records requires separately reviewed data handling and staff authentication/authorization. Public tasks and CI remain independent of private configuration.
 
 The [invoice collection architecture](invoice-collections.md) keeps due-day attempts inside billing, with provider effects in the Stripe adapter and scheduling in the worker. Its browser-safe collection contract carries payment disposition without provider receipts.
+
+The [invoice notice architecture](invoice-notices.md) gives `src/notifications` ownership of invoice email obligations and content. HTTP composition injects its public reader into `notice-routes.ts`; browser code imports only its contract. Billing observations remain billing-owned.
