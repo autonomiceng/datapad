@@ -65,6 +65,22 @@ type WorkResult = "complete" | "retry" | "needs_review";
 type PendingWork =
   { kind: "issue"; invoiceId: string } | { kind: "event"; eventId: string };
 
+interface PendingCursor {
+  createdAt: string;
+  kind: "issue" | "event" | "resolution" | "payment_setup";
+  id: string;
+}
+interface PendingInput {
+  limit?: number;
+  after?: PendingCursor | null;
+  through?: PendingCursor | null;
+}
+interface PendingPage<T> {
+  work: T[];
+  next: PendingCursor | null;
+  through: PendingCursor | null;
+}
+
 interface BillingCommands {
   requestInvoice(input: unknown): Promise<RequestResult>;
   requestIssue(invoiceId: string): Promise<IssueResult>;
@@ -74,13 +90,19 @@ interface BillingCommands {
     event: VerifiedInvoiceEvent,
   ): Promise<"accepted" | "duplicate" | "ignored">;
   processEvent(eventId: string): Promise<WorkResult>;
-  pendingWork(limit?: number): Promise<PendingWork[]>;
+  pendingWork(input?: PendingInput): Promise<PendingPage<PendingWork>>;
 }
 ```
 
 `Billing` combines `BillingReader` and `BillingCommands`. Methods always scope queries to the configured deployment. Unknown refresh/worker IDs are complete no-ops. Operational failures throw safe errors; no SQL, provider response, credentials or private paths enter HTTP errors. `assertSyntheticData` is composition's policy seam: it verifies the full stored request set against the supplied reviewed requests, customer content and configured sandbox ownership. It also refuses orphan customer records or foreign deployment/account records. This control is for accidental import prevention; trusted direct database tampering is outside its threat model.
 
-`requestIssue` commits `issueRequestedAt` before returning accepted. The caller may then enqueue, but durable pending work is sufficient if that enqueue is lost. Repeated calls are unchanged. `issueInvoice` requires an existing authorized issue request and cannot turn an unissued request into one. `refreshInvoice` only retrieves/reconciles the existing provider invoice and never starts a new create. `pendingWork` defaults to 100, caps at 100, orders by next-attempt/creation time and stable ID, and returns only authorized unfinished issuance and unprocessed due events. Exhausted/review items are excluded; no queue payload carries customer details or billing amounts.
+`requestIssue` commits `issueRequestedAt` before returning accepted. The caller may then enqueue, but durable pending work is sufficient if that enqueue is lost. Repeated calls are unchanged. `issueInvoice` requires an existing authorized issue request and cannot turn an unissued request into one. `refreshInvoice` only retrieves/reconciles the existing provider invoice and never starts a new create. `pendingWork` accepts `PendingInput` and returns `PendingPage<PendingWork>`. Limits default to 100 and must be 1 through 100. It returns authorized unfinished issuance and unprocessed due events, with exhausted/review items excluded. No queue payload carries customer details or billing amounts.
+
+The shared page types live in `src/billing/work-types.ts`. Traversal uses immutable `(createdAt, kind, id)` order and one frozen `through` bound across invoice creation times and event receipt times. `nextAttemptAt` controls eligibility only. Continue with `{limit, after: page.next, through: page.through}` while `next` is non-null; when it is null, restart without cursors for the next pass. An empty initial pass has `through: null`. Work beyond the upper bound or newly eligible behind the cursor returns in a later pass. The worker advances each cursor before enqueueing and isolates individual enqueue and kind-discovery failures, so a persistently failing first page cannot hide later work.
+
+`PaymentSettings.pendingSetups(input?: PendingInput)` returns `PendingPage<{kind: "payment_setup"; setupId: string}>`; `InvoiceResolutions.pendingResolutions(input?: PendingInput)` returns `PendingPage<{kind: "resolution"; resolutionId: string}>`. They use the same completion/reset rules and independent worker cursors, ordered by immutable setup acceptance or resolution creation time, kind and ID.
+
+Paused filtering happens before page limits. Receipt recovery and event retrieval remain eligible, including an attempted customer receipt before the setup itself is stamped. An already recovered customer mapping does not make an otherwise unstamped invoice eligible. These readers do not advance effect stamps or attempt counts; provider-write guards and existing finite windows still govern execution.
 
 ## Authenticated preparation and confirmation
 
@@ -183,3 +205,5 @@ Each pass captures a high-water cursor and visits older and newer receipts, incl
 ## Received payments and voids
 
 [Invoice resolutions](invoice-resolutions.md) preserve received external-payment assertions separately from confirmed settlement, support audited void requests and reconcile conflicts without replacing invoice identities.
+
+[Billing operations](billing-operations.md) defines the global financial-write pause, retrieval-only queue and restore inspection boundary.

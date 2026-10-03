@@ -21,3 +21,5 @@ export { billingEnrollmentScopes } from "./payment-scope-schema";
 export { billingInvoiceResolutions } from "./resolutions-schema";
 
 export { billingPaymentAttempts } from "./collection-schema";
+
+export { billingEffectControls } from "./operations-schema";

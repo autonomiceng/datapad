@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
@@ -614,6 +615,7 @@ test("stable registry preserves mutable profiles, optimistic versions and transa
   const staff = await state.login("staff");
   const provider = new SyntheticBillingProvider();
   provider.ownership.deploymentKey = "test";
+  await resumeEffects(pool, "test");
   const billing = createBilling({
     pool,
     provider,

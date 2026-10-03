@@ -3,6 +3,7 @@ import {
   SupportNewTicketPage,
   SupportTicketPage,
 } from "./support/tickets";
+import { BillingOperationsPage } from "./billing/operations";
 import { PaginationSchema } from "../import-review/contract";
 import { AccountPaginationSchema } from "../access/contract";
 import type { ReactNode } from "react";
@@ -136,6 +137,12 @@ const invoicesRoute = createRoute({
     offset: offset(search.offset),
   }),
   component: Invoices,
+});
+
+const operationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/billing-operations",
+  component: BillingOperationsPage,
 });
 
 const signInRoute = createRoute({
@@ -334,6 +341,7 @@ export const router = createRouter({
     importReviewRoute,
     invoicesRoute,
     signInRoute,
+    operationsRoute,
     customersRoute,
     customerRoute,
     invitationRoute,
@@ -505,6 +513,9 @@ function Navigation() {
         >
           Invoices
         </Link>
+        {staffRoles.includes("billing") && (
+          <Link to="/billing-operations">Billing operations</Link>
+        )}
         {staffRoles.length > 0 && (
           <Link
             to="/import-review"

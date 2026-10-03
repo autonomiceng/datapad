@@ -5,8 +5,7 @@ import { createPortalRuntime } from "../src/server/portal-runtime";
 import type { ReconciliationCursor } from "../src/billing";
 
 const action = process.argv[2];
-if (action !== "issue" && action !== "refresh")
-  throw new Error("Expected issue or refresh.");
+if (action !== "refresh") throw new Error("Expected refresh.");
 const { values } = parseArgs({
   args: process.argv.slice(3),
   strict: true,
@@ -17,12 +16,7 @@ const { values } = parseArgs({
   },
 });
 const budget = Number(values["page-budget"]);
-if (
-  !Number.isSafeInteger(budget) ||
-  budget < 1 ||
-  budget > 100 ||
-  (action === "issue" && (values.portal || values.cursor))
-)
+if (!Number.isSafeInteger(budget) || budget < 1 || budget > 100)
   throw new Error("Invalid reconciliation arguments.");
 let cursor:
   | { after: ReconciliationCursor; through: ReconciliationCursor }
@@ -60,67 +54,46 @@ try {
   const runtime = portal
     ? {
         commands: portal.commands,
-        reader: portal.billing.reader,
-        request: undefined,
       }
     : await createBillingRuntime(database.pool);
   if (!runtime.commands)
     throw new Error("Sandbox billing configuration is required.");
-  if (action === "issue") {
-    if (!runtime.request) throw new Error("An operator request is required.");
-    const result = await runtime.commands.requestInvoice(runtime.request);
-    if (result.kind !== "created" && result.kind !== "unchanged")
-      throw new Error("Synthetic invoice request refused.");
-    const issue = await runtime.commands.requestIssue(result.invoiceId);
-    if (
-      issue.kind !== "accepted" &&
-      issue.kind !== "unchanged" &&
-      issue.kind !== "needs_review"
-    )
-      throw new Error("Invoice is not eligible for issue.");
-    console.log(
-      issue.kind === "needs_review"
-        ? "Invoice needs review. Processing remains paused; the app will show its status."
-        : "Synthetic invoice issue requested. The worker will process it.",
-    );
-  } else {
-    let after = cursor?.after ?? null;
-    let through = cursor?.through ?? null;
-    let checked = 0;
-    const failures: Array<{
-      invoiceId: string;
-      outcome: "retry" | "needs_review" | "unavailable";
-    }> = [];
-    for (let index = 0; index < budget; index++) {
-      const page = await runtime.commands.reconciliationPage({
-        limit: 100,
-        after,
-        through,
-      });
-      through = page.through;
-      for (const invoiceId of page.invoiceIds) {
-        try {
-          const outcome = await runtime.commands.refreshInvoice(invoiceId);
-          if (outcome !== "complete") failures.push({ invoiceId, outcome });
-        } catch {
-          failures.push({ invoiceId, outcome: "unavailable" });
-        }
-        checked++;
+  let after = cursor?.after ?? null;
+  let through = cursor?.through ?? null;
+  let checked = 0;
+  const failures: Array<{
+    invoiceId: string;
+    outcome: "retry" | "needs_review" | "unavailable";
+  }> = [];
+  for (let index = 0; index < budget; index++) {
+    const page = await runtime.commands.reconciliationPage({
+      limit: 100,
+      after,
+      through,
+    });
+    through = page.through;
+    for (const invoiceId of page.invoiceIds) {
+      try {
+        const outcome = await runtime.commands.refreshInvoice(invoiceId);
+        if (outcome !== "complete") failures.push({ invoiceId, outcome });
+      } catch {
+        failures.push({ invoiceId, outcome: "unavailable" });
       }
-      after = page.next;
-      if (!after) break;
+      checked++;
     }
-    console.log(
-      JSON.stringify({
-        complete: after === null,
-        checked,
-        needsReviewOrRetry: failures.length,
-        failures,
-        cursor: after ? { after, through } : null,
-      }),
-    );
-    if (failures.length || after) process.exitCode = 2;
+    after = page.next;
+    if (!after) break;
   }
+  console.log(
+    JSON.stringify({
+      complete: after === null,
+      checked,
+      needsReviewOrRetry: failures.length,
+      failures,
+      cursor: after ? { after, through } : null,
+    }),
+  );
+  if (failures.length || after) process.exitCode = 2;
 } catch {
   console.error(
     "Billing command failed; inspect private configuration and invoice status.",

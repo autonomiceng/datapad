@@ -1,14 +1,10 @@
+import { pendingPage } from "./pending-page";
+import { withLocks } from "./locks";
 import {
-  and,
-  asc,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  lte,
-  or,
-  sql,
-} from "drizzle-orm";
+  createFinancialEffectGuard,
+  FinancialEffectsPaused,
+} from "./effect-guard";
+import { and, eq, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { createAuditWriter } from "../../access";
 import { BillingProviderError, type ProviderInvoice } from "../provider";
@@ -78,6 +74,7 @@ export function createLifecycle(
     audit: createAuditWriter(),
     operatorId: "billing-reconciliation",
   };
+  const guard = createFinancialEffectGuard(deploymentKey);
   const db = drizzle(pool);
   const at = () => now().toISOString();
   const scope = (id: string) =>
@@ -213,73 +210,79 @@ export function createLifecycle(
     )
       review(reason);
   }
+  async function checkIssuance(
+    tx: NodePgDatabase,
+    record: StoredInvoice,
+    attemptedAt: string | null,
+    finalizing = false,
+  ) {
+    if (attemptedAt) return;
+    const [group] = await tx
+      .select()
+      .from(billingInvoiceGroups)
+      .where(
+        and(
+          eq(billingInvoiceGroups.invoiceId, record.invoice.id),
+          eq(billingInvoiceGroups.deploymentKey, deploymentKey),
+        ),
+      );
+    if (group) {
+      const [schedule] = await tx
+        .select()
+        .from(billingSchedules)
+        .where(
+          and(
+            eq(billingSchedules.customerId, group.customerId),
+            eq(billingSchedules.deploymentKey, deploymentKey),
+          ),
+        )
+        .for("share");
+      if (!schedule || group.customerId !== record.customer.customerId)
+        review("ownership_mismatch");
+      const calendarNow = businessNow().getTime();
+      if (calendarNow < Date.parse(record.invoice.issueNotBefore))
+        throw new IssuanceDeferred();
+      if (calendarNow >= Date.parse(record.invoice.firstAttemptBefore))
+        review("provider_conflict");
+      if (schedule.issuancePaused) throw new IssuanceDeferred();
+    } else if (
+      !finalizing &&
+      !record.invoice.createAttemptedAt &&
+      now().getTime() >= Date.parse(record.invoice.firstAttemptBefore)
+    )
+      review("provider_conflict");
+  }
   async function stampEffect(
     connection: NodePgDatabase,
     record: StoredInvoice,
-    effect: "customer" | "invoice" | "finalize",
+    effect: "invoice" | "finalize",
   ) {
     const attemptedAt =
-      effect === "customer"
-        ? record.customer.createAttemptedAt
-        : effect === "invoice"
-          ? record.invoice.createAttemptedAt
-          : record.invoice.finalizeAttemptedAt;
-    if (attemptedAt) return;
+      effect === "invoice"
+        ? record.invoice.createAttemptedAt
+        : record.invoice.finalizeAttemptedAt;
     const stamp = await connection.transaction(async (tx) => {
-      let stamp = at();
-      const [group] = await tx
-        .select()
-        .from(billingInvoiceGroups)
-        .where(
-          and(
-            eq(billingInvoiceGroups.invoiceId, record.invoice.id),
-            eq(billingInvoiceGroups.deploymentKey, deploymentKey),
-          ),
-        );
-      if (group) {
-        const [schedule] = await tx
-          .select()
-          .from(billingSchedules)
-          .where(
-            and(
-              eq(billingSchedules.customerId, group.customerId),
-              eq(billingSchedules.deploymentKey, deploymentKey),
-            ),
-          )
-          .for("share");
-        stamp = at();
-        if (!schedule || group.customerId !== record.customer.customerId)
-          review("ownership_mismatch");
-        const calendarNow = businessNow().getTime();
-        if (calendarNow < Date.parse(record.invoice.issueNotBefore))
-          throw new IssuanceDeferred();
-        if (calendarNow >= Date.parse(record.invoice.firstAttemptBefore))
-          review("provider_conflict");
-        if (schedule.issuancePaused) throw new IssuanceDeferred();
-      } else if (
-        effect !== "finalize" &&
-        !record.invoice.createAttemptedAt &&
-        Date.parse(stamp) >= Date.parse(record.invoice.firstAttemptBefore)
-      )
-        review("provider_conflict");
-      if (effect === "customer")
-        await tx
-          .update(billingCustomers)
-          .set({ createAttemptedAt: stamp })
-          .where(eq(billingCustomers.id, record.customer.id));
-      else
-        await tx
-          .update(invoices)
-          .set(
-            effect === "invoice"
-              ? { createAttemptedAt: stamp }
-              : { finalizeAttemptedAt: stamp },
-          )
-          .where(scope(record.invoice.id));
+      await checkIssuance(tx, record, attemptedAt, effect === "finalize");
+      await tx
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(scope(record.invoice.id))
+        .for("update");
+      if ((await guard.assertMayStart(tx)) === "paused")
+        throw new FinancialEffectsPaused();
+      if (attemptedAt) return attemptedAt;
+      const stamp = at();
+      await tx
+        .update(invoices)
+        .set(
+          effect === "invoice"
+            ? { createAttemptedAt: stamp }
+            : { finalizeAttemptedAt: stamp },
+        )
+        .where(scope(record.invoice.id));
       return stamp;
     });
-    if (effect === "customer") record.customer.createAttemptedAt = stamp;
-    else if (effect === "invoice") record.invoice.createAttemptedAt = stamp;
+    if (effect === "invoice") record.invoice.createAttemptedAt = stamp;
     else record.invoice.finalizeAttemptedAt = stamp;
   }
   const recoverCustomer = createCustomerReceipt({
@@ -294,7 +297,7 @@ export function createLifecycle(
     record.customer.providerCustomerId = await recoverCustomer(
       connection,
       record.customer.id,
-      () => stampEffect(connection, record, "customer"),
+      (tx) => checkIssuance(tx, record, record.customer.createAttemptedAt),
     );
   }
   async function issuanceNow(connection: NodePgDatabase, invoiceId: string) {
@@ -313,6 +316,7 @@ export function createLifecycle(
   async function issue(
     connection: NodePgDatabase,
     record: StoredInvoice,
+    retrievalOnly = false,
   ): Promise<WorkResult> {
     const invoice = record.invoice;
     if (
@@ -321,21 +325,30 @@ export function createLifecycle(
       ["open", "uncollectible"].includes(invoice.state)
     )
       return "complete";
-    if (invoice.state === "needs_review") return "needs_review";
-    if (!due(invoice.nextAttemptAt)) return "retry";
+    if (!retrievalOnly && invoice.state === "needs_review")
+      return "needs_review";
+    if (!retrievalOnly && !due(invoice.nextAttemptAt)) return "retry";
     if (
       (await issuanceNow(connection, invoice.id)).getTime() <
       Date.parse(invoice.issueNotBefore)
     )
       return "retry";
     try {
-      await connection
-        .update(invoices)
-        .set({ state: "preparing" })
-        .where(scope(invoice.id));
+      if (!retrievalOnly)
+        await connection
+          .update(invoices)
+          .set({ state: "preparing" })
+          .where(scope(invoice.id));
       if (invoice.billToName !== record.customer.name)
         review("invoice_mismatch");
-      await customerReceipt(connection, record);
+      if (retrievalOnly) {
+        record.customer.providerCustomerId = await recoverCustomer(
+          connection,
+          record.customer.id,
+          undefined,
+          { retrievalOnly: true },
+        );
+      } else await customerReceipt(connection, record);
       const expected = intent(record);
       let snapshot: ProviderInvoice;
       if (invoice.providerInvoiceId)
@@ -344,11 +357,13 @@ export function createLifecycle(
           invoice.providerInvoiceId,
         );
       else {
+        if (retrievalOnly && !invoice.createAttemptedAt) return "complete";
         const found = await provider.findInvoice(expected);
         if (found.kind === "ambiguous") review("uncertain_invoice");
         if (found.kind === "found") snapshot = found.value;
         else {
           canRetry(invoice.createAttemptedAt, "uncertain_invoice");
+          if (retrievalOnly) return "retry";
           await stampEffect(connection, record, "invoice");
           snapshot = await provider.createInvoice(
             expected,
@@ -381,10 +396,20 @@ export function createLifecycle(
         }
         if (line.providerLineId) review("invoice_mismatch", true);
         canRetry(line.createAttemptedAt, "uncertain_line");
-        await connection
-          .update(invoiceLines)
-          .set({ createAttemptedAt: line.createAttemptedAt ?? at() })
-          .where(eq(invoiceLines.id, line.id));
+        if (retrievalOnly) return "retry";
+        await connection.transaction(async (tx) => {
+          await tx
+            .select({ id: invoiceLines.id })
+            .from(invoiceLines)
+            .where(eq(invoiceLines.id, line.id))
+            .for("update");
+          if ((await guard.assertMayStart(tx)) === "paused")
+            throw new FinancialEffectsPaused();
+          await tx
+            .update(invoiceLines)
+            .set({ createAttemptedAt: line.createAttemptedAt ?? at() })
+            .where(eq(invoiceLines.id, line.id));
+        });
         const receipt = await provider.addLine(
           expected,
           snapshot.providerInvoiceId,
@@ -405,6 +430,7 @@ export function createLifecycle(
       verify(record, snapshot, true);
       if (snapshot.status === "draft") {
         canRetry(invoice.finalizeAttemptedAt, "provider_conflict");
+        if (retrievalOnly) return "retry";
         await stampEffect(connection, record, "finalize");
         snapshot = await provider.finalizeInvoice(
           expected,
@@ -416,7 +442,11 @@ export function createLifecycle(
       await project(connection, record, snapshot);
       return "complete";
     } catch (error) {
-      if (error instanceof IssuanceDeferred) {
+      if (
+        error instanceof FinancialEffectsPaused ||
+        error instanceof IssuanceDeferred
+      ) {
+        if (retrievalOnly) return "retry";
         await connection
           .update(invoices)
           .set({
@@ -565,6 +595,39 @@ export function createLifecycle(
   }
 
   return {
+    inspectInvoice: (id) =>
+      locked<WorkResult>(id, "complete", (connection, record) =>
+        record.invoice.providerInvoiceId
+          ? refresh(connection, record, record.invoice.providerInvoiceId)
+          : issue(connection, record, true),
+      ),
+    async inspectCustomer(id) {
+      if (!isUuid(id)) return "complete";
+      return withLocks(pool, [`customer:${id}`], async (connection) => {
+        const [row] = await connection
+          .select()
+          .from(billingCustomers)
+          .where(
+            and(
+              eq(billingCustomers.id, id),
+              eq(billingCustomers.deploymentKey, deploymentKey),
+            ),
+          );
+        if (!row || (!row.createAttemptedAt && !row.providerCustomerId))
+          return "complete";
+        try {
+          await recoverCustomer(connection, id, undefined, {
+            retrievalOnly: true,
+          });
+          return "complete";
+        } catch (error) {
+          if (error instanceof FinancialEffectsPaused) return "retry";
+          if (error instanceof BillingProviderError && error.kind === "review")
+            return "needs_review";
+          return "retry";
+        }
+      });
+    },
     requestIssue: (id) =>
       locked<IssueResult>(
         id,
@@ -665,14 +728,15 @@ export function createLifecycle(
         },
       );
     },
-    async pendingWork(limit = 100): Promise<PendingWork[]> {
-      if (!Number.isInteger(limit) || limit < 1 || limit > 100)
-        throw new RangeError("Invalid work limit");
-      const eligible = await db
+    async pendingWork(input = {}) {
+      const paused = await db.transaction(
+        async (tx) => (await guard.assertMayStart(tx)) === "paused",
+      );
+      const eligible = db
         .select({
-          id: invoices.id,
-          dueAt: invoices.nextAttemptAt,
-          createdAt: invoices.createdAt,
+          id: sql`${invoices.id}::text`.as("id"),
+          kind: sql`'issue'::text`.as("kind"),
+          createdAt: sql`${invoices.createdAt}`.as("created_at"),
         })
         .from(invoices)
         .innerJoin(
@@ -700,6 +764,15 @@ export function createLifecycle(
           and(
             eq(invoices.deploymentKey, deploymentKey),
             isNotNull(invoices.issueRequestedAt),
+            paused
+              ? or(
+                  isNotNull(invoices.createAttemptedAt),
+                  and(
+                    isNotNull(billingCustomers.createAttemptedAt),
+                    isNull(billingCustomers.providerCustomerId),
+                  ),
+                )
+              : undefined,
             sql`${invoices.issueNotBefore} <= case when ${billingInvoiceGroups.id} is null then ${at()}::timestamptz else ${businessNow().toISOString()}::timestamptz end`,
             inArray(invoices.state, ["preparing", "draft"]),
             or(
@@ -721,18 +794,12 @@ export function createLifecycle(
               lte(invoices.nextAttemptAt, at()),
             ),
           ),
-        )
-        .orderBy(
-          asc(invoices.nextAttemptAt),
-          asc(invoices.createdAt),
-          asc(invoices.id),
-        )
-        .limit(limit);
-      const events = await db
+        );
+      const events = db
         .select({
-          id: stripeEvents.eventId,
-          dueAt: stripeEvents.nextAttemptAt,
-          createdAt: stripeEvents.receivedAt,
+          id: sql`${stripeEvents.eventId}`.as("id"),
+          kind: sql`'event'::text`.as("kind"),
+          createdAt: sql`${stripeEvents.receivedAt}`.as("created_at"),
         })
         .from(stripeEvents)
         .where(
@@ -748,28 +815,21 @@ export function createLifecycle(
               lte(stripeEvents.nextAttemptAt, at()),
             ),
           ),
-        )
-        .orderBy(
-          asc(stripeEvents.nextAttemptAt),
-          asc(stripeEvents.receivedAt),
-          asc(stripeEvents.eventId),
-        )
-        .limit(limit);
-      return [
-        ...eligible.map((row) => ({ ...row, kind: "issue" as const })),
-        ...events.map((row) => ({ ...row, kind: "event" as const })),
-      ]
-        .sort(
-          (a, b) =>
-            (a.dueAt ?? a.createdAt).localeCompare(b.dueAt ?? b.createdAt) ||
-            a.id.localeCompare(b.id),
-        )
-        .slice(0, limit)
-        .map((row) =>
+        );
+      const page = await pendingPage(
+        db,
+        sql`${eligible.getSQL()} union all ${events.getSQL()}`,
+        ["issue", "event"],
+        input,
+      );
+      return {
+        ...page,
+        work: page.work.map((row): PendingWork =>
           row.kind === "issue"
             ? { kind: "issue", invoiceId: row.id }
             : { kind: "event", eventId: row.id },
-        );
+        ),
+      };
     },
   };
 }

@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
@@ -20,6 +21,7 @@ test("authenticated composition accepts original signed webhook bytes durably wi
   const deploymentKey = randomUUID();
   const provider = new SyntheticBillingProvider();
   provider.ownership.deploymentKey = deploymentKey;
+  await resumeEffects(pool, deploymentKey);
   const signingSecret = "whsec_synthetic_composition";
   const billing = createBilling({
     pool,

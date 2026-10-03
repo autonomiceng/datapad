@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
@@ -34,7 +35,10 @@ const clear = () =>
   pool.query(
     'TRUNCATE customers, "user", organization, verification, access_audit, access_commands CASCADE',
   );
-beforeEach(clear);
+beforeEach(async () => {
+  await clear();
+  await resumeEffects(pool, "billing-test");
+});
 afterAll(async () => {
   await clear();
   await Promise.all([pool.end(), lockPool.end()]);
@@ -384,7 +388,7 @@ test("concurrent schedule sweeps seal once and audit failure rolls back the invo
       )
     ).rows[0].n,
   ).toBe("1");
-  expect(await s.billing.pendingWork()).toContainEqual({
+  expect((await s.billing.pendingWork()).work).toContainEqual({
     kind: "issue",
     invoiceId: invoiceIds[0],
   });
@@ -548,7 +552,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
   const birchId = [...first.results, ...last.results].find(
     (row) => row.customerId === s.ids.birch,
   )!.invoiceIds[0];
-  expect(await s.billing.pendingWork(1)).toEqual([
+  expect((await s.billing.pendingWork({ limit: 1 })).work).toEqual([
     { kind: "issue", invoiceId: birchId },
   ]);
   expect(
@@ -561,7 +565,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
       createdAt: s.options.now().toISOString(),
     }),
   ).toBe("accepted");
-  expect(await s.billing.pendingWork(2)).toEqual(
+  expect((await s.billing.pendingWork({ limit: 2 })).work).toEqual(
     expect.arrayContaining([
       { kind: "issue", invoiceId: birchId },
       { kind: "event", eventId: "evt_held_synthetic" },
@@ -576,13 +580,13 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
     ).rows[0],
   ).toEqual({ attempts: 0, create_attempted_at: null });
   s.setDate("2030-01-01T17:00:31Z");
-  expect(await s.billing.pendingWork(2)).toEqual(
+  expect((await s.billing.pendingWork({ limit: 2 })).work).toEqual(
     expect.arrayContaining([
       { kind: "issue", invoiceId: birchId },
       { kind: "event", eventId: "evt_held_synthetic" },
     ]),
   );
-  expect(await s.billing.pendingWork()).not.toContainEqual({
+  expect((await s.billing.pendingWork()).work).not.toContainEqual({
     kind: "issue",
     invoiceId: id,
   });
@@ -591,7 +595,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
   expect(await s.billing.issueInvoice(id)).toBe("retry");
   await hold(s, true);
   s.setDate("2030-01-01T17:01:00Z");
-  expect(await s.billing.pendingWork()).toContainEqual({
+  expect((await s.billing.pendingWork()).work).toContainEqual({
     kind: "issue",
     invoiceId: id,
   });
@@ -604,7 +608,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
   expect(await s.billing.issueInvoice(id)).toBe("retry");
   await hold(s, true);
   s.setDate("2030-01-01T17:02:02Z");
-  expect(await s.billing.pendingWork()).toContainEqual({
+  expect((await s.billing.pendingWork()).work).toContainEqual({
     kind: "issue",
     invoiceId: id,
   });
@@ -620,7 +624,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
     finalizeAttempted: false,
   });
   s.setDate("2030-01-01T17:02:33Z");
-  expect(await s.billing.pendingWork()).not.toContainEqual({
+  expect((await s.billing.pendingWork()).work).not.toContainEqual({
     kind: "issue",
     invoiceId: id,
   });
@@ -629,7 +633,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
   expect(await s.billing.issueInvoice(id)).toBe("retry");
   await hold(s, true);
   s.setDate("2030-01-01T17:05:00Z");
-  expect(await s.billing.pendingWork()).toContainEqual({
+  expect((await s.billing.pendingWork()).work).toContainEqual({
     kind: "issue",
     invoiceId: id,
   });
@@ -657,7 +661,7 @@ test("activation, bounded recovery and per-effect issuance holds respect calenda
     }),
   );
   s.setDate("2030-01-23T08:00:04Z");
-  expect(await s.billing.pendingWork()).toContainEqual({
+  expect((await s.billing.pendingWork()).work).toContainEqual({
     kind: "issue",
     invoiceId: birchInvoice,
   });

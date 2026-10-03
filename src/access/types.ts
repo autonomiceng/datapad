@@ -197,7 +197,48 @@ export type AuditEntry = AuditEntryIdentity &
         changedFields: Array<"attachedServiceId">;
       }
   );
+export interface BillingOperationAudit {
+  requestId: string;
+  actor: HumanActor;
+  customerId: string | null;
+  targetId: string;
+  action: "billing.effects_changed" | "billing.status_requested";
+  digest: string;
+  reason: string | null;
+  previousPaused: boolean | null;
+  paused: boolean | null;
+  version: number | null;
+  effectKind: string | null;
+}
+export interface BillingOperationReceipt {
+  actorId: string;
+  sessionId: string | null;
+  action: string;
+  digest: string | null;
+  outcome: "complete" | "retry" | "needs_review" | "unavailable" | null;
+}
 export interface AuditWriter {
+  /** Serializes the command request identity and reads its safe receipt; a foreign action remains a conflicting receipt. */
+  readBillingOperation(
+    tx: NodePgDatabase,
+    requestId: string,
+  ): Promise<BillingOperationReceipt | null>;
+  /** Appends staff control or retrieval authorization in the same transaction as its local command. */
+  recordBillingOperation(
+    tx: NodePgDatabase,
+    entry: BillingOperationAudit,
+  ): Promise<void>;
+  /** Appends a separate safe retrieval outcome linked to the original request after network I/O. */
+  recordBillingOperationOutcome(
+    tx: NodePgDatabase,
+    entry: {
+      requestId: string;
+      actor: HumanActor;
+      customerId: string;
+      targetId: string;
+      outcome: "complete" | "retry" | "needs_review" | "unavailable";
+    },
+  ): Promise<void>;
   /** Locks and checks an identity without reserving it for a no-op. */
   assertRequestUnused(tx: NodePgDatabase, requestId: string): Promise<void>;
   /** Read the manifest digest recorded for a bootstrap key; malformed receipts throw. */

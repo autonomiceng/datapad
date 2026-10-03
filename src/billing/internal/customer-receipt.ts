@@ -1,3 +1,7 @@
+import {
+  createFinancialEffectGuard,
+  FinancialEffectsPaused,
+} from "./effect-guard";
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -11,11 +15,11 @@ import { billingCustomers } from "./invoice-schema";
  * Shared mapping recovery. Caller holds the mapping-customer session lock on
  * the supplied connection, with no enclosing transaction across provider I/O.
  *
- * The returned function's optional beforeCreate callback replaces the default
- * first-attempt recording. It runs only before an unattempted customer create
- * and must commit that mapping's createAttemptedAt on the supplied connection
- * before returning. It may enforce issuance guards in that same transaction;
- * throwing prevents the provider create. Existing attempt stamps never reset.
+ * The optional callback enforces issuance rules in the supplied short transaction.
+ * The receipt path always checks the guard and commits the first stamp itself,
+ * including when a callback is supplied. Neither callback nor transaction may
+ * perform network I/O. Retrieval-only calls never invoke the callback.
+ * Paused or absent read-only evidence throws FinancialEffectsPaused for deferral.
  */
 export function createCustomerReceipt(options: {
   provider: BillingProvider;
@@ -25,6 +29,7 @@ export function createCustomerReceipt(options: {
   const { provider, deploymentKey, now = () => new Date() } = options;
   if (provider.ownership.deploymentKey !== deploymentKey)
     throw new Error("Customer provider ownership differs from deployment.");
+  const guard = createFinancialEffectGuard(deploymentKey);
   const review = (
     reason: "ownership_mismatch" | "uncertain_customer",
   ): never => {
@@ -33,7 +38,8 @@ export function createCustomerReceipt(options: {
   return async (
     connection: NodePgDatabase,
     billingCustomerId: string,
-    beforeCreate?: () => Promise<void>,
+    beforeCreate?: (tx: NodePgDatabase) => Promise<void>,
+    check?: { retrievalOnly: true },
   ): Promise<string> => {
     const scope = and(
       eq(billingCustomers.id, billingCustomerId),
@@ -48,6 +54,12 @@ export function createCustomerReceipt(options: {
       customer.providerAccountId !== provider.ownership.accountId
     )
       return review("ownership_mismatch");
+    if (
+      check?.retrievalOnly &&
+      !customer.createAttemptedAt &&
+      !customer.providerCustomerId
+    )
+      throw new FinancialEffectsPaused();
     const expected: CustomerIntent = {
       ...provider.ownership,
       customerId: customer.id,
@@ -68,16 +80,22 @@ export function createCustomerReceipt(options: {
           23 * 60 * 60 * 1000
       )
         return review("uncertain_customer");
-      if (!customer.createAttemptedAt) {
-        if (beforeCreate) await beforeCreate();
-        else
-          await connection.transaction(async (tx) => {
-            await tx
-              .update(billingCustomers)
-              .set({ createAttemptedAt: now().toISOString() })
-              .where(scope);
-          });
-      }
+      if (check?.retrievalOnly) throw new FinancialEffectsPaused();
+      await connection.transaction(async (tx) => {
+        if (beforeCreate) await beforeCreate(tx);
+        await tx
+          .select({ id: billingCustomers.id })
+          .from(billingCustomers)
+          .where(scope)
+          .for("update");
+        if ((await guard.assertMayStart(tx)) === "paused")
+          throw new FinancialEffectsPaused();
+        if (!customer.createAttemptedAt)
+          await tx
+            .update(billingCustomers)
+            .set({ createAttemptedAt: now().toISOString() })
+            .where(scope);
+      });
       receipt = await provider.createCustomer(expected, {
         idempotencyKey: `datapad:${deploymentKey}:customer:${customer.id}:create`,
       });

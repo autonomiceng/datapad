@@ -1,6 +1,14 @@
 const web = "^(src/web/|tests/architecture/)";
 module.exports = {
   forbidden: [
+    {
+      name: "restore-no-runtime",
+      severity: "error",
+      from: { path: "^scripts/restore/" },
+      to: {
+        path: "^(src/|scripts/(?!restore/)|tests/|node_modules/(?!pg(?:/|-)|canonicalize/))",
+      },
+    },
     { name: "no-cycles", severity: "error", from: {}, to: { circular: true } },
     {
       name: "resolved-imports",
@@ -15,7 +23,7 @@ module.exports = {
       to: {
         path: "^src/(server|import-review|billing|stripe|worker|access|customers|services|notifications|support)/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract|operations-contract))\\.ts$",
       },
     },
     {
@@ -42,7 +50,7 @@ module.exports = {
       name: "http-no-sql",
       severity: "error",
       from: {
-        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|subscription-routes|scheduled-routes|resolution-routes|payment-settings-routes|notice-routes|support-routes|portal-app)\\.ts$",
+        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|subscription-routes|scheduled-routes|resolution-routes|payment-settings-routes|notice-routes|support-routes|operations-routes|portal-app)\\.ts$",
       },
       to: {
         path: "(src/(import-review|billing|access|customers|services|notifications|support)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
@@ -70,19 +78,19 @@ module.exports = {
       name: "contract-browser-safe",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract|operations-contract))\\.ts$",
       },
       to: {
         path: "^src/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract|operations-contract))\\.ts$",
       },
     },
     {
       name: "contract-no-node",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services|notifications|support)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract|operations-contract))\\.ts$",
       },
       to: { dependencyTypes: ["core"] },
     },

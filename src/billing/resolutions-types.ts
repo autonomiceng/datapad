@@ -1,3 +1,4 @@
+import type { PendingInput, PendingPage } from "./work-types";
 import type { Pool } from "pg";
 import type { AccessResult, AuditWriter, HumanActor } from "../access/types";
 import type { Customers } from "../customers/types";
@@ -30,6 +31,8 @@ export interface InvoiceResolutionsOptions {
 }
 /** Human operations require scoped manage_billing; provider effects belong to durable worker recovery. */
 export interface InvoiceResolutions {
+  /** Retrieves and verifies this existing resolution under invoice locks without settling, voiding or restarting work; caller authorizes staff scope. */
+  inspectResolution(resolutionId: string): Promise<WorkResult>;
   /** Retrieves owned payment evidence under invoice locks and persists its projection; provider failures become safe blockers. */
   getResolutionReview(
     actor: HumanActor,
@@ -66,10 +69,10 @@ export interface InvoiceResolutions {
   ): Promise<AccessResult<ResolutionActionResponse>>;
   /** Worker effect recovery holds customer then invoice locks across I/O. Replays the same key within 23 hours; unknown IDs are complete no-ops. */
   processResolution(resolutionId: string): Promise<WorkResult>;
-  /** Reads due pending resolutions for this deployment without provider I/O; limits outside 1 through 100 throw. */
+  /** Traverses due deployment resolutions without effects; retain through with next and restart completed passes. Limits outside 1 through 100 throw. */
   pendingResolutions(
-    limit?: number,
-  ): Promise<Array<{ kind: "resolution"; resolutionId: string }>>;
+    input?: PendingInput,
+  ): Promise<PendingPage<{ kind: "resolution"; resolutionId: string }>>;
   /** Reads stored intentions, receipts and ownership links; throws for unapproved synthetic evidence. */
   assertSyntheticData(): Promise<void>;
 }

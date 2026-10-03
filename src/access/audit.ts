@@ -21,6 +21,76 @@ async function assertRequestUnused(tx: NodePgDatabase, requestId: string) {
  */
 export function createAuditWriter(): AuditWriter {
   return {
+    async readBillingOperation(tx, requestId) {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${`audit-request:${requestId}`},0))`,
+      );
+      const [entry] = await tx
+        .select()
+        .from(auditEntries)
+        .where(eq(auditEntries.requestId, requestId));
+      if (!entry) return null;
+      const [result] = await tx
+        .select()
+        .from(auditEntries)
+        .where(
+          and(
+            eq(auditEntries.action, "billing.status_checked"),
+            sql`${auditEntries.details}->>'commandRequestId' = ${requestId}`,
+          ),
+        );
+      const outcome = result?.details.outcome;
+      return {
+        actorId: entry.actorId,
+        sessionId: entry.sessionId,
+        action: entry.action,
+        digest:
+          typeof entry.details.digest === "string"
+            ? entry.details.digest
+            : null,
+        outcome:
+          outcome === "complete" ||
+          outcome === "retry" ||
+          outcome === "needs_review" ||
+          outcome === "unavailable"
+            ? outcome
+            : null,
+      };
+    },
+    async recordBillingOperation(tx, entry) {
+      await assertRequestUnused(tx, entry.requestId);
+      await tx.insert(auditEntries).values({
+        id: randomUUID(),
+        requestId: entry.requestId,
+        actorId: entry.actor.userId,
+        sessionId: entry.actor.sessionId,
+        customerId: entry.customerId,
+        action: entry.action,
+        targetId: entry.targetId,
+        details: {
+          digest: entry.digest,
+          reason: entry.reason,
+          previousPaused: entry.previousPaused,
+          paused: entry.paused,
+          version: entry.version,
+          effectKind: entry.effectKind,
+        },
+      });
+    },
+    async recordBillingOperationOutcome(tx, entry) {
+      await tx.insert(auditEntries).values({
+        id: randomUUID(),
+        actorId: entry.actor.userId,
+        sessionId: entry.actor.sessionId,
+        customerId: entry.customerId,
+        targetId: entry.targetId,
+        action: "billing.status_checked",
+        details: {
+          commandRequestId: entry.requestId,
+          outcome: entry.outcome,
+        },
+      });
+    },
     assertRequestUnused,
     async getServicesBootstrap(tx, bootstrapKey) {
       const [entry] = await tx

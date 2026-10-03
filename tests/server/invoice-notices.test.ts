@@ -1,3 +1,5 @@
+import { createFinancialEffectGuard } from "../../src/billing";
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 import "elysia/type-system/format";
 import { randomUUID } from "node:crypto";
@@ -52,7 +54,10 @@ const clear = () =>
   pool.query(
     'TRUNCATE customers, "user", organization, verification, access_audit, access_commands CASCADE',
   );
-beforeEach(clear);
+beforeEach(async () => {
+  await clear();
+  await resumeEffects(pool, "billing-test");
+});
 afterAll(async () => {
   await clear();
   await Promise.all([pool.end(), lockPool.end()]);
@@ -238,6 +243,7 @@ async function setup() {
   };
   const factory = (calendar = { timeZone: "America/Los_Angeles", hour: 9 }) =>
     createInvoiceNotices({
+      financialEffectGuard: createFinancialEffectGuard(options.deploymentKey),
       pool,
       deploymentKey: options.deploymentKey,
       customerAccess: customers,

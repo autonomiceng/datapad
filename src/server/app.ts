@@ -1,4 +1,5 @@
 import { supportRoutes } from "./support-routes";
+import { operationsRoutes, type OperationsHttp } from "./operations-routes";
 import { openapi } from "@elysia/openapi";
 import { staticPlugin } from "@elysia/static";
 import { Type } from "@sinclair/typebox";
@@ -81,6 +82,7 @@ export function createApp({
   billing,
   services,
   support,
+  operations,
   invoiceWorkflow,
   subscriptions,
   scheduled,
@@ -94,6 +96,7 @@ export function createApp({
   billing?: BillingHttp;
   services?: ServiceHttp;
   support?: Parameters<typeof supportRoutes>[0];
+  operations?: OperationsHttp;
   invoiceWorkflow?: InvoiceWorkflowHttp;
   subscriptions?: SubscriptionHttp;
   scheduled?: ScheduledHttp;
@@ -266,6 +269,7 @@ export function createApp({
 
   app.use(billingRoutes(billing));
   app
+    .use(operationsRoutes(operations))
     .use(serviceRoutes(services))
     .use(supportRoutes(support))
     .use(invoiceWorkflowRoutes(invoiceWorkflow))

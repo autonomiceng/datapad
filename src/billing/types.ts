@@ -1,3 +1,4 @@
+import type { PendingInput, PendingPage } from "./work-types";
 import type { WorkResult, ReconciliationCursor } from "./work-types";
 export type { WorkResult, ReconciliationCursor } from "./work-types";
 import type { SyntheticScheduledInvoice } from "./scheduled-types";
@@ -128,6 +129,10 @@ export type PendingWork =
   | { kind: "issue"; invoiceId: string }
   | { kind: "event"; eventId: string };
 export interface BillingCommands {
+  /** Retrieves an already-attempted mapping without creating a provider customer; caller supplies staff authority. */
+  inspectCustomer(billingCustomerId: string): Promise<WorkResult>;
+  /** Recovers only existing invoice evidence under locks; never creates, adds lines or finalizes, even while unpaused. */
+  inspectInvoice(invoiceId: string): Promise<WorkResult>;
   /**
    * Stage an immutable request and customer profile snapshot atomically.
    * Matching deployment/origin-key content replays; changed content
@@ -162,10 +167,10 @@ export interface BillingCommands {
    */
   processEvent(eventId: string): Promise<WorkResult>;
   /**
-   * List due issuance and event obligations without claiming them; limit is
-   * 1 through 100 and consumers must tolerate repeated delivery.
+   * Traverse due issuance/events by immutable creation time, kind and ID without claiming them.
+   * Retain through with next; restart completed passes to rediscover failed deliveries.
    */
-  pendingWork(limit?: number): Promise<PendingWork[]>;
+  pendingWork(input?: PendingInput): Promise<PendingPage<PendingWork>>;
 }
 export interface Billing extends BillingReader, BillingCommands {}
 

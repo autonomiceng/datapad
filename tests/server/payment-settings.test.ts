@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 // Standalone domain runs use the same response formats as HTTP composition.
 import "elysia/type-system/format";
@@ -46,7 +47,10 @@ const clear = () =>
   pool.query(
     'TRUNCATE customers, "user", organization, verification, access_audit, access_commands CASCADE',
   );
-beforeEach(clear);
+beforeEach(async () => {
+  await clear();
+  await resumeEffects(pool, "payment-test");
+});
 afterAll(async () => {
   await clear();
   await Promise.all([pool.end(), lockPool.end()]);
@@ -582,7 +586,9 @@ test("lost setup responses and duplicate completion converge without consent or 
     s.settings.receiveSetupEvent(event),
     s.settings.receiveSetupEvent(event),
   ]);
-  expect(await s.settings.pendingSetups()).toContain(pending.setupId);
+  expect(
+    (await s.settings.pendingSetups()).work.map((work) => work.setupId),
+  ).toContain(pending.setupId);
   await Promise.all([
     s.settings.processSetup(pending.setupId),
     s.settings.processSetup(pending.setupId),
@@ -674,7 +680,9 @@ test("lost setup responses and duplicate completion converge without consent or 
     setupId: wrong.setupId,
     providerSessionId: s.provider.setups.get(wrong.setupId)!.providerSessionId,
   });
-  expect(await s.settings.pendingSetups()).not.toContain(wrong.setupId);
+  expect(
+    (await s.settings.pendingSetups()).work.map((work) => work.setupId),
+  ).not.toContain(wrong.setupId);
   expect(await s.settings.processSetup(wrong.setupId)).toBe("needs_review");
   expect(
     value(
@@ -695,7 +703,9 @@ test("lost setup responses and duplicate completion converge without consent or 
       hour === 17 ? "needs_review" : "retry",
     );
   }
-  expect(await s.settings.pendingSetups()).not.toContain(late.setupId);
+  expect(
+    (await s.settings.pendingSetups()).work.map((work) => work.setupId),
+  ).not.toContain(late.setupId);
   expect(await s.settings.processSetup(late.setupId)).toBe("needs_review");
   expect(retrievals).toBe(5);
   s.provider.complete(late.setupId);
@@ -708,10 +718,14 @@ test("lost setup responses and duplicate completion converge without consent or 
   const creates = s.provider.creates;
   const restarted = createPaymentSettings(s.options);
   await restarted.receiveSetupEvent(completion);
-  expect(await restarted.pendingSetups()).toContain(late.setupId);
+  expect(
+    (await restarted.pendingSetups()).work.map((work) => work.setupId),
+  ).toContain(late.setupId);
   expect(await restarted.processSetup(late.setupId)).toBe("retry");
   await restarted.receiveSetupEvent(completion);
-  expect(await restarted.pendingSetups()).not.toContain(late.setupId);
+  expect(
+    (await restarted.pendingSetups()).work.map((work) => work.setupId),
+  ).not.toContain(late.setupId);
   expect(await restarted.processSetup(late.setupId)).toBe("retry");
   expect(retrievals).toBe(6);
   s.provider.beforeRetrieve = null;

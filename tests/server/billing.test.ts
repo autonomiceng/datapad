@@ -1,3 +1,4 @@
+import { resumeEffects } from "./effects-fixture";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 import { Pool } from "pg";
 import {
@@ -21,7 +22,10 @@ const clear = () =>
   pool.query(
     "TRUNCATE billing_customers, invoices, invoice_lines, stripe_events CASCADE",
   );
-beforeEach(clear);
+beforeEach(async () => {
+  await clear();
+  await resumeEffects(pool, "billing-test");
+});
 afterAll(async () => {
   await clear();
   await pool.end();
@@ -190,7 +194,7 @@ test("concurrent workers and process restart issue one owned invoice and preserv
     ).toEqual([
       { hosted_invoice_url: `https://invoice.stripe.com/i/in_${id}` },
     ]);
-    expect(await restarted.pendingWork()).toEqual([]);
+    expect((await restarted.pendingWork()).work).toEqual([]);
   } finally {
     await otherPool.end();
   }
@@ -385,17 +389,17 @@ test("pending work survives a lost enqueue and transient event retrieval; exhaus
   const state = setup();
   const id = await request(state.billing);
   await state.billing.requestIssue(id);
-  expect(await createBilling(state.options).pendingWork()).toEqual([
+  expect((await createBilling(state.options).pendingWork()).work).toEqual([
     { kind: "issue", invoiceId: id },
   ]);
   await state.billing.issueInvoice(id);
   await state.billing.acceptEvent(event(id));
-  expect(await state.billing.pendingWork()).toEqual([
+  expect((await state.billing.pendingWork()).work).toEqual([
     { kind: "event", eventId: "evt_synthetic" },
   ]);
   state.provider.unavailable = true;
   expect(await state.billing.processEvent("evt_synthetic")).toBe("retry");
-  expect(await state.billing.pendingWork()).toEqual([]);
+  expect((await state.billing.pendingWork()).work).toEqual([]);
   state.advance(6000);
   state.provider.unavailable = false;
   state.provider.invoices.get(`in_${id}`)!.status = "paid";
@@ -421,7 +425,7 @@ test("pending work survives a lost enqueue and transient event retrieval; exhaus
     hostedInvoiceUrl: null,
     collection: { disposition: { kind: "defer", reason: "not_payable" } },
   });
-  expect(await state.billing.pendingWork()).toEqual([]);
+  expect((await state.billing.pendingWork()).work).toEqual([]);
 });
 
 test("exhausted event retrieval before the create receipt preserves pending invoice recovery", async () => {
@@ -446,7 +450,7 @@ test("exhausted event retrieval before the create receipt preserves pending invo
     providerStatus: null,
     reviewReason: null,
   });
-  expect(await state.billing.pendingWork()).toEqual([
+  expect((await state.billing.pendingWork()).work).toEqual([
     { kind: "issue", invoiceId: id },
   ]);
   const receipt = await pool.query(

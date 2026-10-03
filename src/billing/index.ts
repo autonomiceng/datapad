@@ -56,3 +56,8 @@ export type * from "./collection-types";
 
 export { createInvoiceNoticeBilling } from "./internal/notices";
 export type * from "./notice-types";
+
+export { createFinancialEffectGuard } from "./internal/effect-guard";
+export type { FinancialEffectGuard } from "./effect-guard";
+export { createBillingOperations } from "./internal/operations";
+export type * from "./operations-types";

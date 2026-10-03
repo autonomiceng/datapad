@@ -854,6 +854,7 @@ export function createPaymentSettings(
       }),
     receiveSetupEvent: recovery.receiveSetupEvent,
     processSetup: recovery.processSetup,
+    inspectSetup: recovery.inspectSetup,
     pendingSetups: recovery.pendingSetups,
     async assertSyntheticData() {
       const setupMappingIds = await recovery.assertSyntheticData();
