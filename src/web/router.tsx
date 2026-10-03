@@ -10,6 +10,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { StaffInvoicePage } from "./billing/workflow";
+import { BillingSchedulePage } from "./billing/schedule";
 import { SubscriptionsPage, SubscriptionPage } from "./billing/subscriptions";
 import { Invoices } from "./billing/invoices";
 import { ImportReview } from "./import-review/viewer";
@@ -194,6 +195,25 @@ const reviewInvoiceRoute = createRoute({
     return <StaffInvoicePage customerId={customerId} invoiceId={invoiceId} />;
   },
 });
+const billingScheduleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/billing-schedule",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { fromDueDate?: string; throughDueDate?: string; offset?: number } => ({
+    fromDueDate:
+      typeof search.fromDueDate === "string" ? search.fromDueDate : undefined,
+    throughDueDate:
+      typeof search.throughDueDate === "string"
+        ? search.throughDueDate
+        : undefined,
+    offset: offset(search.offset),
+  }),
+  component: () => {
+    const { customerId } = billingScheduleRoute.useParams();
+    return <BillingSchedulePage key={customerId} customerId={customerId} />;
+  },
+});
 const subscriptionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/customers/$customerId/subscriptions",
@@ -232,6 +252,7 @@ export const router = createRouter({
     prepareInvoiceRoute,
     reviewInvoiceRoute,
     subscriptionsRoute,
+    billingScheduleRoute,
     subscriptionRoute,
   ]),
 });

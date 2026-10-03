@@ -9,19 +9,10 @@ import type {
   ReviewReason,
 } from "../../billing/contract";
 import { useSession } from "../accounts/api";
+import { date, invoiceStateLabels, money } from "./format";
 import "./invoices.css";
 
 const pageSize = 50;
-const labels: Record<InvoiceState, string> = {
-  requested: "Requested",
-  preparing: "Preparing",
-  needs_review: "Needs review",
-  draft: "Draft",
-  open: "Unpaid",
-  paid: "Paid",
-  void: "Void",
-  uncollectible: "Uncollectible",
-};
 const notes: Partial<Record<InvoiceState, string>> = {
   requested:
     "Not issued yet. The payment link appears once the invoice is issued.",
@@ -41,17 +32,6 @@ const reasons: Record<ReviewReason, string> = {
     "The request or invoice status could not be confirmed with Stripe.",
   retry_exhausted: "Processing stopped after repeated failures.",
 };
-export const money = (amountMinor: number, currency: string) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
-    amountMinor / 100,
-  );
-export const date = (value: string) =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${value}T00:00:00Z`));
 const instant = (value: string) =>
   new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -80,7 +60,7 @@ async function read<T>(path: string): Promise<T> {
 function Status({ state }: { state: InvoiceState }) {
   return (
     <span className={`status-tag invoice-status invoice-status-${state}`}>
-      {labels[state]}
+      {invoiceStateLabels[state]}
     </span>
   );
 }
@@ -324,7 +304,11 @@ export function Invoice({ invoice }: { invoice: InvoiceDetail }) {
           <dd>{invoice.billTo.billingEmail ?? "Not recorded"}</dd>
         </div>
         <div>
-          <dt>{invoice.issuedAt ? "Issued at" : "Issue date (UTC)"}</dt>
+          <dt>
+            {invoice.issuedAt
+              ? "Issued at"
+              : `Issue date (${invoice.calendar?.timeZone ?? "UTC"})`}
+          </dt>
           <dd>
             {invoice.issuedAt
               ? instant(invoice.issuedAt)
@@ -332,7 +316,7 @@ export function Invoice({ invoice }: { invoice: InvoiceDetail }) {
           </dd>
         </div>
         <div>
-          <dt>Due date (UTC)</dt>
+          <dt>Due date ({invoice.calendar?.timeZone ?? "UTC"})</dt>
           <dd>{date(invoice.dueDate)}</dd>
         </div>
         <div>

@@ -1,4 +1,8 @@
 import { PgBoss } from "pg-boss";
+import type {
+  ScheduledBilling,
+  ScheduleSweepInput,
+} from "../billing/scheduled-types";
 import type { BillingCommands, PendingWork } from "../billing/types";
 
 const queue = "datapad-billing";
@@ -14,6 +18,7 @@ export async function createBillingWorker(options: {
     BillingCommands,
     "pendingWork" | "issueInvoice" | "processEvent"
   >;
+  scheduled?: Pick<ScheduledBilling, "sweepScheduled">;
   onError?: () => void;
 }): Promise<BillingWorker> {
   const boss = new PgBoss({
@@ -24,6 +29,7 @@ export async function createBillingWorker(options: {
   boss.on("error", report);
   let stopped = false;
   let sweeping: Promise<void> | undefined;
+  let scheduleCursor: Pick<ScheduleSweepInput, "after" | "through"> = {};
   async function enqueue(work: PendingWork) {
     if (stopped) throw new Error("Billing worker stopped.");
     const singletonKey =
@@ -35,6 +41,17 @@ export async function createBillingWorker(options: {
   async function sweep() {
     if (stopped || sweeping) return sweeping;
     sweeping = (async () => {
+      if (options.scheduled) {
+        try {
+          const page = await options.scheduled.sweepScheduled(scheduleCursor);
+          scheduleCursor = page.next
+            ? { after: page.next, through: page.through }
+            : {};
+          if (page.results.some((result) => result.failure !== null)) report();
+        } catch {
+          report();
+        }
+      }
       for (const work of await options.billing.pendingWork(100)) {
         if (stopped) return;
         await enqueue(work);

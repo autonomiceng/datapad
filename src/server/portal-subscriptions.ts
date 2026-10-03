@@ -4,11 +4,13 @@ import type { Pool } from "pg";
 import type { Access } from "../access";
 import type { Customers } from "../customers";
 import { createSubscriptions, type SubscriptionPolicy } from "../billing";
-import type { SubscriptionOptionsResponse } from "../billing/subscriptions-contract";
+import type {
+  CalendarPolicy,
+  SubscriptionOptionsResponse,
+} from "../billing/subscriptions-contract";
 import type { SubscriptionHttp } from "./subscription-routes";
 import { portalServicePolicy } from "./portal-services";
 
-const calendar = { timeZone: "UTC", issueHour: 9, chargeHour: 9 };
 const cancellationReasons = [
   "Customer requested cancellation",
   "Cancellation confirmed",
@@ -21,9 +23,21 @@ export async function createPortalSubscriptions(options: {
   access: Access;
   customerIds: { elm: string; birch: string };
   origin: string;
-}): Promise<SubscriptionHttp> {
+  calendar?: CalendarPolicy;
+  now?: () => Date;
+}): Promise<{
+  http: SubscriptionHttp;
+  allowSubscription: SubscriptionPolicy;
+  choices: (customerId: string) => SubscriptionOptionsResponse["choices"];
+  calendar: CalendarPolicy;
+}> {
   const { pool, deploymentKey, customers, access, customerIds, origin } =
     options;
+  const calendar = options.calendar ?? {
+    timeZone: "UTC",
+    issueHour: 9,
+    chargeHour: 9,
+  };
   const manifest = portalServicePolicy(customerIds).manifest;
   const choices = (
     customerId: string,
@@ -83,9 +97,10 @@ export async function createPortalSubscriptions(options: {
     audit: access.audit,
     calendar,
     allowSubscription,
+    now: options.now,
   });
   await subscriptions.assertSyntheticData();
-  return {
+  const http: SubscriptionHttp = {
     subscriptions,
     access,
     origin,
@@ -98,7 +113,11 @@ export async function createPortalSubscriptions(options: {
         false,
       );
       if (!authorization.ok) return authorization;
-      const anchor = Temporal.Now.plainDateISO(calendar.timeZone)
+      const anchor = Temporal.Instant.from(
+        (options.now?.() ?? new Date()).toISOString(),
+      )
+        .toZonedDateTimeISO(calendar.timeZone)
+        .toPlainDate()
         .add({ months: 1 })
         .toString();
       return {
@@ -113,4 +132,5 @@ export async function createPortalSubscriptions(options: {
       };
     },
   };
+  return { http, allowSubscription, choices, calendar };
 }

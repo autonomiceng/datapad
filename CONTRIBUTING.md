@@ -42,6 +42,8 @@ The [billing proof](docs/billing-proof.md) has credential-free checks in `test:b
 
 The retained [invoice sandbox](docs/billing-demo.md) has database and webhook checks in `test:app` and provider boundary checks in `test:stripe`. Real hosted-payment acceptance uses `billing:demo` with explicit private sandbox configuration; it is separate from credential-free CI.
 
+Scheduled invoice acceptance uses `mise run test:portal:scheduled -- --config <private-config> --run-dir <private-run-directory>`. It uses real sandbox invoices, local sign-in and a private test clock; it is excluded from credential-free CI. Normal portal startup uses wall time. Preserve the chosen `--time-zone` when reopening that demo database. See [scheduled billing](docs/scheduled-billing.md).
+
 The [customer account demo](docs/accounts-demo.md) uses `portal:demo` and an isolated local inbox. `test:portal` exercises real mailbox sign-in and membership in the PR gate. `test:app` includes PostgreSQL account permissions and an upgrade from the merged billing schema. `openapi:generate` and `openapi:check` cover both the anonymous viewer and authenticated portal contracts. Account work requires reading [its module boundaries and authorization contract](docs/accounts.md).
 
 Before changing import-review modules, schemas or application structure, read [the module architecture and contract guide](docs/import-review.md). Review generated SQL from `mise run db:generate` and apply it explicitly with `mise run db:migrate`. Preserve migrations once released or depended on by real installations. A reviewed change may replace an unmerged baseline used only by disposable synthetic demos, with an explicit demo reset. Disposable demo reset is a separate operation.

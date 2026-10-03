@@ -3,13 +3,18 @@ import { and, eq, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { RegisteredCustomer } from "../../customers/types";
 import type { InvoiceRequest } from "../contract";
+import type { ScheduledInvoiceRequest } from "../scheduled-types";
+import type { ProviderOwnership } from "../provider";
 import type { BillingOptions, RequestResult } from "../types";
 import { billingCustomers, invoiceLines, invoices } from "./schema";
 import { readinessDate, requestDigest, validateRequest } from "./validate";
 
 export async function ensureMapping(
   tx: NodePgDatabase,
-  options: BillingOptions,
+  options: {
+    deploymentKey: string;
+    provider: { ownership: ProviderOwnership };
+  },
   account: RegisteredCustomer,
   key: string,
   name: string,
@@ -43,7 +48,7 @@ export async function ensureMapping(
 export async function persistInvoice(
   tx: NodePgDatabase,
   deploymentKey: string,
-  request: InvoiceRequest,
+  request: InvoiceRequest | ScheduledInvoiceRequest,
   account: RegisteredCustomer,
   billingCustomerId: string,
   createdAt: string,
@@ -62,6 +67,18 @@ export async function persistInvoice(
     issueDate: request.issueDate,
     dueDate: request.dueDate,
     readinessDate: readinessDate(request.dueDate),
+    ...("calendar" in request
+      ? {
+          calendar: request.calendar,
+          issueNotBefore: request.issueNotBefore,
+          firstAttemptBefore: request.firstAttemptBefore,
+          dueEndAt: request.dueEndAt,
+        }
+      : {
+          issueNotBefore: `${request.issueDate}T00:00:00.000Z`,
+          firstAttemptBefore: `${request.dueDate}T00:00:00.000Z`,
+          dueEndAt: `${request.dueDate}T23:59:59.000Z`,
+        }),
     currency: request.currency,
     totalMinor: request.lines.reduce((sum, line) => sum + line.amountMinor, 0),
     state: "requested",

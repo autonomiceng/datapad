@@ -52,12 +52,21 @@ export function createAuditWriter(): AuditWriter {
         customerId: entry.customerId,
         action: entry.action,
         targetId: entry.targetId,
-        details: { changedFields: entry.changedFields },
+        details: {
+          changedFields: entry.changedFields,
+          ...(entry.action === "billing_schedule.changed"
+            ? { selections: entry.selections }
+            : {}),
+        },
       });
     },
     async recordOperator(tx, entry) {
+      if (entry.action === "invoice_group.sealed")
+        await assertRequestUnused(tx, entry.requestId);
       await tx.insert(auditEntries).values({
         id: randomUUID(),
+        requestId:
+          entry.action === "invoice_group.sealed" ? entry.requestId : null,
         actorId: entry.operatorId,
         customerId: entry.customerId,
         action: entry.action,

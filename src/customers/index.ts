@@ -47,11 +47,9 @@ export function createCustomers(options: CustomersOptions): Customers {
     };
   }
   return {
-    async readProfile(tx, id) {
-      const [row] = await tx
-        .select()
-        .from(customers)
-        .where(eq(customers.id, id));
+    async readProfile(tx, id, readOptions) {
+      const query = tx.select().from(customers).where(eq(customers.id, id));
+      const [row] = await (readOptions?.lock ? query.for("share") : query);
       return row
         ? { customerId: row.id, profile: profileOf(row), version: row.version }
         : null;

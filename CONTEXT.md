@@ -146,3 +146,8 @@ _Avoid_: Exception, readiness score
 **Needs review**: Preparation or reconciliation cannot safely continue without resolving an uncertain or conflicting outcome.
 
 **Last checked**: When the invoice's current state was last successfully retrieved from its payment provider.
+
+- **Invoice schedule**: explicitly activated subscriptions whose ready periods can produce invoices. Activation selects a first period; earlier periods remain outside this schedule. New subscriptions need their own activation.
+- **Invoice group**: the fixed set of periods combined for one customer, due date, currency and payment arrangement. Sealing records its membership and invoice request, or a final No charge result.
+- **Issuance hold**: pauses new scheduled invoices and provider effects that have not started. Recovery of an already attempted effect can continue. It does not pause billing terms or service delivery.
+- **Before activation**: first-unbilled periods skipped when choosing a later schedule start. This does not declare their old-system debt paid.

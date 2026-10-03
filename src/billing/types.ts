@@ -1,3 +1,4 @@
+import type { SyntheticScheduledInvoice } from "./scheduled-types";
 import type { AccessResult, AuditWriter, HumanActor } from "../access/types";
 import type { Customers } from "../customers/types";
 import type {
@@ -51,6 +52,7 @@ export interface BillingReader {
   assertSyntheticPolicy(
     allowRequest: SyntheticInvoicePolicy,
     accountId?: string,
+    allowScheduledRequest?: (invoice: SyntheticScheduledInvoice) => boolean,
   ): Promise<void>;
 
   listInvoices(page?: Partial<BillingPagination>): Promise<InvoicesResponse>;

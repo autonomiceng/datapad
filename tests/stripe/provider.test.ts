@@ -19,6 +19,7 @@ const intent: InvoiceIntent = {
   providerCustomerId: "cus_synthetic",
   issueDate: "2026-10-03",
   dueDate: "2026-10-24",
+  dueEndAt: "2026-10-25T06:59:59.000Z",
   currency: "USD",
   totalMinor: 100,
   lines: [
@@ -49,7 +50,7 @@ function invoice(status = "draft", total = 0) {
     currency: "usd",
     collection_method: "send_invoice",
     auto_advance: false,
-    due_date: Date.parse("2026-10-24T23:59:59Z") / 1000,
+    due_date: Date.parse("2026-10-25T06:59:59.000Z") / 1000,
     automatic_tax: { enabled: false },
     discounts: [],
     total_discount_amounts: [],
@@ -170,6 +171,7 @@ test("retrieval preserves actual recipients, amounts and line identities; recipi
   const paid = await adapter.retrieveInvoice(intent, "in_synthetic");
   expect(paid.lines[0].providerLineId).toBe("ii_synthetic");
   expect(paid.lines[0].amountMinor).toBe(100);
+  expect(paid.dueEndAt).toBe(intent.dueEndAt);
   expect(paid.recipientName).toBe(intent.recipientName);
   expect(paid.recipientEmail).toBe(`${intent.customerId}@billing.test`);
   const renamed = await provider((url) =>

@@ -101,6 +101,15 @@ export type AuditEntry = AuditEntryIdentity &
         changedFields: Array<"terms" | "billingState" | "cancellation">;
       }
     | {
+        action: "billing_schedule.changed";
+        changedFields: Array<"activation" | "issuancePaused">;
+        selections: Array<{
+          subscriptionId: string;
+          firstUnbilledPeriodIndex: number;
+          activationFromPeriodIndex: number;
+        }>;
+      }
+    | {
         action: "forecast.materialized";
         changedFields: Array<"periods">;
       }
@@ -130,12 +139,16 @@ export interface AuditWriter {
     entry: {
       operatorId: string;
       customerId: string;
-      action:
-        | "customer.created"
-        | "customer.organization.bound"
-        | "service.created";
       targetId: string;
-    },
+    } & (
+      | {
+          action:
+            | "customer.created"
+            | "customer.organization.bound"
+            | "service.created";
+        }
+      | { action: "invoice_group.sealed"; requestId: string }
+    ),
   ): Promise<void>;
   append(tx: NodePgDatabase, entry: AuditEntry): Promise<void>;
 }

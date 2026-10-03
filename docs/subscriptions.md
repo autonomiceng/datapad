@@ -20,7 +20,7 @@ The due anchor can be up to one full calendar interval before or after the servi
 
 Boundary options show dates beside their indices. The first unbilled index excludes earlier periods owned by the previous billing system; it does not assert that their debt was paid. Materialization never advances it or authorizes catch-up billing.
 
-Each agreement captures an immutable timezone and issue/charge hours. Readiness is 21 calendar days before due date; issue and charge instants use their configured local hours, and due date ends at 23:59:59 local. Nonexistent or ambiguous local times produce a review reason and nullable instants. Changing runtime configuration does not rewrite existing agreements. Named-calendar migration and scheduled execution require their own approved work.
+Each agreement captures an immutable timezone and issue/charge hours. Readiness is 21 calendar days before due date; issue and charge instants use their configured local hours, and due date ends at 23:59:59 local. Nonexistent or ambiguous local times produce a review reason and nullable instants. Changing runtime configuration does not rewrite existing agreements. Changing a captured calendar requires an explicit migration. [Scheduled billing](scheduled-billing.md) consumes these captured instants after activation.
 
 ## Revisions and cancellation
 
@@ -44,7 +44,7 @@ Zero-valued eligible periods persist and support provisional No charge. Free lin
 
 A narrow overlap warning identifies positive billable periods of different agreements referring to the same service with overlapping service ranges. It also considers neighboring periods whose due dates lie outside the displayed group. Consulting without a service reference, free periods and inactive periods are exempt. There is no general duplicate-contract or override system.
 
-Future invoice sealing must take the same customer lock, rederive current membership and terms, and check classification again. Positive and final zero groups seal at readiness. This slice never sets sealedAt or creates provider effects.
+Scheduled invoice sealing takes the same customer lock, rederives current membership and terms, and checks classification again. Positive and final zero groups seal at readiness. Forecast commands do not themselves set sealedAt or create provider effects.
 
 ## Commands, retries and synthetic policy
 
@@ -53,3 +53,7 @@ Future invoice sealing must take the same customer lock, rederive current member
 Creation stores an original digest and supports an identical retry after current authorization. Changed creation input under the same identity conflicts. Other recorded mutation request IDs conflict globally. A genuine no-op creates no audit or request reservation; its previously unused identity can later name a real mutation. Version mismatch returns conflict. Persistence or audit failure rolls back all changes.
 
 `assertSyntheticData` inspects every agreement, original creation intent, historical commercial revision, current cancellation reason and persisted period against the configured synthetic policy and derived facts. Sample labels or UUID prefixes alone are insufficient. Ordinary forecasts work without Stripe credentials. Public tooling and tests use isolated synthetic data; this module supplies no real-data or anonymous mutation bypass.
+
+## Activation and sealed periods
+
+[Scheduled billing](scheduled-billing.md) explicitly activates an agreement from a selected service period. Activation preserves original anchors and first-unbilled ownership, increments the subscription version and cannot move afterward. When any due-date group seals, all applicable periods become immutable, including paused or cancelled exclusions. A positive group references its invoice; a final No charge group has no invoice. Forecast remains a read-time classification and does not itself authorize issuance.

@@ -32,3 +32,6 @@ export function createBilling(options: BillingOptions): Billing {
 export { createBillingWorkflow } from "./internal/workflow";
 export { createSubscriptions } from "./internal/subscriptions";
 export type * from "./subscriptions-types";
+
+export { createScheduledBilling } from "./internal/scheduled";
+export type * from "./scheduled-types";

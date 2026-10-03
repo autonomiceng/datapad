@@ -20,6 +20,7 @@
     "drizzle.config.ts",
     "playwright.config.ts",
     "playwright.portal.config.ts",
-    "playwright.billing.config.ts"
+    "playwright.billing.config.ts",
+    "playwright.scheduled.config.ts"
   ]
 }

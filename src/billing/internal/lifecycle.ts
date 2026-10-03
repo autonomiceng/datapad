@@ -1,4 +1,14 @@
-import { and, asc, eq, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   BillingProviderError,
@@ -22,7 +32,10 @@ import {
   stripeEvents,
 } from "./schema";
 import { withLocks } from "./locks";
+import { billingSchedules, billingInvoiceGroups } from "./scheduled-schema";
 import { isUuid } from "./validate";
+
+class IssuanceDeferred extends Error {}
 
 type Invoice = typeof invoices.$inferSelect;
 type Customer = typeof billingCustomers.$inferSelect;
@@ -105,6 +118,7 @@ export function createLifecycle(
       recipientName: record.customer.name,
       issueDate: record.invoice.issueDate,
       dueDate: record.invoice.dueDate,
+      dueEndAt: new Date(record.invoice.dueEndAt).toISOString(),
       currency: "USD",
       totalMinor: record.invoice.totalMinor,
       lines: record.lines.map((line) => ({
@@ -152,6 +166,7 @@ export function createLifecycle(
       snapshot.currency !== "USD" ||
       snapshot.issueDate !== expected.issueDate ||
       snapshot.dueDate !== expected.dueDate ||
+      Date.parse(snapshot.dueEndAt) !== Date.parse(expected.dueEndAt) ||
       snapshot.collectionMethod !== "send_invoice" ||
       snapshot.autoAdvance !== false ||
       !["draft", "open", "paid", "void", "uncollectible"].includes(
@@ -331,6 +346,74 @@ export function createLifecycle(
     )
       review(reason);
   }
+  async function stampEffect(
+    connection: NodePgDatabase,
+    record: StoredInvoice,
+    effect: "customer" | "invoice" | "finalize",
+  ) {
+    const attemptedAt =
+      effect === "customer"
+        ? record.customer.createAttemptedAt
+        : effect === "invoice"
+          ? record.invoice.createAttemptedAt
+          : record.invoice.finalizeAttemptedAt;
+    if (attemptedAt) return;
+    const stamp = await connection.transaction(async (tx) => {
+      let stamp = at();
+      const [group] = await tx
+        .select()
+        .from(billingInvoiceGroups)
+        .where(
+          and(
+            eq(billingInvoiceGroups.invoiceId, record.invoice.id),
+            eq(billingInvoiceGroups.deploymentKey, deploymentKey),
+          ),
+        );
+      if (group) {
+        const [schedule] = await tx
+          .select()
+          .from(billingSchedules)
+          .where(
+            and(
+              eq(billingSchedules.customerId, group.customerId),
+              eq(billingSchedules.deploymentKey, deploymentKey),
+            ),
+          )
+          .for("share");
+        stamp = at();
+        if (!schedule || group.customerId !== record.customer.customerId)
+          review("ownership_mismatch");
+        if (Date.parse(stamp) < Date.parse(record.invoice.issueNotBefore))
+          throw new IssuanceDeferred();
+        if (Date.parse(stamp) >= Date.parse(record.invoice.firstAttemptBefore))
+          review("provider_conflict");
+        if (schedule.issuancePaused) throw new IssuanceDeferred();
+      } else if (
+        effect !== "finalize" &&
+        !record.invoice.createAttemptedAt &&
+        Date.parse(stamp) >= Date.parse(record.invoice.firstAttemptBefore)
+      )
+        review("provider_conflict");
+      if (effect === "customer")
+        await tx
+          .update(billingCustomers)
+          .set({ createAttemptedAt: stamp })
+          .where(eq(billingCustomers.id, record.customer.id));
+      else
+        await tx
+          .update(invoices)
+          .set(
+            effect === "invoice"
+              ? { createAttemptedAt: stamp }
+              : { finalizeAttemptedAt: stamp },
+          )
+          .where(scope(record.invoice.id));
+      return stamp;
+    });
+    if (effect === "customer") record.customer.createAttemptedAt = stamp;
+    else if (effect === "invoice") record.invoice.createAttemptedAt = stamp;
+    else record.invoice.finalizeAttemptedAt = stamp;
+  }
   async function customerReceipt(
     connection: NodePgDatabase,
     record: StoredInvoice,
@@ -349,10 +432,7 @@ export function createLifecycle(
     if (found.kind === "found") receipt = found.value;
     else {
       canRetry(customer.createAttemptedAt, "uncertain_customer");
-      await connection
-        .update(billingCustomers)
-        .set({ createAttemptedAt: customer.createAttemptedAt ?? at() })
-        .where(eq(billingCustomers.id, customer.id));
+      await stampEffect(connection, record, "customer");
       receipt = await provider.createCustomer(
         expected,
         effectKey("customer", customer.id),
@@ -388,12 +468,8 @@ export function createLifecycle(
       return "complete";
     if (invoice.state === "needs_review") return "needs_review";
     if (!due(invoice.nextAttemptAt)) return "retry";
-    const today = at().slice(0, 10);
-    if (today < invoice.readinessDate || today < invoice.issueDate)
-      return "retry";
+    if (now().getTime() < Date.parse(invoice.issueNotBefore)) return "retry";
     try {
-      if (!invoice.createAttemptedAt && today >= invoice.dueDate)
-        review("provider_conflict");
       await connection
         .update(invoices)
         .set({ state: "preparing" })
@@ -414,10 +490,7 @@ export function createLifecycle(
         if (found.kind === "found") snapshot = found.value;
         else {
           canRetry(invoice.createAttemptedAt, "uncertain_invoice");
-          await connection
-            .update(invoices)
-            .set({ createAttemptedAt: invoice.createAttemptedAt ?? at() })
-            .where(scope(invoice.id));
+          await stampEffect(connection, record, "invoice");
           snapshot = await provider.createInvoice(
             expected,
             effectKey("invoice", invoice.id),
@@ -473,10 +546,7 @@ export function createLifecycle(
       verify(record, snapshot, true);
       if (snapshot.status === "draft") {
         canRetry(invoice.finalizeAttemptedAt, "provider_conflict");
-        await connection
-          .update(invoices)
-          .set({ finalizeAttemptedAt: invoice.finalizeAttemptedAt ?? at() })
-          .where(scope(invoice.id));
+        await stampEffect(connection, record, "finalize");
         snapshot = await provider.finalizeInvoice(
           expected,
           snapshot.providerInvoiceId,
@@ -487,6 +557,15 @@ export function createLifecycle(
       await project(connection, record, snapshot);
       return "complete";
     } catch (error) {
+      if (error instanceof IssuanceDeferred) {
+        await connection
+          .update(invoices)
+          .set({
+            nextAttemptAt: new Date(now().getTime() + 30000).toISOString(),
+          })
+          .where(scope(invoice.id));
+        return "retry";
+      }
       return failure(connection, record, error);
     }
   }
@@ -536,10 +615,10 @@ export function createLifecycle(
         async (connection, { invoice }) => {
           if (invoice.state === "needs_review") return { kind: "needs_review" };
           if (invoice.issueRequestedAt) return { kind: "unchanged" };
-          const today = at().slice(0, 10);
-          if (today < invoice.readinessDate || today < invoice.issueDate)
+          if (now().getTime() < Date.parse(invoice.issueNotBefore))
             return { kind: "not_ready" };
-          if (today >= invoice.dueDate) return { kind: "past_due" };
+          if (now().getTime() >= Date.parse(invoice.firstAttemptBefore))
+            return { kind: "past_due" };
           await connection
             .update(invoices)
             .set({ issueRequestedAt: at(), state: "preparing" })
@@ -632,11 +711,47 @@ export function createLifecycle(
           createdAt: invoices.createdAt,
         })
         .from(invoices)
+        .innerJoin(
+          billingCustomers,
+          eq(invoices.billingCustomerId, billingCustomers.id),
+        )
+        .leftJoin(
+          billingInvoiceGroups,
+          and(
+            eq(billingInvoiceGroups.invoiceId, invoices.id),
+            eq(billingInvoiceGroups.deploymentKey, invoices.deploymentKey),
+          ),
+        )
+        .leftJoin(
+          billingSchedules,
+          and(
+            eq(billingSchedules.customerId, billingInvoiceGroups.customerId),
+            eq(
+              billingSchedules.deploymentKey,
+              billingInvoiceGroups.deploymentKey,
+            ),
+          ),
+        )
         .where(
           and(
             eq(invoices.deploymentKey, deploymentKey),
             isNotNull(invoices.issueRequestedAt),
+            lte(invoices.issueNotBefore, at()),
             inArray(invoices.state, ["preparing", "draft"]),
+            or(
+              isNull(billingInvoiceGroups.id),
+              isNull(billingSchedules.customerId),
+              eq(billingSchedules.issuancePaused, false),
+              lte(invoices.firstAttemptBefore, at()),
+              sql`case
+                when ${billingCustomers.providerCustomerId} is null then ${billingCustomers.createAttemptedAt} is not null
+                when ${invoices.providerInvoiceId} is null then ${invoices.createAttemptedAt} is not null
+                when ${invoices.providerStatus} is distinct from 'draft' then true
+                else ${invoices.finalizeAttemptedAt} is not null or exists (
+                  select 1 from ${invoiceLines} where ${invoiceLines.invoiceId} = ${invoices.id} and ${invoiceLines.providerLineId} is null
+                )
+              end`,
+            ),
             or(
               isNull(invoices.nextAttemptAt),
               lte(invoices.nextAttemptAt, at()),

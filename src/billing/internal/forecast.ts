@@ -87,7 +87,12 @@ export function samePeriod(
   row: BillingPeriod,
   facts: ReturnType<typeof derivePeriod>,
 ): boolean {
-  const { id: _id, sealedAt: _sealedAt, ...stored } = row;
+  const {
+    id: _id,
+    sealedAt: _sealedAt,
+    invoiceGroupId: _invoiceGroupId,
+    ...stored
+  } = row;
   return (
     canonicalize({
       ...stored,
@@ -138,7 +143,9 @@ export function buildForecast(
       const row = stored.find(
         (row) => row.subscriptionId === sub.id && row.periodIndex === index,
       );
-      const facts = row?.sealedAt ? row : expected;
+      const facts = row?.sealedAt
+        ? (({ invoiceGroupId: _claim, ...facts }) => facts)(row)
+        : expected;
       const key = `${facts.dueDate}:${facts.paymentArrangement}`;
       let group = groups.get(key);
       if (!group) {

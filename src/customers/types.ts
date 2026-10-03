@@ -38,6 +38,7 @@ export interface Customers {
   readProfile(
     tx: NodePgDatabase,
     customerId: string,
+    options?: { lock?: boolean },
   ): Promise<RegisteredCustomer | null>;
   billingScope(
     actor: HumanActor,

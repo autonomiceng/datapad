@@ -21,6 +21,7 @@ const input = {
   lines: [{ description: "Sample hosting", amountMinor: 500 }],
 };
 const invoice: InvoiceDetail = {
+  calendar: null,
   id: invoiceId,
   customer: { id: customerId, name: "Sample customer" },
   billTo: {
