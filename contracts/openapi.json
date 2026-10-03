@@ -1,6 +1,6 @@
 {
   "info": {
-    "title": "Datapad import review API",
+    "title": "Datapad API",
     "description": "Development documentation",
     "version": "1.0.0"
   },
@@ -2015,6 +2015,693 @@
                       "type": "string",
                       "enum": [
                         "invalid_query",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing/invoices": {
+      "get": {
+        "operationId": "listInvoices",
+        "summary": "List invoices",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 100,
+                  "default": 50,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 1000000,
+                  "default": 0,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "invoices",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "invoices": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "customer",
+                          "issueDate",
+                          "dueDate",
+                          "readinessDate",
+                          "currency",
+                          "totalMinor",
+                          "state",
+                          "providerStatus",
+                          "reviewReason",
+                          "lastCheckedAt",
+                          "issuedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "customer": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "issueDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "dueDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "readinessDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "currency": {
+                            "const": "USD",
+                            "type": "string"
+                          },
+                          "totalMinor": {
+                            "minimum": 50,
+                            "maximum": 99999999,
+                            "type": "integer"
+                          },
+                          "state": {
+                            "anyOf": [
+                              {
+                                "const": "requested",
+                                "type": "string"
+                              },
+                              {
+                                "const": "preparing",
+                                "type": "string"
+                              },
+                              {
+                                "const": "needs_review",
+                                "type": "string"
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "draft",
+                                  "open",
+                                  "paid",
+                                  "void",
+                                  "uncollectible"
+                                ]
+                              }
+                            ]
+                          },
+                          "providerStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "draft",
+                              "open",
+                              "paid",
+                              "void",
+                              "uncollectible"
+                            ]
+                          },
+                          "reviewReason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "uncertain_customer",
+                              "uncertain_invoice",
+                              "uncertain_line",
+                              "ownership_mismatch",
+                              "invoice_mismatch",
+                              "provider_conflict",
+                              "retry_exhausted"
+                            ]
+                          },
+                          "lastCheckedAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "issuedAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "minimum": 0,
+                      "maximum": 1000000,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing/invoices/{invoiceId}": {
+      "get": {
+        "operationId": "getInvoice",
+        "summary": "Read an invoice",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "invoice"
+                  ],
+                  "properties": {
+                    "invoice": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "customer",
+                        "issueDate",
+                        "dueDate",
+                        "readinessDate",
+                        "currency",
+                        "totalMinor",
+                        "state",
+                        "providerStatus",
+                        "reviewReason",
+                        "lastCheckedAt",
+                        "issuedAt",
+                        "lines",
+                        "hostedInvoiceUrl"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "customer": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "name": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "issueDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "dueDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "readinessDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "currency": {
+                          "const": "USD",
+                          "type": "string"
+                        },
+                        "totalMinor": {
+                          "minimum": 50,
+                          "maximum": 99999999,
+                          "type": "integer"
+                        },
+                        "state": {
+                          "anyOf": [
+                            {
+                              "const": "requested",
+                              "type": "string"
+                            },
+                            {
+                              "const": "preparing",
+                              "type": "string"
+                            },
+                            {
+                              "const": "needs_review",
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "paid",
+                                "void",
+                                "uncollectible"
+                              ]
+                            }
+                          ]
+                        },
+                        "providerStatus": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "draft",
+                            "open",
+                            "paid",
+                            "void",
+                            "uncollectible"
+                          ]
+                        },
+                        "reviewReason": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "uncertain_customer",
+                            "uncertain_invoice",
+                            "uncertain_line",
+                            "ownership_mismatch",
+                            "invoice_mismatch",
+                            "provider_conflict",
+                            "retry_exhausted"
+                          ]
+                        },
+                        "lastCheckedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "issuedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "lines": {
+                          "minItems": 1,
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "position",
+                              "description",
+                              "amountMinor",
+                              "originRef"
+                            ],
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "position": {
+                                "minimum": 0,
+                                "maximum": 99,
+                                "type": "integer"
+                              },
+                              "description": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "minimum": 1,
+                                "maximum": 99999999,
+                                "type": "integer"
+                              },
+                              "originRef": {
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "hostedInvoiceUrl": {
+                          "maxLength": 2048,
+                          "pattern": "^https://invoice\\.stripe\\.com/",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing/webhooks/stripe": {
+      "post": {
+        "operationId": "receiveStripeInvoiceEvent",
+        "summary": "Receive a signed Stripe sandbox invoice event",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Stripe-Signature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "received"
+                  ],
+                  "properties": {
+                    "received": {
+                      "const": true,
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Response for status 413",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
                         "not_found",
                         "unavailable"
                       ]

@@ -629,3 +629,11 @@ th .text-button {
     font-size: var(--text-support);
   }
 }
+
+.site-header nav {
+  display: flex;
+  gap: 20px;
+}
+.site-header nav a[aria-current] {
+  color: var(--text);
+}

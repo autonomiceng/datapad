@@ -33,6 +33,8 @@ Code reviewers check for unused code and exports, unnecessary duplication, obsol
 
 Before adding modules, changing application structure or changing import-review behavior, read [the import-review architecture and contracts](docs/import-review.md) and its linked schemas and ADRs. Follow those dependency directions and raise missing architecture decisions with the integrator before implementing dependent interfaces or layout.
 
+Before changing invoice persistence, provider effects, payment events or invoice UI, read [the billing architecture and contracts](docs/billing.md).
+
 ## Taste
 
 - Check maintained open-source libraries before building infrastructure.

@@ -191,7 +191,20 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
       "getImportReviewCustomer",
     "/api/import-review/imports/{importId}/data-issues": "listDataIssues",
   };
-  expect(Object.keys(contract.paths)).toEqual(Object.keys(operations));
+  const billingPaths = [
+    "/api/billing/invoices",
+    "/api/billing/invoices/{invoiceId}",
+    "/api/billing/webhooks/stripe",
+  ];
+  expect(Object.keys(contract.paths)).toEqual([
+    ...Object.keys(operations),
+    ...billingPaths,
+  ]);
+  expect(contract.paths[billingPaths[0]].get.operationId).toBe("listInvoices");
+  expect(contract.paths[billingPaths[1]].get.operationId).toBe("getInvoice");
+  expect(contract.paths[billingPaths[2]].post.operationId).toBe(
+    "receiveStripeInvoiceEvent",
+  );
   for (const [path, operationId] of Object.entries(operations)) {
     expect(Object.keys(contract.paths[path])).toEqual(["get"]);
     const operation = contract.paths[path].get;

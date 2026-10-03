@@ -84,3 +84,27 @@ _Avoid_: Exception, readiness score
 **DNS zone**: DNS records administered together for a domain or delegated subdomain.
 
 **Hosting account**: A provider container for hosted resources. It may supply several components under one or more commercial agreements.
+
+## Invoices and payment
+
+**Invoice request**: An instruction to prepare one invoice for a customer with stated lines, currency, issue date and due date. Repeating the same request does not create another invoice.
+
+**Origin key**: The stable identity of an invoice request. Different billing periods or separate pieces of work have different origin keys.
+
+**Invoice**: A request for payment for stated lines by a due date. Its payment status describes the provider's confirmed state.
+
+**Invoice line**: One described charge on an invoice, with an amount in that invoice's currency.
+
+**Origin reference**: An optional reference explaining what an invoice line was requested for. It does not itself establish a service relationship.
+
+**Issue date**: The intended calendar date for making an invoice available for payment. The actual issue time can differ when preparation is delayed.
+
+**Due date**: The calendar date by which an invoice is payable.
+
+**Readiness date**: The earliest calendar date on which an invoice may be issued. This billing slice uses 21 days before the due date.
+
+**Preparing**: An authorized invoice is being created or finalized and is not yet available for payment.
+
+**Needs review**: Preparation or reconciliation cannot safely continue without resolving an uncertain or conflicting outcome.
+
+**Last checked**: When the invoice's current state was last successfully retrieved from its payment provider.

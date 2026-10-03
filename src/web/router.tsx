@@ -6,6 +6,7 @@ import {
   Link,
   Outlet,
 } from "@tanstack/react-router";
+import { Invoices } from "./billing/invoices";
 import { ImportReview } from "./import-review/viewer";
 
 interface ImportReviewSearch {
@@ -66,8 +67,21 @@ const importReviewRoute = createRoute({
   component: ImportReview,
 });
 
+const invoicesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invoices",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { invoiceId?: string; offset: number } => ({
+    invoiceId:
+      typeof search.invoiceId === "string" ? search.invoiceId : undefined,
+    offset: offset(search.offset),
+  }),
+  component: Invoices,
+});
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([importReviewRoute]),
+  routeTree: rootRoute.addChildren([importReviewRoute, invoicesRoute]),
 });
 declare module "@tanstack/react-router" {
   interface Register {
@@ -100,6 +114,13 @@ function Shell() {
           <span>Datapad</span>
         </Link>
         <nav aria-label="Resources">
+          <Link
+            to="/invoices"
+            search={{ offset: 0 }}
+            activeOptions={{ includeSearch: false }}
+          >
+            Invoices
+          </Link>
           <a href="/api/openapi/json">OpenAPI</a>
         </nav>
       </header>
