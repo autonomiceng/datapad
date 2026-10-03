@@ -35,7 +35,11 @@ export type CustomerCapability =
   | "manage_members"
   | "read_billing"
   | "manage_billing"
-  | "manage_payment_settings";
+  | "manage_payment_settings"
+  | "read_support"
+  | "request_support"
+  | "manage_support"
+  | "approve_support";
 export type CustomerReadScope =
   | { kind: "staff"; roles: StaffRole[]; organizationIds: string[] }
   | { kind: "memberships"; organizationIds: string[] };
@@ -89,6 +93,25 @@ interface AuditEntryIdentity {
 }
 export type AuditEntry = AuditEntryIdentity &
   (
+    | {
+        action:
+          | "ticket.opened"
+          | "ticket.replied"
+          | "ticket.note_added"
+          | "ticket.proposed"
+          | "ticket.approved"
+          | "ticket.result_recorded";
+        changedFields: Array<
+          "ticket" | "reply" | "note" | "proposal" | "approval" | "result"
+        >;
+        support: {
+          ticketVersion: number;
+          entryId?: string;
+          proposalId?: string;
+          proposalVersion?: number;
+          approvalId?: string;
+        };
+      }
     | {
         action: "payment_setup.started";
         changedFields: ["saveTerms"];

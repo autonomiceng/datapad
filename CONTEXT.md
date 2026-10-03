@@ -180,3 +180,11 @@ _Avoid_: Exception, readiness score
 - **Reminder**: an invoice notice scheduled before, on or after the payment due date.
 - **Accepted**: the mail server accepted the message. This does not prove that a person received or read it.
 - **Uncertain delivery**: the portal cannot establish whether the mail server accepted an attempted message. Staff review is required before any further delivery decision.
+
+## Support
+
+- **Ticket:** a customer request about a service and, optionally, one hosting component.
+- **Internal note:** an append-only staff message hidden from customers and their activity counts.
+- **Proposal:** a versioned description of intended work, cost and effects on data.
+- **Approval:** a customer administrator's recorded acceptance of one exact proposal and target version.
+- **Result:** staff's verified account of completed work or resolution without changes. It records what happened; it does not perform the work.

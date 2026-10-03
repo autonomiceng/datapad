@@ -58,6 +58,7 @@ export function createAuditWriter(): AuditWriter {
         targetId: entry.targetId,
         details: {
           changedFields: entry.changedFields,
+          ...("support" in entry ? { support: entry.support } : {}),
           ...(entry.action === "invoice.receipt_correction_requested"
             ? { reason: entry.reason }
             : {}),

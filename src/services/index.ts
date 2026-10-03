@@ -257,6 +257,48 @@ export function createServices(options: ServicesOptions): Services {
     };
   }
   return {
+    async readTarget(tx, customerId, serviceId, componentId, { lock }) {
+      if (
+        !validId(customerId) ||
+        !validId(serviceId) ||
+        (componentId !== null && !validId(componentId))
+      )
+        return null;
+      const serviceQuery = tx
+        .select({
+          id: services.id,
+          kind: services.kind,
+          name: services.name,
+          version: services.version,
+        })
+        .from(services)
+        .where(
+          and(eq(services.id, serviceId), eq(services.customerId, customerId)),
+        );
+      const [service] = lock
+        ? await serviceQuery.for("share")
+        : await serviceQuery;
+      if (!service) return null;
+      if (componentId === null) return { service, component: null };
+      const componentQuery = tx
+        .select({
+          id: serviceComponents.id,
+          kind: serviceComponents.kind,
+          version: serviceComponents.version,
+        })
+        .from(serviceComponents)
+        .where(
+          and(
+            eq(serviceComponents.id, componentId),
+            eq(serviceComponents.serviceId, serviceId),
+            eq(serviceComponents.customerId, customerId),
+          ),
+        );
+      const [component] = lock
+        ? await componentQuery.for("share")
+        : await componentQuery;
+      return component ? { service, component } : null;
+    },
     async listServices(actor, customerId, page) {
       const access = await options.authorizeCustomer(
         db,

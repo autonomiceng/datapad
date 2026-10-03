@@ -109,3 +109,5 @@ Use synthetic IDs, invented observations and `.test` domains in code, tests and 
 The [invoice collection architecture](invoice-collections.md) keeps due-day attempts inside billing, with provider effects in the Stripe adapter and scheduling in the worker. Its browser-safe collection contract carries payment disposition without provider receipts.
 
 The [invoice notice architecture](invoice-notices.md) gives `src/notifications` ownership of invoice email obligations and content. HTTP composition injects its public reader into `notice-routes.ts`; browser code imports only its contract. Billing observations remain billing-owned.
+
+Support request ownership, permissions and dependency directions are defined in [the support contract](support.md).

@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { AccountPagination } from "../access/contract";
 import type { AccessResult, AuditWriter, HumanActor } from "../access/types";
 import type { Customers } from "../customers/types";
@@ -99,6 +100,17 @@ export interface ServiceBootstrapOptions extends ServicePolicy {
 }
 /** Reads require customer read access; edits require manage_services and preserve provider state. */
 export interface Services {
+  /** Reads target ownership and versions in the caller transaction without granting authority. Optional shared locks use service then component order. */
+  readTarget(
+    tx: NodePgDatabase,
+    customerId: string,
+    serviceId: string,
+    componentId: string | null,
+    options: { lock: boolean },
+  ): Promise<{
+    service: { id: string; kind: ServiceKind; name: string; version: number };
+    component: { id: string; kind: ComponentKind; version: number } | null;
+  } | null>;
   /** Lists only this customer's inventory, including attached add-ons; performs no provider reads. */
   listServices(
     actor: HumanActor,

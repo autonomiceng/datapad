@@ -110,6 +110,10 @@ export function createPolicy(pool: Pool): AccessPolicy {
       if (!visible) return { ok: false, code: "not_found" };
       const permitted =
         capability === "read" ||
+        ((capability === "read_support" || capability === "request_support") &&
+          (role !== null || roles.includes("support"))) ||
+        (capability === "manage_support" && roles.includes("support")) ||
+        (capability === "approve_support" && role === "administrator") ||
         (capability === "manage_payment_settings" &&
           role === "administrator") ||
         (capability === "read_billing" &&

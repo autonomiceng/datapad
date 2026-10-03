@@ -1,2 +1,2 @@
 /** Schema references only. Services owns operational writes. */
-export { services } from "./internal/schema";
+export { services, serviceComponents } from "./internal/schema";

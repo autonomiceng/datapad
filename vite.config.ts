@@ -11,10 +11,10 @@ export default defineConfig({
           const normalized = id.replaceAll("\\", "/");
           if (
             /\/src\/(server|stripe|worker)\//.test(normalized) ||
-            (/\/src\/(import-review|billing|access|customers|services|notifications)\//.test(
+            (/\/src\/(import-review|billing|access|customers|services|notifications|support)\//.test(
               normalized,
             ) &&
-              !/\/src\/(import-review|billing|access|customers|services|notifications)\/contract\.ts$/.test(
+              !/\/src\/(import-review|billing|access|customers|services|notifications|support)\/contract\.ts$/.test(
                 normalized,
               )) ||
             /\/node_modules\/(?:elysia|@elysia|drizzle-orm|pg|pg-pool|pg-protocol|pg-boss|stripe|better-auth|@better-auth|nodemailer)\//.test(
@@ -46,7 +46,7 @@ export default defineConfig({
     overrides: [
       {
         files: [
-          "src/{access,customers,services,import-review,billing,notifications}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,*-types}.ts",
+          "src/{access,customers,services,import-review,billing,notifications,support}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,*-types}.ts",
         ],
         rules: {
           "jsdoc-js/require-jsdoc": [

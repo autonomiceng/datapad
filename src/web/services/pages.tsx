@@ -438,6 +438,15 @@ function ServiceDetail({
                 : ". No included components recorded.")}
           </p>
         )}
+        {service && (
+          <Link
+            to="/customers/$customerId/tickets/new"
+            params={{ customerId }}
+            search={{ serviceId }}
+          >
+            Request support
+          </Link>
+        )}
         {reload.isSuccess && (
           <p role="status">
             Latest service loaded. Review the fields before saving again.
