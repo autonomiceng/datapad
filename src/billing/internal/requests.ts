@@ -9,6 +9,7 @@ export function createRequester({
   pool,
   provider,
   deploymentKey,
+  customers,
   now = () => new Date(),
 }: BillingOptions) {
   const db = drizzle(pool);
@@ -49,16 +50,24 @@ export function createRequester({
         );
       if (
         customer &&
-        (customer.name !== request.customer.name ||
-          customer.providerAccountId !== provider.ownership.accountId)
+        customer.providerAccountId !== provider.ownership.accountId
       )
         return { kind: "conflict" };
       const createdAt = now().toISOString();
+      const account = await customers.ensureCustomer(tx, {
+        registryKey: JSON.stringify([deploymentKey, request.customer.key]),
+        initialProfile: {
+          displayName: request.customer.name,
+          legalName: request.customer.name,
+          billingEmail: null,
+        },
+      });
       if (!customer) {
         [customer] = await tx
           .insert(billingCustomers)
           .values({
             id: randomUUID(),
+            customerId: account.customerId,
             deploymentKey,
             providerAccountId: provider.ownership.accountId,
             key: request.customer.key,
@@ -73,7 +82,11 @@ export function createRequester({
         deploymentKey,
         originKey: request.originKey,
         requestDigest: digest,
-        customerId: customer.id,
+        requestCustomerName: request.customer.name,
+        billingCustomerId: customer.id,
+        billToName: account.profile.legalName,
+        billToEmail: account.profile.billingEmail,
+        billToProfileVersion: account.version,
         issueDate: request.issueDate,
         dueDate: request.dueDate,
         readinessDate: readinessDate(request.dueDate),

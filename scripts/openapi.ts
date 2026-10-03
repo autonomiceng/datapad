@@ -12,8 +12,39 @@ const importReview: ImportReviewReader = {
   listDataIssues: offlineRead,
 };
 
-export async function exportOpenApi() {
-  const app = createApp({ importReview });
+export async function exportOpenApi(
+  portal = false,
+  portalOrigin = "http://localhost",
+) {
+  const app = createApp({
+    importReview,
+    ...(portal
+      ? {
+          accounts: {
+            routes: {
+              origin: portalOrigin,
+              access: {
+                resolveActor: offlineRead,
+                getSession: offlineRead,
+                listMembers: offlineRead,
+                listInvitations: offlineRead,
+                inviteMember: offlineRead,
+                acceptInvitation: offlineRead,
+                revokeInvitation: offlineRead,
+                revokeMember: offlineRead,
+              },
+              customers: {
+                listCustomers: offlineRead,
+                getCustomer: offlineRead,
+                updateCustomer: offlineRead,
+              },
+            },
+            authHandler: offlineRead,
+            authorizeImport: offlineRead,
+          },
+        }
+      : {}),
+  });
   const response = await app.handle(
     new Request("http://localhost/api/openapi/json"),
   );
@@ -26,19 +57,29 @@ if (import.meta.main) {
   const args = process.argv.slice(2);
   if (args.some((arg) => arg !== "--check"))
     throw new Error("Usage: openapi.ts [--check]");
-  const output = await exportOpenApi();
-  const artifact = Bun.file(
-    new URL("../contracts/openapi.json", import.meta.url),
-  );
-  if (args.includes("--check")) {
-    if (!(await artifact.exists()) || (await artifact.text()) !== output) {
-      throw new Error(
-        "OpenAPI contract is out of date. Run mise run openapi:generate.",
-      );
+  for (const portal of [false, true]) {
+    const output = await exportOpenApi(portal);
+    const artifact = Bun.file(
+      new URL(
+        portal
+          ? "../contracts/portal-openapi.json"
+          : "../contracts/openapi.json",
+        import.meta.url,
+      ),
+    );
+    if (args.includes("--check")) {
+      if (!(await artifact.exists()) || (await artifact.text()) !== output) {
+        throw new Error(
+          "OpenAPI contract is out of date. Run mise run openapi:generate.",
+        );
+      }
+    } else {
+      await Bun.write(artifact, output);
     }
-    console.log("OpenAPI contract is current.");
-  } else {
-    await Bun.write(artifact, output);
-    console.log("OpenAPI contract generated.");
   }
+  console.log(
+    args.includes("--check")
+      ? "OpenAPI contracts are current."
+      : "OpenAPI contracts generated.",
+  );
 }

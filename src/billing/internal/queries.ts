@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Value } from "@sinclair/typebox/value";
 import { BillingPaginationSchema, type InvoiceRequest } from "../contract";
@@ -21,7 +21,7 @@ export function createReader({
   const scope = eq(invoices.deploymentKey, deploymentKey);
   const selection = {
     id: invoices.id,
-    customer: { id: billingCustomers.id, name: billingCustomers.name },
+    customer: { id: billingCustomers.customerId, name: invoices.billToName },
     issueDate: invoices.issueDate,
     dueDate: invoices.dueDate,
     readinessDate: invoices.readinessDate,
@@ -33,78 +33,133 @@ export function createReader({
     lastCheckedAt: invoices.lastCheckedAt,
     issuedAt: invoices.issuedAt,
   };
-  return {
-    async listInvoices(page = {}) {
-      const pagination = { limit: page.limit ?? 50, offset: page.offset ?? 0 };
-      if (!Value.Check(BillingPaginationSchema, pagination))
-        throw new RangeError("Invalid pagination");
-      const rows = await db
-        .select(selection)
-        .from(invoices)
-        .innerJoin(
-          billingCustomers,
-          eq(invoices.customerId, billingCustomers.id),
-        )
-        .where(scope)
-        .orderBy(desc(invoices.createdAt), asc(invoices.id))
-        .limit(pagination.limit)
-        .offset(pagination.offset);
-      const [size] = await db
-        .select({ total: count() })
-        .from(invoices)
-        .where(scope);
-      return {
-        invoices: rows.map((row) => ({
-          ...row,
-          lastCheckedAt: instant(row.lastCheckedAt),
-          issuedAt: instant(row.issuedAt),
-        })),
-        total: size.total,
-        ...pagination,
-      };
-    },
-    async getInvoice(invoiceId) {
-      if (!isUuid(invoiceId)) return null;
-      const [row] = await db
-        .select({ ...selection, hostedInvoiceUrl: invoices.hostedInvoiceUrl })
-        .from(invoices)
-        .innerJoin(
-          billingCustomers,
-          eq(invoices.customerId, billingCustomers.id),
-        )
-        .where(and(scope, eq(invoices.id, invoiceId)));
-      if (!row) return null;
-      const lines = await db
-        .select({
-          id: invoiceLines.id,
-          position: invoiceLines.position,
-          description: invoiceLines.description,
-          amountMinor: invoiceLines.amountMinor,
-          originRef: invoiceLines.originRef,
-        })
-        .from(invoiceLines)
-        .where(eq(invoiceLines.invoiceId, invoiceId))
-        .orderBy(asc(invoiceLines.position));
-      const visible = ["open", "paid", "void", "uncollectible"].includes(
-        row.state,
-      );
-      const url = row.hostedInvoiceUrl;
-      return {
-        invoice: {
-          ...row,
-          lastCheckedAt: instant(row.lastCheckedAt),
-          issuedAt: instant(row.issuedAt),
-          lines,
-          hostedInvoiceUrl:
-            visible && url && url.startsWith("https://invoice.stripe.com/")
-              ? url
-              : null,
+  const listInvoices = async (
+    page: Parameters<BillingReader["listInvoices"]>[0] = {},
+    customerScope?: SQL,
+  ) => {
+    const pagination = { limit: page.limit ?? 50, offset: page.offset ?? 0 };
+    if (!Value.Check(BillingPaginationSchema, pagination))
+      throw new RangeError("Invalid pagination");
+    const rows = await db
+      .select(selection)
+      .from(invoices)
+      .innerJoin(
+        billingCustomers,
+        eq(invoices.billingCustomerId, billingCustomers.id),
+      )
+      .where(and(scope, customerScope))
+      .orderBy(desc(invoices.createdAt), asc(invoices.id))
+      .limit(pagination.limit)
+      .offset(pagination.offset);
+    const [size] = await db
+      .select({ total: count() })
+      .from(invoices)
+      .innerJoin(
+        billingCustomers,
+        eq(invoices.billingCustomerId, billingCustomers.id),
+      )
+      .where(and(scope, customerScope));
+    return {
+      invoices: rows.map((row) => ({
+        ...row,
+        lastCheckedAt: instant(row.lastCheckedAt),
+        issuedAt: instant(row.issuedAt),
+      })),
+      total: size.total,
+      ...pagination,
+    };
+  };
+  const getInvoice = async (invoiceId: string, customerScope?: SQL) => {
+    if (!isUuid(invoiceId)) return null;
+    const [row] = await db
+      .select({
+        ...selection,
+        hostedInvoiceUrl: invoices.hostedInvoiceUrl,
+        billTo: {
+          legalName: invoices.billToName,
+          billingEmail: invoices.billToEmail,
+          profileVersion: invoices.billToProfileVersion,
         },
-      };
+      })
+      .from(invoices)
+      .innerJoin(
+        billingCustomers,
+        eq(invoices.billingCustomerId, billingCustomers.id),
+      )
+      .where(and(scope, customerScope, eq(invoices.id, invoiceId)));
+    if (!row) return null;
+    const lines = await db
+      .select({
+        id: invoiceLines.id,
+        position: invoiceLines.position,
+        description: invoiceLines.description,
+        amountMinor: invoiceLines.amountMinor,
+        originRef: invoiceLines.originRef,
+      })
+      .from(invoiceLines)
+      .where(eq(invoiceLines.invoiceId, invoiceId))
+      .orderBy(asc(invoiceLines.position));
+    const visible = ["open", "paid", "void", "uncollectible"].includes(
+      row.state,
+    );
+    const url = row.hostedInvoiceUrl;
+    return {
+      invoice: {
+        ...row,
+        lastCheckedAt: instant(row.lastCheckedAt),
+        issuedAt: instant(row.issuedAt),
+        lines,
+        hostedInvoiceUrl:
+          visible && url && url.startsWith("https://invoice.stripe.com/")
+            ? url
+            : null,
+      },
+    };
+  };
+  const customerScope = (ids: string[]) => {
+    if (ids.some((id) => !isUuid(id)))
+      throw new RangeError("Invalid customer scope");
+    return ids.length ? inArray(billingCustomers.customerId, ids) : sql`false`;
+  };
+  return {
+    listInvoices,
+    getInvoice,
+    listInvoicesForCustomers: (ids, page) =>
+      listInvoices(page, customerScope(ids)),
+    getInvoiceForCustomers: (ids, invoiceId) =>
+      getInvoice(invoiceId, customerScope(ids)),
+    async providerProfile(customerId, profile) {
+      if (!isUuid(customerId)) return "not_linked";
+      const mappings = await db
+        .select({
+          name: billingCustomers.name,
+          providerCustomerId: billingCustomers.providerCustomerId,
+        })
+        .from(billingCustomers)
+        .where(
+          and(
+            eq(billingCustomers.deploymentKey, deploymentKey),
+            eq(billingCustomers.customerId, customerId),
+          ),
+        );
+      const linked = mappings.filter(
+        (mapping) => mapping.providerCustomerId !== null,
+      );
+      if (linked.length === 0) return "not_linked";
+      return linked.every(
+        (mapping) =>
+          mapping.name === profile.legalName && profile.billingEmail === null,
+      )
+        ? "unchanged"
+        : "pending";
     },
     async assertSyntheticData(
       allowedRequests: InvoiceRequest[],
       accountId?: string,
+      allowedBillTo = allowedRequests.map((request) => ({
+        legalName: request.customer.name,
+        billingEmail: null as string | null,
+      })),
     ) {
       const fail = () => {
         throw new Error(
@@ -129,16 +184,18 @@ export function createReader({
           (customer) =>
             customer.deploymentKey !== deploymentKey ||
             customer.providerAccountId !== accountId ||
-            !rows.some((row) => row.customerId === customer.id),
+            !rows.some((row) => row.billingCustomerId === customer.id),
         )
       )
         fail();
       for (const row of rows) {
-        const customer = customers.find((value) => value.id === row.customerId);
+        const customer = customers.find(
+          (value) => value.id === row.billingCustomerId,
+        );
         if (!customer || row.deploymentKey !== deploymentKey) return fail();
         const request: InvoiceRequest = {
           originKey: row.originKey,
-          customer: { key: customer.key, name: customer.name },
+          customer: { key: customer.key, name: row.requestCustomerName },
           issueDate: row.issueDate,
           dueDate: row.dueDate,
           currency: row.currency,
@@ -151,6 +208,11 @@ export function createReader({
             })),
         };
         if (
+          !allowedBillTo.some(
+            (profile) =>
+              profile.legalName === row.billToName &&
+              profile.billingEmail === row.billToEmail,
+          ) ||
           !validateRequest(request) ||
           requestDigest(request) !== row.requestDigest ||
           !allowed.has(row.requestDigest) ||

@@ -62,6 +62,14 @@ export const InvoiceSummarySchema = object({
 });
 export const InvoiceDetailSchema = object({
   ...InvoiceSummarySchema.properties,
+  billTo: object({
+    legalName: label,
+    billingEmail: Type.Union([
+      Type.String({ format: "email", maxLength: 254 }),
+      Type.Null(),
+    ]),
+    profileVersion: Type.Integer({ minimum: 1, maximum: 2147483647 }),
+  }),
   lines: Type.Array(
     object({
       id,

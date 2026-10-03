@@ -18,6 +18,7 @@
     "tests/**/*.ts",
     "vite.config.ts",
     "drizzle.config.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "playwright.portal.config.ts"
   ]
 }

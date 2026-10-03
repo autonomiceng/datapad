@@ -1,0 +1,7 @@
+# Customer identity and the authentication boundary
+
+Customers have stable application identities independent of sign-in users, access organizations, imported records and payment-provider mappings. Better Auth owns sessions and mailbox verification; the access module owns explicit staff authority and translates customer membership into current permissions. This keeps a customer rename or authentication-provider change from replacing its billing identity or rewriting historical invoices.
+
+The pinned Better Auth organization APIs require the initiating user to belong to an organization for ordinary invitations and revocation. Staff authority applies across customer accounts. A narrow, access-owned adapter therefore creates and cancels invitations, preprovisions invited users without passwords, and revokes membership through the pinned framework schema. It checks current authority, protects the last administrator and commits application audit records in the same transaction. Hidden staff memberships and impersonation would obscure that authority. Framework schema upgrades require focused adapter compatibility checks.
+
+Invitation acceptance uses Better Auth's supported API. Its accepted status and membership insertion can commit separately, so the facade records intent and confirms actual membership before reporting completion. An accepted invitation without membership requires review. Domain modules consume access interfaces and never read framework tables directly. See [the account contracts](../accounts.md).

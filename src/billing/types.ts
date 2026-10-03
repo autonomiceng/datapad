@@ -6,6 +6,10 @@ import type {
   InvoicesResponse,
 } from "./contract";
 import type { BillingProvider, VerifiedInvoiceEvent } from "./provider";
+import type {
+  CustomerRegistry,
+  ProviderProfileReader,
+} from "../customers/types";
 
 export interface BillingReaderOptions {
   pool: Pool;
@@ -13,14 +17,25 @@ export interface BillingReaderOptions {
 }
 export interface BillingOptions extends BillingReaderOptions {
   provider: BillingProvider;
+  customers: CustomerRegistry;
   now?: () => Date;
 }
 export interface BillingReader {
   listInvoices(page?: Partial<BillingPagination>): Promise<InvoicesResponse>;
   getInvoice(invoiceId: string): Promise<InvoiceResponse | null>;
+  listInvoicesForCustomers(
+    customerIds: string[],
+    page?: Partial<BillingPagination>,
+  ): Promise<InvoicesResponse>;
+  getInvoiceForCustomers(
+    customerIds: string[],
+    invoiceId: string,
+  ): Promise<InvoiceResponse | null>;
+  providerProfile: ProviderProfileReader;
   assertSyntheticData(
     allowedRequests: InvoiceRequest[],
     accountId?: string,
+    allowedBillTo?: Array<{ legalName: string; billingEmail: string | null }>,
   ): Promise<void>;
 }
 export type RequestResult =

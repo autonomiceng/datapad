@@ -6,27 +6,51 @@ import { openSandbox, availableLoopbackPort } from "./billing-sandbox";
 import { startStripeListener } from "./stripe-listener";
 
 const mode = process.argv[2];
-if (!["demo", "dev", "test", "destroy", "billing"].includes(mode ?? "")) {
-  throw new Error("Expected demo, dev, test, destroy or billing.");
+if (
+  ![
+    "demo",
+    "dev",
+    "test",
+    "destroy",
+    "billing",
+    "portal",
+    "portal-test",
+    "portal-destroy",
+  ].includes(mode ?? "")
+) {
+  throw new Error(
+    "Expected demo, dev, test, destroy, billing, portal, portal-test or portal-destroy.",
+  );
 }
+const portal =
+  mode === "portal" || mode === "portal-test" || mode === "portal-destroy";
+const testing = mode === "test" || mode === "portal-test";
 const { values } = parseArgs({
   args: process.argv.slice(3),
-  options: { config: { type: "string" }, "run-dir": { type: "string" } },
+  options: {
+    config: { type: "string" },
+    "run-dir": { type: "string" },
+    origin: { type: "string" },
+    "inbox-origin": { type: "string" },
+  },
   strict: true,
 });
 if (mode === "billing" && (!values.config || !values["run-dir"]))
   throw new Error("Billing requires --config and --run-dir outside Git.");
-if (mode !== "billing" && Object.keys(values).length)
+if (mode !== "billing" && (values.config || values["run-dir"]))
   throw new Error("Sandbox arguments require billing mode.");
+if ((values.origin || values["inbox-origin"]) && mode !== "portal")
+  throw new Error("An external origin requires portal demo mode.");
 let sandbox: Awaited<ReturnType<typeof openSandbox>> | undefined;
 let serverPort = 0;
 const root = resolve(import.meta.dir, "..");
 const localId = createHash("sha256").update(root).digest("hex").slice(0, 12);
-const project =
-  mode === "test"
-    ? `datapad-test-${randomUUID()}`
-    : mode === "billing"
-      ? `datapad-billing-${createHash("sha256").update(resolve(values["run-dir"]!)).digest("hex").slice(0, 12)}`
+const project = testing
+  ? `datapad-test-${randomUUID()}`
+  : mode === "billing"
+    ? `datapad-billing-${createHash("sha256").update(resolve(values["run-dir"]!)).digest("hex").slice(0, 12)}`
+    : portal
+      ? `datapad-portal-${localId}`
       : `datapad-${localId}`;
 const lock = resolve(
   root,
@@ -39,6 +63,7 @@ const compose = [
   resolve(root, "compose.yaml"),
   "--project-name",
   project,
+  ...(portal ? ["--profile", "portal"] : []),
 ];
 const env: Record<string, string | undefined> = { ...process.env };
 const children: ReturnType<typeof Bun.spawn>[] = [];
@@ -98,7 +123,7 @@ function cleanup(): Promise<void> {
           await command([
             ...compose,
             "down",
-            ...(mode === "test" ? ["--volumes"] : []),
+            ...(testing ? ["--volumes"] : []),
           ]);
         }
       } finally {
@@ -111,14 +136,20 @@ function cleanup(): Promise<void> {
 }
 
 async function startServer(): Promise<string> {
-  const child = Bun.spawn([process.execPath, "src/server/index.ts"], {
-    cwd: root,
-    env: { ...env, HOST: "127.0.0.1", PORT: String(serverPort) },
-    stdout: "pipe",
-    stderr: "inherit",
-    stdin: "ignore",
-    detached: true,
-  });
+  const child = Bun.spawn(
+    [
+      process.execPath,
+      portal ? "src/server/portal-index.ts" : "src/server/index.ts",
+    ],
+    {
+      cwd: root,
+      env: { ...env, HOST: "127.0.0.1", PORT: String(serverPort) },
+      stdout: "pipe",
+      stderr: "inherit",
+      stdin: "ignore",
+      detached: true,
+    },
+  );
   children.push(child);
   const reader = child.stdout.getReader();
   let startupTimer: ReturnType<typeof setTimeout> | undefined;
@@ -162,7 +193,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 }
 
 try {
-  if (mode !== "test") {
+  if (!testing) {
     await mkdir(resolve(root, ".scratch"), { recursive: true });
     try {
       await mkdir(lock);
@@ -177,7 +208,7 @@ try {
       JSON.stringify({ pid: process.pid, root, project }),
     );
   }
-  if (mode === "destroy") {
+  if (mode === "destroy" || mode === "portal-destroy") {
     await command([...compose, "down", "--volumes"]);
   } else {
     databaseStarted = true;
@@ -205,6 +236,50 @@ try {
     ]) {
       await command([process.execPath, "scripts/import-records.ts", fixture]);
     }
+    if (portal) {
+      serverPort = await availableLoopbackPort();
+      const origin = values.origin ?? `http://127.0.0.1:${serverPort}`;
+      const parsedOrigin = new URL(origin);
+      if (
+        !["http:", "https:"].includes(parsedOrigin.protocol) ||
+        parsedOrigin.origin !== origin
+      )
+        throw new Error(
+          "Portal origin must be an HTTP(S) origin without a path or credentials.",
+        );
+      const smtpBinding = await command(
+        [...compose, "port", "mail", "1025"],
+        true,
+      );
+      const inboxBinding = await command(
+        [...compose, "port", "mail", "8025"],
+        true,
+      );
+      const smtpPort = /^127\.0\.0\.1:(\d+)$/.exec(smtpBinding)?.[1];
+      const inboxPort = /^127\.0\.0\.1:(\d+)$/.exec(inboxBinding)?.[1];
+      if (!smtpPort || !inboxPort)
+        throw new Error("Expected loopback-only test mail ports.");
+      // This composition has no provider credentials or external mail transport.
+      for (const key of Object.keys(env)) {
+        if (key.startsWith("STRIPE_") || key.startsWith("BILLING_"))
+          delete env[key];
+      }
+      env.PORTAL_DEMO_ORIGIN = origin;
+      env.PORTAL_DEMO_SECRET = `${randomUUID()}${randomUUID()}`;
+      env.PORTAL_DEMO_SMTP_URL = `smtp://127.0.0.1:${smtpPort}`;
+      env.PORTAL_TEST_MAILPIT_URL = `http://127.0.0.1:${inboxPort}`;
+      const inboxOrigin = values["inbox-origin"] ?? env.PORTAL_TEST_MAILPIT_URL;
+      if (
+        !["http:", "https:"].includes(new URL(inboxOrigin).protocol) ||
+        new URL(inboxOrigin).origin !== inboxOrigin
+      )
+        throw new Error(
+          "Inbox origin must be an HTTP(S) origin without a path or credentials.",
+        );
+      env.PORTAL_DEMO_INBOX_URL = inboxOrigin;
+      await command([process.execPath, "scripts/portal-seed.ts"]);
+      console.log(`Sample inbox: ${env.PORTAL_TEST_MAILPIT_URL}`);
+    }
     if (mode === "billing") {
       sandbox = await openSandbox(values.config!, values["run-dir"]!);
       serverPort = await availableLoopbackPort();
@@ -223,9 +298,13 @@ try {
     env.NODE_ENV = mode === "dev" ? "development" : "production";
     env.ASSETS_DIR = mode === "dev" ? "" : "dist";
     const url = await startServer();
-    if (mode === "test") {
+    if (testing) {
       env.TEST_BASE_URL = url;
-      await command(["./node_modules/.bin/playwright", "test"]);
+      await command([
+        "./node_modules/.bin/playwright",
+        "test",
+        ...(portal ? ["--config", "playwright.portal.config.ts"] : []),
+      ]);
     } else {
       if (mode === "dev") {
         const web = Bun.spawn(
@@ -249,7 +328,9 @@ try {
         children.push(web);
       }
       console.log(
-        "Press Ctrl+C to stop. Imports persist; mise run demo:destroy removes this checkout's database.",
+        portal
+          ? "Press Ctrl+C to stop. Customer data persists; mise run portal:destroy removes this checkout's demo database."
+          : "Press Ctrl+C to stop. Imports persist; mise run demo:destroy removes this checkout's database.",
       );
       await Promise.race([
         new Promise<void>((done) => {

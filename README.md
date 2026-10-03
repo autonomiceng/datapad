@@ -1,6 +1,6 @@
 # Datapad
 
-An open-source customer support and billing portal for service providers. The first application slice is **Import review**: inspect sample customers, services, add-ons, domains and data issues before planning a migration. The [data model](docs/data-model.md) shows import relationships and timestamps; the accepted [service model](docs/service-model.md) describes future packages and independent components. Page Help explains the record types and import terms; the [glossary](CONTEXT.md) keeps that language consistent for contributors and agents.
+An open-source customer support and billing portal for service providers. The authenticated **Customer accounts** demo supports sample profiles, membership and invitations. **Import review** inspects sample customers, services, add-ons, domains and data issues before planning a migration. The [data model](docs/data-model.md) shows import relationships and timestamps; the accepted [service model](docs/service-model.md) describes future packages and independent components. Page Help explains the record types and import terms; the [glossary](CONTEXT.md) keeps that language consistent for contributors and agents.
 
 An import is a saved copy of records from one source. Billing and services remain in the original system. Import review supplies no provisioning, source connectivity or sign-in. The separate invoice sandbox demonstrates manual payment with synthetic customers.
 
@@ -30,6 +30,10 @@ Run `mise run test` for application tests and tooling safeguards. On Linux, `mis
 
 Format intentionally edited files explicitly, for example `mise run format -- README.md`. Every PR adds a benefit-focused release-note fragment. Read [CONTRIBUTING.md](CONTRIBUTING.md) for commands, checks and delivery, and [AGENTS.md](AGENTS.md) for agent guidance.
 
+## Customer accounts
+
+Run `mise run portal:demo` for the [authenticated account demo](docs/accounts-demo.md). Sign in through the local sample inbox, edit a profile as staff, invite a member and check customer access boundaries. The [account architecture](docs/accounts.md) explains permissions, stable customer identities and preserved invoice history. The demo includes no live billing, external email or production customer data. Google/Microsoft provider sign-in awaits credentialed verification.
+
 ## Invoice sandbox
 
 The retained **Invoices** screen displays a synthetic customer, service lines, dates, total and Stripe payment status. Run the [invoice sandbox demo](docs/billing-demo.md) to issue a test invoice, pay through Stripe and verify payment status survives a restart. The ordinary demo keeps billing empty and requires no credentials. [The billing architecture](docs/billing.md) explains persistence, event handling and recovery.
@@ -42,7 +46,7 @@ The [Stripe billing proof](docs/billing-proof.md) provides operator tooling for 
 
 The public core contains reusable code, documentation and synthetic examples. Keep business-specific code, branding, configuration and migration mappings in a separate private repository. Store credentials, customer records and database exports outside both repositories. Public builds and checks work without private repositories or provider credentials.
 
-Local tasks bind to loopback and serve synthetic fixtures. This slice supplies no production deployment or real-data access controls.
+Local tasks bind to loopback and serve synthetic fixtures. Real-data ingestion and production deployment remain outside the current scope.
 
 ## License
 

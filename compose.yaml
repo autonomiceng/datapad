@@ -16,5 +16,15 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+  mail:
+    image: axllent/mailpit:v1.31.4
+    profiles: [portal]
+    ports:
+      - target: 1025
+        host_ip: 127.0.0.1
+        protocol: tcp
+      - target: 8025
+        host_ip: 127.0.0.1
+        protocol: tcp
 volumes:
   database:

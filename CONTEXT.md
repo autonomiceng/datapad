@@ -16,6 +16,24 @@ A **record type** describes what an entry represents. Import review supports the
 
 **Domain**: A domain registration on a customer's account, such as `example.test`. A hostname shown on a hosting service does not by itself mean a domain registration is included.
 
+## Customer access
+
+**User**: A person who signs in. One user can belong to several customer accounts.
+
+**Customer profile**: A customer's current display name, legal name and billing contact. Changing the profile leaves previously issued invoices unchanged.
+
+**Billing contact**: The email destination chosen for a customer's billing messages. Being the billing contact does not grant account access.
+
+**Member**: A user with access to a particular customer account.
+
+**Customer administrator**: A member allowed to manage that customer's membership and invitations.
+
+**Staff role**: An explicit permission to administer accounts, manage billing or provide support across customers.
+
+**Invitation**: A time-limited offer of membership for a particular email address and customer. Access starts only after verified acceptance creates membership.
+
+**Bill-to details**: The customer identity recorded on an invoice when it is prepared. Later profile changes leave those historical details unchanged.
+
 ## Reviewing imported data
 
 **Source**: The system the records came from. Different sources can use the same record identifiers for different customers or services.

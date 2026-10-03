@@ -224,9 +224,9 @@ function ImportContext({
   );
 }
 
-export function ImportReview() {
-  const search = useSearch({ from: "/" });
-  const navigate = useNavigate({ from: "/" });
+export function ImportReview({ route }: { route: "/" | "/import-review" }) {
+  const search = useSearch({ from: route });
+  const navigate = useNavigate({ from: route });
   const [showSourceIds, setShowSourceIds] = useState(false);
   // Summary activation saves choices before loading can unmount the details.
   // Native toggle events are queued and can arrive after that unmount.

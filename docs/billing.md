@@ -1,6 +1,6 @@
 # Billing architecture and contract
 
-The retained billing slice stores explicit synthetic invoice requests, issues positive USD invoices for manual payment and displays retrieved Stripe status. It has no recurring scheduler, automatic collection, email sending, external payment recording, authentication or real customer data. [The glossary](../CONTEXT.md) defines the terms; [ADR 0007](adr/0007-invoice-ownership-and-recovery.md) records ownership and recovery decisions. [Runtime schemas](../src/billing/contract.ts), [the provider port](../src/billing/provider.ts) [public module types](../src/billing/types.ts) and [the schema](../src/billing/internal/schema.ts) are the concrete contracts.
+The retained billing slice stores explicit synthetic invoice requests, issues positive USD invoices for manual payment and displays retrieved Stripe status. It has no recurring scheduler, automatic collection, invoice email sending, external payment recording or real customer data. The separate [account composition](accounts.md) supplies authentication and current customer-scoped reads. [The glossary](../CONTEXT.md) defines the terms; [ADR 0007](adr/0007-invoice-ownership-and-recovery.md) records ownership and recovery decisions. [Runtime schemas](../src/billing/contract.ts), [the provider port](../src/billing/provider.ts) [public module types](../src/billing/types.ts) and [the schema](../src/billing/internal/schema.ts) are the concrete contracts.
 
 ## Module ownership
 
@@ -19,7 +19,9 @@ Billing imports no import-review, Stripe SDK, worker, HTTP or browser implementa
 
 ## Public module interface
 
-`createBilling({ pool, provider, deploymentKey, now? })` constructs the module. `pool` is a PostgreSQL `Pool`; `provider` implements `BillingProvider`; `deploymentKey` is a stable deployment namespace and must equal `provider.ownership.deploymentKey`. Provider account identity is verified at composition time and checked against every stored customer. The optional `now: () => Date` is a test seam; runtime uses the actual clock. No domain code knows fixture names or permanent demo dates.
+`createBilling({ pool, provider, customers, deploymentKey, now? })` constructs the module. `pool` is a PostgreSQL `Pool`; `provider` implements `BillingProvider`; `customers` is the operator-composed customer registry using the caller's transaction; `deploymentKey` is a stable deployment namespace and must equal `provider.ownership.deploymentKey`. Provider account identity is verified at composition time and checked against every stored mapping. The optional `now: () => Date` is a test seam; runtime uses the actual clock. No domain code knows fixture names or permanent demo dates.
+
+`billing_customers` preserves provider mapping IDs, original creation intent and effect receipts. Its required `customer_id` references the stable operational customer. `invoices.billing_customer_id` references that mapping; public `invoice.customer.id` identifies the operational customer. Invoice bill-to name, contact and profile version are copied when the request is first stored. A profile edit preserves the provider mapping and every historical invoice. Forward migration retains old IDs and backfills unavailable historical contact as null.
 
 `createBillingReader({ pool, deploymentKey })` returns the same read methods and `assertSyntheticData` without a provider or credentials. Ordinary demo/CI can serve an empty billing database through that reader; it must not construct a fake provider. The policy check accepts optional expected account identity; a nonempty dataset must supply it from private runtime configuration before serving. Provider IDs and account IDs are never browser configuration.
 
@@ -31,9 +33,22 @@ The factory returns these methods. Input and response types come from the runtim
 interface BillingReader {
   listInvoices(page?: Partial<BillingPagination>): Promise<InvoicesResponse>;
   getInvoice(invoiceId: string): Promise<InvoiceResponse | null>;
+  listInvoicesForCustomers(
+    customerIds: string[],
+    page?: Partial<BillingPagination>,
+  ): Promise<InvoicesResponse>;
+  getInvoiceForCustomers(
+    customerIds: string[],
+    invoiceId: string,
+  ): Promise<InvoiceResponse | null>;
+  providerProfile(
+    customerId: string,
+    profile: { legalName: string; billingEmail: string | null },
+  ): Promise<"not_linked" | "unchanged" | "pending">;
   assertSyntheticData(
     allowedRequests: InvoiceRequest[],
     accountId?: string,
+    allowedBillTo?: Array<{ legalName: string; billingEmail: string | null }>,
   ): Promise<void>;
 }
 
@@ -69,7 +84,7 @@ interface BillingCommands {
 
 ## Immutable request and database rules
 
-An origin key identifies an immutable request in one deployment. The request includes customer key/name, intended issue date, due date, USD and ordered positive lines with nullable immutable origin references. An origin reference is evidence supplied by the caller, with no service, subscription or imported-record relationship. Store the canonical request digest with the invoice. Matching identity and content returns unchanged; changed content conflicts. An existing customer key with a changed name conflicts too. Customer, invoice and all lines commit in one transaction, with unique constraints arbitrating concurrent requests.
+An origin key identifies an immutable request in one deployment. The request includes customer key/name, intended issue date, due date, USD and ordered positive lines with nullable immutable origin references. An origin reference is evidence supplied by the caller, with no service, subscription or imported-record relationship. Store the canonical request digest with the invoice. Matching identity and content returns unchanged; changed content conflicts. A new invoice origin may use the same stable customer key after a profile change. The provider mapping keeps its original create intent; `requestCustomerName` retains each invoice request's original name for digest verification; the bill-to fields snapshot the current customer profile. Reusing an existing origin with changed request content still conflicts. Customer, invoice and all lines commit in one transaction, with unique constraints arbitrating concurrent requests.
 
 Dates are actual calendar dates in UTC. Readiness is due date minus 21 calendar days. The intended issue date must be on or after readiness and before due date. A new request requires a future due date. `requestIssue` and the first provider effect refuse before both readiness and intended issue date or on/after due date. Once invoice creation has been attempted, later recovery may finish that same invoice after due date; it must never create a replacement. Customer creation alone does not authorize creating an invoice after its due date. `issuedAt` comes from confirmed provider finalization and can differ from the intended issue date. Demo composition freezes today's UTC date when first creating its stable request and chooses a due date 21 calendar days later; repeat startup reuses that persisted request.
 
