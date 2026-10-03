@@ -10,10 +10,12 @@ export default defineConfig({
         for (const id of this.getModuleIds()) {
           const normalized = id.replaceAll("\\", "/");
           if (
-            normalized.includes("/src/server/") ||
-            (normalized.includes("/src/import-review/") &&
-              !normalized.endsWith("/src/import-review/contract.ts")) ||
-            /\/node_modules\/(?:elysia|@elysia|drizzle-orm|pg|pg-pool|pg-protocol)\//.test(
+            /\/src\/(server|stripe|worker)\//.test(normalized) ||
+            (/\/src\/(import-review|billing)\//.test(normalized) &&
+              !/\/src\/(import-review|billing)\/contract\.ts$/.test(
+                normalized,
+              )) ||
+            /\/node_modules\/(?:elysia|@elysia|drizzle-orm|pg|pg-pool|pg-protocol|pg-boss|stripe)\//.test(
               normalized,
             )
           ) {

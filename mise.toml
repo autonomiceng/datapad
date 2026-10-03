@@ -1,6 +1,7 @@
 [tools]
 node = "24.19.0"
 bun = "1.4.2"
+"aqua:stripe/stripe-cli" = "1.53.0"
 "aqua:rhysd/actionlint" = "1.7.12"
 "github:editorconfig-checker/editorconfig-checker" = { version = "4.0.2", rename_exe = "editorconfig-checker" }
 shellcheck = "0.11.0"
@@ -39,7 +40,7 @@ run = "shellcheck .mise/tasks/format .mise/tasks/test/format .mise/tasks/changel
 
 [tasks.test]
 description = "Run tooling safeguards and isolated application tests"
-depends = ["test:format", "test:changelog", "test:app", "test:billing-proof"]
+depends = ["test:format", "test:changelog", "test:app", "test:billing-proof", "test:stripe"]
 
 [tasks."test:changelog"]
 description = "Test fragment policy, comparison context and read-only previews"
@@ -81,7 +82,7 @@ depends = ["deps:install"]
 run = 'if [ "${CI:-}" = "true" ]; then mise run browser:deps; fi; ./node_modules/.bin/playwright install chromium'
 
 [tasks."test:app"]
-description = "Run eight backend cases and one browser journey against an isolated database"
+description = "Run application integration and browser cases against an isolated database"
 depends = ["build", "browser:install"]
 run = "bun scripts/local.ts test"
 
@@ -111,7 +112,7 @@ depends = ["deps:install"]
 run = "./node_modules/.bin/playwright install-deps chromium"
 
 [tasks."check:architecture"]
-description = "Enforce import review module ownership and prove two forbidden imports fail"
+description = "Enforce application module ownership and verify forbidden imports fail"
 depends = ["deps:install"]
 run = "bun scripts/check-architecture.ts"
 
@@ -138,3 +139,18 @@ run = "bun scripts/billing-proof/report.ts"
 [tasks."agents:stripe-skills"]
 description = "Install current official Stripe guidance locally for Codex and Claude"
 run = "npx --yes skills@1.7.0 add https://docs.stripe.com --skill stripe-best-practices upgrade-stripe --agent codex claude-code --yes"
+
+[tasks."test:stripe"]
+description = "Verify Stripe adapter boundaries without provider credentials"
+depends = ["deps:install"]
+run = "bun test tests/stripe"
+
+[tasks."billing:demo"]
+description = "Issue a synthetic manual-payment invoice and run the sandbox app with webhook forwarding"
+depends = ["build"]
+run = "bun scripts/local.ts billing"
+
+[tasks."billing:refresh"]
+description = "Reconcile the approved synthetic invoice using explicit sandbox runtime configuration"
+depends = ["deps:install"]
+run = "bun scripts/billing-operator.ts refresh"

@@ -1,16 +1,37 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { parseArgs } from "node:util";
+import { openSandbox, availableLoopbackPort } from "./billing-sandbox";
+import { startStripeListener } from "./stripe-listener";
 
 const mode = process.argv[2];
-if (!["demo", "dev", "test", "destroy"].includes(mode ?? "")) {
-  throw new Error("Expected demo, dev, test or destroy.");
+if (!["demo", "dev", "test", "destroy", "billing"].includes(mode ?? "")) {
+  throw new Error("Expected demo, dev, test, destroy or billing.");
 }
+const { values } = parseArgs({
+  args: process.argv.slice(3),
+  options: { config: { type: "string" }, "run-dir": { type: "string" } },
+  strict: true,
+});
+if (mode === "billing" && (!values.config || !values["run-dir"]))
+  throw new Error("Billing requires --config and --run-dir outside Git.");
+if (mode !== "billing" && Object.keys(values).length)
+  throw new Error("Sandbox arguments require billing mode.");
+let sandbox: Awaited<ReturnType<typeof openSandbox>> | undefined;
+let serverPort = 0;
 const root = resolve(import.meta.dir, "..");
 const localId = createHash("sha256").update(root).digest("hex").slice(0, 12);
 const project =
-  mode === "test" ? `datapad-test-${randomUUID()}` : `datapad-${localId}`;
-const lock = resolve(root, ".scratch/local-run.lock");
+  mode === "test"
+    ? `datapad-test-${randomUUID()}`
+    : mode === "billing"
+      ? `datapad-billing-${createHash("sha256").update(resolve(values["run-dir"]!)).digest("hex").slice(0, 12)}`
+      : `datapad-${localId}`;
+const lock = resolve(
+  root,
+  mode === "billing" ? ".scratch/billing-run.lock" : ".scratch/local-run.lock",
+);
 const compose = [
   "docker",
   "compose",
@@ -82,6 +103,7 @@ function cleanup(): Promise<void> {
         }
       } finally {
         if (locked) await rm(lock, { recursive: true });
+        await sandbox?.release();
       }
     }
   })();
@@ -91,7 +113,7 @@ function cleanup(): Promise<void> {
 async function startServer(): Promise<string> {
   const child = Bun.spawn([process.execPath, "src/server/index.ts"], {
     cwd: root,
-    env: { ...env, HOST: "127.0.0.1", PORT: "0" },
+    env: { ...env, HOST: "127.0.0.1", PORT: String(serverPort) },
     stdout: "pipe",
     stderr: "inherit",
     stdin: "ignore",
@@ -182,6 +204,21 @@ try {
       "fixtures/import-review/synthetic-v1-later.json",
     ]) {
       await command([process.execPath, "scripts/import-records.ts", fixture]);
+    }
+    if (mode === "billing") {
+      sandbox = await openSandbox(values.config!, values["run-dir"]!);
+      serverPort = await availableLoopbackPort();
+      const listener = startStripeListener({
+        secretKey: sandbox.key,
+        forwardTo: `http://127.0.0.1:${serverPort}/api/billing/webhooks/stripe`,
+        configPath: resolve(sandbox.directory, "stripe-cli.toml"),
+      });
+      children.push(listener.child);
+      env.STRIPE_WEBHOOK_SECRET = await listener.ready;
+      env.STRIPE_SECRET_KEY = sandbox.key;
+      env.BILLING_DEPLOYMENT_KEY = sandbox.deploymentKey;
+      env.BILLING_ISSUE_DATE = sandbox.issueDate;
+      await command([process.execPath, "scripts/billing-operator.ts", "issue"]);
     }
     env.NODE_ENV = mode === "dev" ? "development" : "production";
     env.ASSETS_DIR = mode === "dev" ? "" : "dist";

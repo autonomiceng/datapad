@@ -13,8 +13,8 @@ module.exports = {
       severity: "error",
       from: { path: web },
       to: {
-        path: "^src/(server|import-review)/",
-        pathNot: "^src/import-review/contract\\.ts$",
+        path: "^src/(server|import-review|billing|stripe|worker)/",
+        pathNot: "^src/(import-review|billing)/contract\\.ts$",
       },
     },
     {
@@ -28,7 +28,7 @@ module.exports = {
       severity: "error",
       from: { path: web },
       to: {
-        path: "(^|/)(pg|pg-pool|pg-protocol|drizzle-orm|elysia|@elysia)(/|$)",
+        path: "(^|/)(pg|pg-pool|pg-protocol|pg-boss|stripe|drizzle-orm|elysia|@elysia)(/|$)",
       },
     },
     {
@@ -40,16 +40,16 @@ module.exports = {
     {
       name: "http-no-sql",
       severity: "error",
-      from: { path: "^src/server/app\\.ts$" },
+      from: { path: "^src/server/(app|billing-routes)\\.ts$" },
       to: {
-        path: "(src/import-review/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
+        path: "(src/(import-review|billing)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
       },
     },
     {
       name: "import-review-no-adapters",
       severity: "error",
       from: { path: "^src/import-review/" },
-      to: { path: "^(src/(server|web)/|scripts/)" },
+      to: { path: "^(src/(server|web|billing|stripe|worker)/|scripts/)" },
     },
     {
       name: "pure-no-persistence",
@@ -64,14 +64,37 @@ module.exports = {
     {
       name: "contract-browser-safe",
       severity: "error",
-      from: { path: "^src/import-review/contract\\.ts$" },
-      to: { path: "^src/", pathNot: "^src/import-review/contract\\.ts$" },
+      from: { path: "^src/(import-review|billing)/contract\\.ts$" },
+      to: {
+        path: "^src/",
+        pathNot: "^src/(import-review|billing)/contract\\.ts$",
+      },
     },
     {
       name: "contract-no-node",
       severity: "error",
-      from: { path: "^src/import-review/contract\\.ts$" },
+      from: { path: "^src/(import-review|billing)/contract\\.ts$" },
       to: { dependencyTypes: ["core"] },
+    },
+    {
+      name: "billing-private",
+      severity: "error",
+      from: { pathNot: "^(src/billing/|drizzle\\.config\\.ts$)" },
+      to: { path: "^src/billing/internal/" },
+    },
+    {
+      name: "billing-no-adapters",
+      severity: "error",
+      from: { path: "^src/billing/" },
+      to: {
+        path: "^(src/(server|web|stripe|worker|import-review)/|scripts/|node_modules/(stripe|pg-boss)/)",
+      },
+    },
+    {
+      name: "stripe-no-composition",
+      severity: "error",
+      from: { path: "^src/stripe/" },
+      to: { path: "^(src/(server|web|worker|import-review)/|scripts/)" },
     },
     {
       name: "production-no-tests",

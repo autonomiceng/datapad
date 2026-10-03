@@ -28,6 +28,7 @@ if (real.summary.violations.length) {
 for (const [fixture, rule] of [
   ["tests/architecture/web-pg.ts", "web-no-sql"],
   ["tests/architecture/web-private.ts", "import-review-private"],
+  ["tests/architecture/web-billing-private.ts", "billing-private"],
 ]) {
   const result = await inspect(fixture!);
   if (
@@ -36,8 +37,6 @@ for (const [fixture, rule] of [
     throw new Error(`Architecture safeguard did not reject ${fixture}`);
   }
 }
-console.log(
-  "Application module rules and both forbidden-import fixtures passed.",
-);
+console.log("Application module rules and forbidden-import fixtures passed.");
 
 export {};

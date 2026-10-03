@@ -40,6 +40,8 @@ Run `mise run test:app` for real PostgreSQL integration cases and the browser jo
 
 The [billing proof](docs/billing-proof.md) has credential-free checks in `test:billing-proof`, included in the PR gate. Its actual Stripe acceptance uses `billing:proof` with explicit private configuration. Serve only its generated report with `billing:serve`; keep provider evidence and credentials outside Git.
 
+The retained [invoice sandbox](docs/billing-demo.md) has database and webhook checks in `test:app` and provider boundary checks in `test:stripe`. Real hosted-payment acceptance uses `billing:demo` with explicit private sandbox configuration; it is separate from credential-free CI.
+
 Before changing import-review modules, schemas or application structure, read [the module architecture and contract guide](docs/import-review.md). Review generated SQL from `mise run db:generate` and apply it explicitly with `mise run db:migrate`. Preserve migrations once released or depended on by real installations. A reviewed change may replace an unmerged baseline used only by disposable synthetic demos, with an explicit demo reset. Disposable demo reset is a separate operation.
 
 ## Deliver a change

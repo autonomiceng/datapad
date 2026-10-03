@@ -7,5 +7,5 @@ export function createDatabase(url: string) {
     connectionTimeoutMillis: 3000,
   });
   const db = drizzle(pool);
-  return { db, close: () => pool.end() };
+  return { pool, db, close: () => pool.end() };
 }

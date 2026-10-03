@@ -3,6 +3,7 @@ import { staticPlugin } from "@elysia/static";
 import { Type } from "@sinclair/typebox";
 import { Elysia, t } from "elysia";
 import { join } from "node:path";
+import { billingRoutes, type BillingHttp } from "./billing-routes";
 import {
   CustomerObservationSchema,
   CustomerResponseSchema,
@@ -55,9 +56,11 @@ const paginationQuery = Type.Object(
 export function createApp({
   importReview,
   assetsDir,
+  billing,
 }: {
   importReview: ImportReviewReader;
   assetsDir?: string;
+  billing?: BillingHttp;
 }) {
   const app = new Elysia({ normalize: false })
     .onRequest(({ request, set }) => {
@@ -65,9 +68,13 @@ export function createApp({
       if (path === "/api" || path.startsWith("/api/"))
         set.headers["cache-control"] = "no-store";
     })
-    .onError(({ code, status }) => {
+    .onError(({ code, status, request }) => {
       if (code === "VALIDATION" || code === "PARSE")
-        return status(422, { code: "invalid_query" });
+        return status(422, {
+          code: new URL(request.url).pathname.startsWith("/api/billing/")
+            ? "invalid_request"
+            : "invalid_query",
+        });
       if (code === "NOT_FOUND") return status(404, { code: "not_found" });
       return status(503, { code: "unavailable" });
     })
@@ -76,7 +83,7 @@ export function createApp({
         path: "/api/openapi",
         provider: null,
         documentation: {
-          info: { title: "Datapad import review API", version: "1.0.0" },
+          info: { title: "Datapad API", version: "1.0.0" },
         },
       }),
     )
@@ -167,6 +174,8 @@ export function createApp({
         },
       },
     );
+
+  app.use(billingRoutes(billing));
 
   if (assetsDir) {
     app.use(

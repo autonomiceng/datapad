@@ -2,7 +2,7 @@
 
 An open-source customer support and billing portal for service providers. The first application slice is **Import review**: inspect sample customers, services, add-ons, domains and data issues before planning a migration. The [data model](docs/data-model.md) shows import relationships and timestamps; the accepted [service model](docs/service-model.md) describes future packages and independent components. Page Help explains the record types and import terms; the [glossary](CONTEXT.md) keeps that language consistent for contributors and agents.
 
-An import is a saved copy of records from one source. Billing and services remain in the original system. This slice supplies no billing, provisioning, source connectivity or sign-in.
+An import is a saved copy of records from one source. Billing and services remain in the original system. Import review supplies no provisioning, source connectivity or sign-in. The separate invoice sandbox demonstrates manual payment with synthetic customers.
 
 ## Start locally
 
@@ -29,6 +29,10 @@ Tool versions and tasks live in `mise.toml`; dependencies live in `package.json`
 Run `mise run test` for application tests and tooling safeguards. On Linux, `mise run browser:deps` installs Chromium system libraries with administrator privileges. Run `mise run pr:check` before opening or updating a PR. The local gate requires a fetched `origin/main` and a new staged or committed changelog fragment; clean `main` intentionally fails that contribution requirement.
 
 Format intentionally edited files explicitly, for example `mise run format -- README.md`. Every PR adds a benefit-focused release-note fragment. Read [CONTRIBUTING.md](CONTRIBUTING.md) for commands, checks and delivery, and [AGENTS.md](AGENTS.md) for agent guidance.
+
+## Invoice sandbox
+
+The retained **Invoices** screen displays a synthetic customer, service lines, dates, total and Stripe payment status. Run the [invoice sandbox demo](docs/billing-demo.md) to issue a test invoice, pay through Stripe and verify payment status survives a restart. The ordinary demo keeps billing empty and requires no credentials. [The billing architecture](docs/billing.md) explains persistence, event handling and recovery.
 
 ## Billing experiment
 
