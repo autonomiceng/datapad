@@ -230,6 +230,11 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
     "/api/customers/{customerId}/invoices/{invoiceId}/preparation",
     "/api/customers/{customerId}/invoices/{invoiceId}/issue",
     "/api/customers/{customerId}/invoices/{invoiceId}/check",
+    "/api/customers/{customerId}/subscription-options",
+    "/api/customers/{customerId}/subscriptions",
+    "/api/customers/{customerId}/subscriptions/{subscriptionId}",
+    "/api/customers/{customerId}/subscription-boundaries",
+    "/api/customers/{customerId}/billing-forecast",
   ]);
   expect(contract.paths[billingPaths[0]].get.operationId).toBe("listInvoices");
   expect(contract.paths[billingPaths[1]].get.operationId).toBe("getInvoice");

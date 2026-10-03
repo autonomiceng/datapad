@@ -81,7 +81,7 @@ _Avoid_: Exception, readiness score
 
 **Package**: An offered combination of services, limits and pricing.
 
-**Subscription**: A customer's recurring agreement for an offering.
+**Subscription**: A customer's recurring billing agreement. It can cover a service, an add-on or work such as consulting without a hosted service.
 
 **Entitlement**: A capability or allowance included in a customer's purchase or subscription. It can remain available while the customer chooses not to use it.
 
@@ -108,6 +108,22 @@ _Avoid_: Exception, readiness score
 **Hosting account**: A provider container for hosted resources. It may supply several components under one or more commercial agreements.
 
 ## Invoices and payment
+
+**Service period**: The time covered by a recurring charge. Its end date is exclusive: a period from January 1 to February 1 covers January.
+
+**Billing forecast**: A preview of upcoming charges grouped by due date and payment arrangement. It does not create an invoice or establish an account balance.
+
+**First unbilled period**: The first service period this portal may bill. Earlier periods remain the responsibility of the previous billing system.
+
+**Calendar anchor**: The original date used to calculate recurring dates. A January 31 monthly anchor produces February 28 and then March 31. Service periods and payment due dates have separate anchors.
+
+**Payment arrangement**: Whether a charge is intended for manual payment or automatic payment. An automatic arrangement still requires payment consent before a payment can be attempted.
+
+**No charge**: A billing group whose eligible lines total zero. A forecast can change before it is finalized.
+
+**Billing paused**: Selected future service periods are excluded from billing. They are not charged later when billing resumes. This does not suspend the service.
+
+**Effective period**: The selected future service period when an agreement change starts applying. Earlier periods keep their existing terms.
 
 **Invoice request**: An instruction to prepare one invoice for a customer with stated lines, currency, issue date and due date. Repeating the same request does not create another invoice.
 

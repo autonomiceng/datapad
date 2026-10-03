@@ -34,9 +34,11 @@ Format intentionally edited files explicitly, for example `mise run format -- RE
 
 Run `mise run portal:demo` for the [authenticated account demo](docs/accounts-demo.md). Sign in through the local sample inbox, edit a profile as staff, invite a member and check customer access boundaries. Open Services to inspect hosting, registrations, websites and aliases; staff can record independent web/email/DNS preferences and attach or detach add-ons. These operations change portal records without sending provider commands. See the [services guide](docs/services.md). The [account architecture](docs/accounts.md) explains permissions, stable customer identities and preserved invoice history. The demo includes no live billing, external email or production customer data. Google/Microsoft provider sign-in awaits credentialed verification.
 
+In a customer account, open **Subscriptions** to create a recurring agreement and review its billing forecast. Staff can select the first unbilled period, schedule future prices, pause billing and decide cancellation requests. Customers can read their own agreements and forecasts. The [subscriptions guide](docs/subscriptions.md) explains calendar anchors, free periods and grouping. Forecasts work without Stripe credentials and do not issue invoices.
+
 ## Invoice sandbox
 
-The retained **Invoices** screen displays a synthetic customer, service lines, dates, total and Stripe payment status. Run the [invoice sandbox demo](docs/billing-demo.md) to issue a test invoice, pay through Stripe and verify payment status survives a restart. The ordinary demo keeps billing empty and requires no credentials. [The billing architecture](docs/billing.md) explains persistence, event handling and recovery.
+The retained **Invoices** screen displays a synthetic customer, service lines, dates, total and Stripe payment status. Run the [invoice sandbox demo](docs/billing-demo.md) to issue a test invoice, pay through Stripe and verify payment status survives a restart. The ordinary demo keeps invoices empty and requires no credentials. [The billing architecture](docs/billing.md) explains persistence, event handling and recovery.
 
 ## Billing experiment
 

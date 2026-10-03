@@ -19,6 +19,11 @@ import type {
   ReviewReason,
 } from "../contract";
 import { customers } from "../../customers/schema";
+export {
+  billingSubscriptions,
+  billingSubscriptionTerms,
+  billingPeriods,
+} from "./subscriptions-schema";
 
 const instant = (name: string) =>
   timestamp(name, { withTimezone: true, mode: "string" });

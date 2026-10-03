@@ -73,6 +73,8 @@ export function createAuthentication(options: AuthenticationOptions): {
       magicLink({
         disableSignUp: true,
         storeToken: "hashed",
+        // The isolated demo shares one local address across sample accounts.
+        rateLimit: { window: 60, max: 30 },
         sendMagicLink: async ({ email, url }) => {
           if (allowed.has(email.toLowerCase()))
             await options.sendMagicLink({ email, url });

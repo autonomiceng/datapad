@@ -1,10 +1,23 @@
 import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import type { AuditWriter } from "./types";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { auditEntries } from "./internal/schema";
 export class AuditRequestConflict extends Error {}
+async function assertRequestUnused(tx: NodePgDatabase, requestId: string) {
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${`audit-request:${requestId}`},0))`,
+  );
+  const [existing] = await tx
+    .select({ id: auditEntries.id })
+    .from(auditEntries)
+    .where(eq(auditEntries.requestId, requestId));
+  if (existing)
+    throw new AuditRequestConflict("Mutation request identity already used");
+}
 export function createAuditWriter(): AuditWriter {
   return {
+    assertRequestUnused,
     async getServicesBootstrap(tx, bootstrapKey) {
       const [entry] = await tx
         .select({ details: auditEntries.details })
@@ -30,17 +43,7 @@ export function createAuditWriter(): AuditWriter {
       });
     },
     async append(tx, entry) {
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(hashtextextended(${`audit-request:${entry.requestId}`},0))`,
-      );
-      const [existing] = await tx
-        .select({ id: auditEntries.id })
-        .from(auditEntries)
-        .where(eq(auditEntries.requestId, entry.requestId));
-      if (existing)
-        throw new AuditRequestConflict(
-          "Mutation request identity already used",
-        );
+      await assertRequestUnused(tx, entry.requestId);
       await tx.insert(auditEntries).values({
         id: randomUUID(),
         requestId: entry.requestId,

@@ -87,11 +87,31 @@ export type AuditEntry = AuditEntryIdentity &
         changedFields: Array<"issueRequestedAt">;
       }
     | {
+        action: "subscription.created";
+        changedFields: Array<
+          | "serviceId"
+          | "anchors"
+          | "firstUnbilledPeriodIndex"
+          | "terms"
+          | "calendarPolicy"
+        >;
+      }
+    | {
+        action: "subscription.changed";
+        changedFields: Array<"terms" | "billingState" | "cancellation">;
+      }
+    | {
+        action: "forecast.materialized";
+        changedFields: Array<"periods">;
+      }
+    | {
         action: "service.addon.attached";
         changedFields: Array<"attachedServiceId">;
       }
   );
 export interface AuditWriter {
+  /** Locks and checks an identity without reserving it for a no-op. */
+  assertRequestUnused(tx: NodePgDatabase, requestId: string): Promise<void>;
   getServicesBootstrap(
     tx: NodePgDatabase,
     bootstrapKey: string,
