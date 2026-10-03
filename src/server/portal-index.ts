@@ -20,6 +20,7 @@ try {
     importReview,
     billing: runtime.billing,
     invoiceWorkflow: runtime.invoiceWorkflow,
+    subscriptions: runtime.subscriptions,
     services: runtime.services,
     accounts: runtime.accounts,
     assetsDir: process.env.ASSETS_DIR

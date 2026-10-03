@@ -8006,6 +8006,4093 @@
           }
         }
       }
+    },
+    "/api/customers/{customerId}/subscription-options": {
+      "get": {
+        "operationId": "getSubscriptionOptions",
+        "summary": "Read subscription choices",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "cancellationReasons",
+                    "choices",
+                    "calendar",
+                    "periodAnchorDate",
+                    "dueAnchorDate"
+                  ],
+                  "properties": {
+                    "cancellationReasons": {
+                      "maxItems": 10,
+                      "uniqueItems": true,
+                      "type": "array",
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 256,
+                        "type": "string"
+                      }
+                    },
+                    "choices": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "serviceId",
+                          "label",
+                          "amountMinor",
+                          "paymentArrangement",
+                          "intervalMonths"
+                        ],
+                        "properties": {
+                          "serviceId": {
+                            "format": "uuid",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "label": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "minimum": 0,
+                            "maximum": 99999999,
+                            "type": "integer"
+                          },
+                          "paymentArrangement": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "automatic"
+                            ]
+                          },
+                          "intervalMonths": {
+                            "type": "string",
+                            "enum": [
+                              1,
+                              3,
+                              6,
+                              12,
+                              24,
+                              36
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "calendar": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "timeZone",
+                        "issueHour",
+                        "chargeHour"
+                      ],
+                      "properties": {
+                        "timeZone": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "issueHour": {
+                          "minimum": 0,
+                          "maximum": 23,
+                          "type": "integer"
+                        },
+                        "chargeHour": {
+                          "minimum": 0,
+                          "maximum": 23,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "periodAnchorDate": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "dueAnchorDate": {
+                      "format": "date",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/subscriptions": {
+      "get": {
+        "operationId": "listCustomerSubscriptions",
+        "summary": "List customer agreements",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer",
+              "default": 50,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 100,
+                  "type": "integer",
+                  "default": 50
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "maximum": 1000000,
+              "type": "integer",
+              "default": 0,
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 1000000,
+                  "type": "integer",
+                  "default": 0
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "subscriptions",
+                    "total",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "subscriptions": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "customerId",
+                          "serviceId",
+                          "version",
+                          "periodAnchorDate",
+                          "dueAnchorDate",
+                          "intervalMonths",
+                          "firstUnbilledPeriodIndex",
+                          "calendar",
+                          "label",
+                          "amountMinor",
+                          "paymentArrangement",
+                          "billingState",
+                          "nextRenewal",
+                          "cancellation"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "customerId": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "serviceId": {
+                            "format": "uuid",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "maximum": 2147483647,
+                            "type": "integer"
+                          },
+                          "periodAnchorDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "dueAnchorDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "intervalMonths": {
+                            "type": "string",
+                            "enum": [
+                              1,
+                              3,
+                              6,
+                              12,
+                              24,
+                              36
+                            ]
+                          },
+                          "firstUnbilledPeriodIndex": {
+                            "minimum": 0,
+                            "maximum": 120000,
+                            "type": "integer"
+                          },
+                          "calendar": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "timeZone",
+                              "issueHour",
+                              "chargeHour"
+                            ],
+                            "properties": {
+                              "timeZone": {
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "type": "string"
+                              },
+                              "issueHour": {
+                                "minimum": 0,
+                                "maximum": 23,
+                                "type": "integer"
+                              },
+                              "chargeHour": {
+                                "minimum": 0,
+                                "maximum": 23,
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "label": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "minimum": -99999999,
+                            "maximum": 99999999,
+                            "type": "integer"
+                          },
+                          "paymentArrangement": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "automatic"
+                            ]
+                          },
+                          "billingState": {
+                            "type": "string",
+                            "enum": [
+                              "billable",
+                              "paused",
+                              "cancelled"
+                            ]
+                          },
+                          "nextRenewal": {
+                            "format": "date",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "cancellation": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "status",
+                              "reason",
+                              "effectivePeriodIndex"
+                            ],
+                            "properties": {
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "requested",
+                                  "declined",
+                                  "approved"
+                                ]
+                              },
+                              "reason": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "effectivePeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "minimum": 0,
+                      "maximum": 1000000,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCustomerSubscription",
+        "summary": "Record a recurring agreement",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "serviceId",
+                  "periodAnchorDate",
+                  "dueAnchorDate",
+                  "intervalMonths",
+                  "firstUnbilledPeriodIndex",
+                  "label",
+                  "amountMinor",
+                  "paymentArrangement"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "serviceId": {
+                    "format": "uuid",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "periodAnchorDate": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "dueAnchorDate": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "intervalMonths": {
+                    "type": "string",
+                    "enum": [
+                      1,
+                      3,
+                      6,
+                      12,
+                      24,
+                      36
+                    ]
+                  },
+                  "firstUnbilledPeriodIndex": {
+                    "minimum": 0,
+                    "maximum": 120000,
+                    "type": "integer"
+                  },
+                  "label": {
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "type": "string"
+                  },
+                  "amountMinor": {
+                    "minimum": 0,
+                    "maximum": 99999999,
+                    "type": "integer"
+                  },
+                  "paymentArrangement": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "automatic"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "subscription",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "subscription": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "customerId",
+                        "serviceId",
+                        "version",
+                        "periodAnchorDate",
+                        "dueAnchorDate",
+                        "intervalMonths",
+                        "firstUnbilledPeriodIndex",
+                        "calendar",
+                        "label",
+                        "amountMinor",
+                        "paymentArrangement",
+                        "billingState",
+                        "nextRenewal",
+                        "cancellation",
+                        "canManage",
+                        "firstUnbilled",
+                        "upcomingChanges",
+                        "changesTruncated"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "customerId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "serviceId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "periodAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "dueAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "intervalMonths": {
+                          "type": "string",
+                          "enum": [
+                            1,
+                            3,
+                            6,
+                            12,
+                            24,
+                            36
+                          ]
+                        },
+                        "firstUnbilledPeriodIndex": {
+                          "minimum": 0,
+                          "maximum": 120000,
+                          "type": "integer"
+                        },
+                        "calendar": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "timeZone",
+                            "issueHour",
+                            "chargeHour"
+                          ],
+                          "properties": {
+                            "timeZone": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            },
+                            "issueHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            },
+                            "chargeHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "amountMinor": {
+                          "minimum": -99999999,
+                          "maximum": 99999999,
+                          "type": "integer"
+                        },
+                        "paymentArrangement": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "automatic"
+                          ]
+                        },
+                        "billingState": {
+                          "type": "string",
+                          "enum": [
+                            "billable",
+                            "paused",
+                            "cancelled"
+                          ]
+                        },
+                        "nextRenewal": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "cancellation": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "reason",
+                            "effectivePeriodIndex"
+                          ],
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "requested",
+                                "declined",
+                                "approved"
+                              ]
+                            },
+                            "reason": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "effectivePeriodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "firstUnbilled": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "periodIndex",
+                            "periodStart",
+                            "periodEnd",
+                            "dueDate"
+                          ],
+                          "properties": {
+                            "periodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": "integer"
+                            },
+                            "periodStart": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "periodEnd": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "dueDate": {
+                              "format": "date",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "upcomingChanges": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "label",
+                                  "amountMinor",
+                                  "paymentArrangement"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "commercial",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "label": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  },
+                                  "amountMinor": {
+                                    "minimum": -99999999,
+                                    "maximum": 99999999,
+                                    "type": "integer"
+                                  },
+                                  "paymentArrangement": {
+                                    "type": "string",
+                                    "enum": [
+                                      "manual",
+                                      "automatic"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "billingState"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "state",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "billingState": {
+                                    "type": "string",
+                                    "enum": [
+                                      "billable",
+                                      "paused",
+                                      "cancelled"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "changesTruncated": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "created",
+                        "unchanged"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Response for status 201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "subscription",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "subscription": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "customerId",
+                        "serviceId",
+                        "version",
+                        "periodAnchorDate",
+                        "dueAnchorDate",
+                        "intervalMonths",
+                        "firstUnbilledPeriodIndex",
+                        "calendar",
+                        "label",
+                        "amountMinor",
+                        "paymentArrangement",
+                        "billingState",
+                        "nextRenewal",
+                        "cancellation",
+                        "canManage",
+                        "firstUnbilled",
+                        "upcomingChanges",
+                        "changesTruncated"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "customerId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "serviceId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "periodAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "dueAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "intervalMonths": {
+                          "type": "string",
+                          "enum": [
+                            1,
+                            3,
+                            6,
+                            12,
+                            24,
+                            36
+                          ]
+                        },
+                        "firstUnbilledPeriodIndex": {
+                          "minimum": 0,
+                          "maximum": 120000,
+                          "type": "integer"
+                        },
+                        "calendar": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "timeZone",
+                            "issueHour",
+                            "chargeHour"
+                          ],
+                          "properties": {
+                            "timeZone": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            },
+                            "issueHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            },
+                            "chargeHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "amountMinor": {
+                          "minimum": -99999999,
+                          "maximum": 99999999,
+                          "type": "integer"
+                        },
+                        "paymentArrangement": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "automatic"
+                          ]
+                        },
+                        "billingState": {
+                          "type": "string",
+                          "enum": [
+                            "billable",
+                            "paused",
+                            "cancelled"
+                          ]
+                        },
+                        "nextRenewal": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "cancellation": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "reason",
+                            "effectivePeriodIndex"
+                          ],
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "requested",
+                                "declined",
+                                "approved"
+                              ]
+                            },
+                            "reason": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "effectivePeriodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "firstUnbilled": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "periodIndex",
+                            "periodStart",
+                            "periodEnd",
+                            "dueDate"
+                          ],
+                          "properties": {
+                            "periodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": "integer"
+                            },
+                            "periodStart": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "periodEnd": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "dueDate": {
+                              "format": "date",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "upcomingChanges": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "label",
+                                  "amountMinor",
+                                  "paymentArrangement"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "commercial",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "label": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  },
+                                  "amountMinor": {
+                                    "minimum": -99999999,
+                                    "maximum": 99999999,
+                                    "type": "integer"
+                                  },
+                                  "paymentArrangement": {
+                                    "type": "string",
+                                    "enum": [
+                                      "manual",
+                                      "automatic"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "billingState"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "state",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "billingState": {
+                                    "type": "string",
+                                    "enum": [
+                                      "billable",
+                                      "paused",
+                                      "cancelled"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "changesTruncated": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "created",
+                        "unchanged"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/subscriptions/{subscriptionId}": {
+      "get": {
+        "operationId": "getCustomerSubscription",
+        "summary": "Read a recurring agreement",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "subscription"
+                  ],
+                  "properties": {
+                    "subscription": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "customerId",
+                        "serviceId",
+                        "version",
+                        "periodAnchorDate",
+                        "dueAnchorDate",
+                        "intervalMonths",
+                        "firstUnbilledPeriodIndex",
+                        "calendar",
+                        "label",
+                        "amountMinor",
+                        "paymentArrangement",
+                        "billingState",
+                        "nextRenewal",
+                        "cancellation",
+                        "canManage",
+                        "firstUnbilled",
+                        "upcomingChanges",
+                        "changesTruncated"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "customerId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "serviceId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "periodAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "dueAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "intervalMonths": {
+                          "type": "string",
+                          "enum": [
+                            1,
+                            3,
+                            6,
+                            12,
+                            24,
+                            36
+                          ]
+                        },
+                        "firstUnbilledPeriodIndex": {
+                          "minimum": 0,
+                          "maximum": 120000,
+                          "type": "integer"
+                        },
+                        "calendar": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "timeZone",
+                            "issueHour",
+                            "chargeHour"
+                          ],
+                          "properties": {
+                            "timeZone": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            },
+                            "issueHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            },
+                            "chargeHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "amountMinor": {
+                          "minimum": -99999999,
+                          "maximum": 99999999,
+                          "type": "integer"
+                        },
+                        "paymentArrangement": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "automatic"
+                          ]
+                        },
+                        "billingState": {
+                          "type": "string",
+                          "enum": [
+                            "billable",
+                            "paused",
+                            "cancelled"
+                          ]
+                        },
+                        "nextRenewal": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "cancellation": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "reason",
+                            "effectivePeriodIndex"
+                          ],
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "requested",
+                                "declined",
+                                "approved"
+                              ]
+                            },
+                            "reason": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "effectivePeriodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "firstUnbilled": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "periodIndex",
+                            "periodStart",
+                            "periodEnd",
+                            "dueDate"
+                          ],
+                          "properties": {
+                            "periodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": "integer"
+                            },
+                            "periodStart": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "periodEnd": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "dueDate": {
+                              "format": "date",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "upcomingChanges": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "label",
+                                  "amountMinor",
+                                  "paymentArrangement"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "commercial",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "label": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  },
+                                  "amountMinor": {
+                                    "minimum": -99999999,
+                                    "maximum": 99999999,
+                                    "type": "integer"
+                                  },
+                                  "paymentArrangement": {
+                                    "type": "string",
+                                    "enum": [
+                                      "manual",
+                                      "automatic"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "billingState"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "state",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "billingState": {
+                                    "type": "string",
+                                    "enum": [
+                                      "billable",
+                                      "paused",
+                                      "cancelled"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "changesTruncated": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "changeCustomerSubscription",
+        "summary": "Record future agreement terms or cancellation",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "expectedVersion",
+                  "change"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "type": "integer"
+                  },
+                  "change": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "effectivePeriodIndex",
+                          "label",
+                          "amountMinor",
+                          "paymentArrangement"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "terms",
+                            "type": "string"
+                          },
+                          "effectivePeriodIndex": {
+                            "minimum": 0,
+                            "maximum": 120000,
+                            "type": "integer"
+                          },
+                          "label": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "minimum": 0,
+                            "maximum": 99999999,
+                            "type": "integer"
+                          },
+                          "paymentArrangement": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "automatic"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "effectivePeriodIndex"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "pause_billing",
+                            "type": "string"
+                          },
+                          "effectivePeriodIndex": {
+                            "minimum": 0,
+                            "maximum": 120000,
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "effectivePeriodIndex"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "resume_billing",
+                            "type": "string"
+                          },
+                          "effectivePeriodIndex": {
+                            "minimum": 0,
+                            "maximum": 120000,
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "reason"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "request_cancellation",
+                            "type": "string"
+                          },
+                          "reason": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "decision",
+                          "reason"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "decide_cancellation",
+                            "type": "string"
+                          },
+                          "decision": {
+                            "const": "decline",
+                            "type": "string"
+                          },
+                          "reason": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "decision",
+                          "reason",
+                          "effectivePeriodIndex"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "decide_cancellation",
+                            "type": "string"
+                          },
+                          "decision": {
+                            "const": "approve",
+                            "type": "string"
+                          },
+                          "reason": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "effectivePeriodIndex": {
+                            "minimum": 0,
+                            "maximum": 120000,
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "subscription",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "subscription": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "customerId",
+                        "serviceId",
+                        "version",
+                        "periodAnchorDate",
+                        "dueAnchorDate",
+                        "intervalMonths",
+                        "firstUnbilledPeriodIndex",
+                        "calendar",
+                        "label",
+                        "amountMinor",
+                        "paymentArrangement",
+                        "billingState",
+                        "nextRenewal",
+                        "cancellation",
+                        "canManage",
+                        "firstUnbilled",
+                        "upcomingChanges",
+                        "changesTruncated"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "customerId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "serviceId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "periodAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "dueAnchorDate": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "intervalMonths": {
+                          "type": "string",
+                          "enum": [
+                            1,
+                            3,
+                            6,
+                            12,
+                            24,
+                            36
+                          ]
+                        },
+                        "firstUnbilledPeriodIndex": {
+                          "minimum": 0,
+                          "maximum": 120000,
+                          "type": "integer"
+                        },
+                        "calendar": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "timeZone",
+                            "issueHour",
+                            "chargeHour"
+                          ],
+                          "properties": {
+                            "timeZone": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            },
+                            "issueHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            },
+                            "chargeHour": {
+                              "minimum": 0,
+                              "maximum": 23,
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        "amountMinor": {
+                          "minimum": -99999999,
+                          "maximum": 99999999,
+                          "type": "integer"
+                        },
+                        "paymentArrangement": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "automatic"
+                          ]
+                        },
+                        "billingState": {
+                          "type": "string",
+                          "enum": [
+                            "billable",
+                            "paused",
+                            "cancelled"
+                          ]
+                        },
+                        "nextRenewal": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "cancellation": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "reason",
+                            "effectivePeriodIndex"
+                          ],
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "requested",
+                                "declined",
+                                "approved"
+                              ]
+                            },
+                            "reason": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "effectivePeriodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            }
+                          }
+                        },
+                        "canManage": {
+                          "type": "boolean"
+                        },
+                        "firstUnbilled": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "periodIndex",
+                            "periodStart",
+                            "periodEnd",
+                            "dueDate"
+                          ],
+                          "properties": {
+                            "periodIndex": {
+                              "minimum": 0,
+                              "maximum": 120000,
+                              "type": "integer"
+                            },
+                            "periodStart": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "periodEnd": {
+                              "format": "date",
+                              "type": "string"
+                            },
+                            "dueDate": {
+                              "format": "date",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "upcomingChanges": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "label",
+                                  "amountMinor",
+                                  "paymentArrangement"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "commercial",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "label": {
+                                    "minLength": 1,
+                                    "maxLength": 256,
+                                    "type": "string"
+                                  },
+                                  "amountMinor": {
+                                    "minimum": -99999999,
+                                    "maximum": 99999999,
+                                    "type": "integer"
+                                  },
+                                  "paymentArrangement": {
+                                    "type": "string",
+                                    "enum": [
+                                      "manual",
+                                      "automatic"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "effectivePeriodIndex",
+                                  "billingState"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "const": "state",
+                                    "type": "string"
+                                  },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "maximum": 2147483647,
+                                    "type": "integer"
+                                  },
+                                  "effectivePeriodIndex": {
+                                    "minimum": 0,
+                                    "maximum": 120000,
+                                    "type": "integer"
+                                  },
+                                  "billingState": {
+                                    "type": "string",
+                                    "enum": [
+                                      "billable",
+                                      "paused",
+                                      "cancelled"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "changesTruncated": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "changed",
+                        "unchanged"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/subscription-boundaries": {
+      "get": {
+        "operationId": "getSubscriptionBoundaries",
+        "summary": "Read service period and due date choices",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodAnchorDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueAnchorDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "intervalMonths",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "numeric",
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "fromDueDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "throughDueDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "boundaries",
+                    "calendar"
+                  ],
+                  "properties": {
+                    "boundaries": {
+                      "maxItems": 38,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "periodIndex",
+                          "periodStart",
+                          "periodEnd",
+                          "dueDate"
+                        ],
+                        "properties": {
+                          "periodIndex": {
+                            "minimum": 0,
+                            "maximum": 120000,
+                            "type": "integer"
+                          },
+                          "periodStart": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "periodEnd": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "dueDate": {
+                            "format": "date",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "calendar": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "timeZone",
+                        "issueHour",
+                        "chargeHour"
+                      ],
+                      "properties": {
+                        "timeZone": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "issueHour": {
+                          "minimum": 0,
+                          "maximum": 23,
+                          "type": "integer"
+                        },
+                        "chargeHour": {
+                          "minimum": 0,
+                          "maximum": 23,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/billing-forecast": {
+      "get": {
+        "operationId": "getCustomerBillingForecast",
+        "summary": "Read the bounded billing forecast",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDueDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "throughDueDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer",
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 1,
+                  "maximum": 100,
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "maximum": 1000000,
+              "type": "integer",
+              "anyOf": [
+                {
+                  "format": "integer",
+                  "default": 0,
+                  "type": "string"
+                },
+                {
+                  "minimum": 0,
+                  "maximum": 1000000,
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "groups",
+                    "complete",
+                    "total",
+                    "fromDueDate",
+                    "throughDueDate",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "groups": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "dueDate",
+                          "currency",
+                          "paymentArrangement",
+                          "totalMinor",
+                          "outcome",
+                          "reviewReasons",
+                          "periods"
+                        ],
+                        "properties": {
+                          "dueDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "currency": {
+                            "const": "USD",
+                            "type": "string"
+                          },
+                          "paymentArrangement": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "automatic"
+                            ]
+                          },
+                          "totalMinor": {
+                            "minimum": -370000000000,
+                            "maximum": 370000000000,
+                            "type": "integer"
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "billable",
+                              "no_charge",
+                              "needs_review",
+                              "inactive"
+                            ]
+                          },
+                          "reviewReasons": {
+                            "maxItems": 8,
+                            "uniqueItems": true,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "not_materialized",
+                                "negative_amount",
+                                "unsupported_total",
+                                "too_many_lines",
+                                "past_due",
+                                "invalid_local_time",
+                                "calendar_mismatch",
+                                "overlapping_agreement"
+                              ]
+                            }
+                          },
+                          "periods": {
+                            "maxItems": 3700,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "subscriptionId",
+                                "serviceId",
+                                "periodIndex",
+                                "periodStart",
+                                "periodEnd",
+                                "dueDate",
+                                "commercialRevision",
+                                "stateRevision",
+                                "label",
+                                "amountMinor",
+                                "paymentArrangement",
+                                "billingState",
+                                "calendar",
+                                "readinessDate",
+                                "issueAt",
+                                "dueEndAt",
+                                "chargeAt",
+                                "sealedAt"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "format": "uuid",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "subscriptionId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "serviceId": {
+                                  "format": "uuid",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "periodIndex": {
+                                  "minimum": 0,
+                                  "maximum": 120000,
+                                  "type": "integer"
+                                },
+                                "periodStart": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "periodEnd": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "dueDate": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "commercialRevision": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "stateRevision": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "label": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "type": "string"
+                                },
+                                "amountMinor": {
+                                  "minimum": -99999999,
+                                  "maximum": 99999999,
+                                  "type": "integer"
+                                },
+                                "paymentArrangement": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "automatic"
+                                  ]
+                                },
+                                "billingState": {
+                                  "type": "string",
+                                  "enum": [
+                                    "billable",
+                                    "paused",
+                                    "cancelled"
+                                  ]
+                                },
+                                "calendar": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "timeZone",
+                                    "issueHour",
+                                    "chargeHour"
+                                  ],
+                                  "properties": {
+                                    "timeZone": {
+                                      "minLength": 1,
+                                      "maxLength": 128,
+                                      "type": "string"
+                                    },
+                                    "issueHour": {
+                                      "minimum": 0,
+                                      "maximum": 23,
+                                      "type": "integer"
+                                    },
+                                    "chargeHour": {
+                                      "minimum": 0,
+                                      "maximum": 23,
+                                      "type": "integer"
+                                    }
+                                  }
+                                },
+                                "readinessDate": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "issueAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "dueEndAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "chargeAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "sealedAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "complete": {
+                      "type": "boolean"
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "fromDueDate": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "throughDueDate": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "minimum": 0,
+                      "maximum": 1000000,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "materializeCustomerBillingForecast",
+        "summary": "Generate durable forecast periods without issuing invoices",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "fromDueDate",
+                  "throughDueDate"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "fromDueDate": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "throughDueDate": {
+                    "format": "date",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "groups",
+                    "complete",
+                    "total",
+                    "fromDueDate",
+                    "throughDueDate",
+                    "limit",
+                    "offset",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "groups": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "dueDate",
+                          "currency",
+                          "paymentArrangement",
+                          "totalMinor",
+                          "outcome",
+                          "reviewReasons",
+                          "periods"
+                        ],
+                        "properties": {
+                          "dueDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "currency": {
+                            "const": "USD",
+                            "type": "string"
+                          },
+                          "paymentArrangement": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "automatic"
+                            ]
+                          },
+                          "totalMinor": {
+                            "minimum": -370000000000,
+                            "maximum": 370000000000,
+                            "type": "integer"
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "billable",
+                              "no_charge",
+                              "needs_review",
+                              "inactive"
+                            ]
+                          },
+                          "reviewReasons": {
+                            "maxItems": 8,
+                            "uniqueItems": true,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "not_materialized",
+                                "negative_amount",
+                                "unsupported_total",
+                                "too_many_lines",
+                                "past_due",
+                                "invalid_local_time",
+                                "calendar_mismatch",
+                                "overlapping_agreement"
+                              ]
+                            }
+                          },
+                          "periods": {
+                            "maxItems": 3700,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "subscriptionId",
+                                "serviceId",
+                                "periodIndex",
+                                "periodStart",
+                                "periodEnd",
+                                "dueDate",
+                                "commercialRevision",
+                                "stateRevision",
+                                "label",
+                                "amountMinor",
+                                "paymentArrangement",
+                                "billingState",
+                                "calendar",
+                                "readinessDate",
+                                "issueAt",
+                                "dueEndAt",
+                                "chargeAt",
+                                "sealedAt"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "format": "uuid",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "subscriptionId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "serviceId": {
+                                  "format": "uuid",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "periodIndex": {
+                                  "minimum": 0,
+                                  "maximum": 120000,
+                                  "type": "integer"
+                                },
+                                "periodStart": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "periodEnd": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "dueDate": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "commercialRevision": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "stateRevision": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "label": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "type": "string"
+                                },
+                                "amountMinor": {
+                                  "minimum": -99999999,
+                                  "maximum": 99999999,
+                                  "type": "integer"
+                                },
+                                "paymentArrangement": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "automatic"
+                                  ]
+                                },
+                                "billingState": {
+                                  "type": "string",
+                                  "enum": [
+                                    "billable",
+                                    "paused",
+                                    "cancelled"
+                                  ]
+                                },
+                                "calendar": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "timeZone",
+                                    "issueHour",
+                                    "chargeHour"
+                                  ],
+                                  "properties": {
+                                    "timeZone": {
+                                      "minLength": 1,
+                                      "maxLength": 128,
+                                      "type": "string"
+                                    },
+                                    "issueHour": {
+                                      "minimum": 0,
+                                      "maximum": 23,
+                                      "type": "integer"
+                                    },
+                                    "chargeHour": {
+                                      "minimum": 0,
+                                      "maximum": 23,
+                                      "type": "integer"
+                                    }
+                                  }
+                                },
+                                "readinessDate": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "issueAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "dueEndAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "chargeAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "sealedAt": {
+                                  "format": "date-time",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "complete": {
+                      "type": "boolean"
+                    },
+                    "total": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "fromDueDate": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "throughDueDate": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "minimum": 0,
+                      "maximum": 1000000,
+                      "type": "integer"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "changed",
+                        "unchanged"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

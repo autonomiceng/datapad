@@ -15,6 +15,7 @@ import { createServices, assertSyntheticServices } from "../services";
 import { portalServicePolicy } from "./portal-services";
 import { createBillingReader } from "../billing";
 import { createPortalBilling } from "./portal-billing";
+import { createPortalSubscriptions } from "./portal-subscriptions";
 import type { BillingHttp } from "./billing-routes";
 import {
   allowPortalProfile,
@@ -146,7 +147,16 @@ export async function createPortalRuntime(pool: Pool) {
       };
     },
   };
+  const subscriptions = await createPortalSubscriptions({
+    pool,
+    deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
+    customers,
+    access,
+    customerIds: { elm: elm.customerId, birch: birch.customerId },
+    origin: configuration.origin,
+  });
   return {
+    subscriptions,
     invoiceWorkflow: portalBilling.http,
     commands: portalBilling.commands,
     services: { services, access, origin: configuration.origin },

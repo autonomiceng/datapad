@@ -1,4 +1,5 @@
 import { PaginationSchema } from "../import-review/contract";
+import { AccountPaginationSchema } from "../access/contract";
 import type { ReactNode } from "react";
 import {
   createRootRoute,
@@ -9,6 +10,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { StaffInvoicePage } from "./billing/workflow";
+import { SubscriptionsPage, SubscriptionPage } from "./billing/subscriptions";
 import { Invoices } from "./billing/invoices";
 import { ImportReview } from "./import-review/viewer";
 import { useSession } from "./accounts/api";
@@ -32,13 +34,44 @@ interface ImportReviewSearch {
   dataIssuesOffset: number;
 }
 
-function offset(value: unknown): number {
+function offset(
+  value: unknown,
+  maximum = PaginationSchema.properties.offset.maximum!,
+): number {
   const number = Number(value ?? 0);
-  return Number.isInteger(number) &&
-    number >= 0 &&
-    number <= PaginationSchema.properties.offset.maximum!
+  return Number.isInteger(number) && number >= 0 && number <= maximum
     ? number
     : 0;
+}
+
+function forecastSearch(search: Record<string, unknown>): {
+  fromDueDate?: string;
+  throughDueDate?: string;
+  forecastOffset?: number;
+} {
+  const calendarDate = (value: unknown): value is string => {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+      return false;
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return (
+      Number.isFinite(parsed.getTime()) &&
+      parsed.toISOString().slice(0, 10) === value
+    );
+  };
+  if (
+    !calendarDate(search.fromDueDate) ||
+    !calendarDate(search.throughDueDate) ||
+    search.fromDueDate > search.throughDueDate
+  )
+    return {};
+  return {
+    fromDueDate: search.fromDueDate,
+    throughDueDate: search.throughDueDate,
+    forecastOffset: offset(
+      search.forecastOffset,
+      AccountPaginationSchema.properties.offset.maximum!,
+    ),
+  };
 }
 
 const importReviewStart = {
@@ -161,6 +194,30 @@ const reviewInvoiceRoute = createRoute({
     return <StaffInvoicePage customerId={customerId} invoiceId={invoiceId} />;
   },
 });
+const subscriptionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/subscriptions",
+  validateSearch: forecastSearch,
+  component: () => {
+    const { customerId } = subscriptionsRoute.useParams();
+    return <SubscriptionsPage key={customerId} customerId={customerId} />;
+  },
+});
+const subscriptionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/subscriptions/$subscriptionId",
+  validateSearch: forecastSearch,
+  component: () => {
+    const { customerId, subscriptionId } = subscriptionRoute.useParams();
+    return (
+      <SubscriptionPage
+        key={`${customerId}:${subscriptionId}`}
+        customerId={customerId}
+        subscriptionId={subscriptionId}
+      />
+    );
+  },
+});
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     entryRoute,
@@ -174,6 +231,8 @@ export const router = createRouter({
     serviceRoute,
     prepareInvoiceRoute,
     reviewInvoiceRoute,
+    subscriptionsRoute,
+    subscriptionRoute,
   ]),
 });
 declare module "@tanstack/react-router" {

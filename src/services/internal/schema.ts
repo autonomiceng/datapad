@@ -47,6 +47,7 @@ export const services = pgTable(
   },
   (t) => [
     unique("service_customer_kind").on(t.id, t.customerId, t.kind),
+    unique("service_customer").on(t.id, t.customerId),
     unique("service_source_key").on(t.customerId, t.sourceKey),
     foreignKey({
       name: "service_attachment_customer_kind",
