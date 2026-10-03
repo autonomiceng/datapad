@@ -48,6 +48,12 @@ The [customer account demo](docs/accounts-demo.md) uses `portal:demo` and an iso
 
 Before changing import-review modules, schemas or application structure, read [the module architecture and contract guide](docs/import-review.md). Review generated SQL from `mise run db:generate` and apply it explicitly with `mise run db:migrate`. Preserve migrations once released or depended on by real installations. A reviewed change may replace an unmerged baseline used only by disposable synthetic demos, with an explicit demo reset. Disposable demo reset is a separate operation.
 
+## Public interface documentation
+
+`mise run app:check` requires short JSDoc descriptions on the callable domain contracts selected in `vite.config.ts`. This check also runs in `pr:check`. Document permissions and customer scope, side effects, retry behavior, failure outcomes and caller obligations when they affect correct use. Keep TypeScript as the source of parameter and return types. Internal helpers, React components and test helpers do not require comments by default.
+
+Reviewers verify that these descriptions match the implementation and explain what a caller needs to know. Comment presence cannot establish usefulness. CodeRabbit follows this policy instead of a percentage quota across changed functions. When adding a public entrypoint or re-exported factory, include its definition in the lint scope.
+
 ## Deliver a change
 
 1. Propose a small increment with a visible outcome and acceptance criteria. Obtain an independent adversarial plan review, address its findings, and get maintainer approval before implementation. A request to prepare a draft for review authorizes that draft only.

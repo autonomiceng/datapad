@@ -34,7 +34,9 @@ export interface ScheduledBillingOptions {
   audit: AuditWriter;
   workerId: string;
   allowSubscription: SubscriptionPolicy;
+  /** Approves the exact positive invoice and frozen bill-to facts before sealing or startup inspection. */
   allowRequest: (invoice: SyntheticScheduledInvoice) => boolean;
+  /** Clock for captured-calendar eligibility and schedule timestamps; production uses wall time. */
   now?: () => Date;
 }
 export interface ScheduleCursor {
@@ -57,21 +59,27 @@ export interface ScheduleSweepResult {
     failure: "unavailable" | null;
   }>;
 }
+/** Staff configure issuance authority; worker sweeps consume it without provider I/O. */
 export interface ScheduledBilling {
+  /** Requires manage_billing and current versions. Activation selects future unbilled boundaries; stopping or pausing preserves sealed groups. */
   configureSchedule(
     actor: HumanActor,
     customerId: string,
     input: ConfigureScheduleRequest,
   ): Promise<AccessResult<ConfigureScheduleResponse>>;
+  /** Requires read_billing and reads the customer's activation, pause state and selectable future boundaries. */
   getSchedule(
     actor: HumanActor,
     customerId: string,
   ): Promise<AccessResult<ScheduleResponse>>;
+  /** Requires read_billing; compares sealed groups with the bounded forecast without issuing invoices. */
   listScheduledGroups(
     actor: HumanActor,
     customerId: string,
     input: ScheduledGroupsQuery,
   ): Promise<AccessResult<ScheduledGroupsResponse>>;
+  /** Transactionally seals eligible groups and durable issue requests; zero totals become No charge. Carry next and through together across pages; per-customer failures remain in results. */
   sweepScheduled(input?: ScheduleSweepInput): Promise<ScheduleSweepResult>;
+  /** Reads captured schedules, claims and invoice intentions; throws if any ownership or synthetic-policy invariant fails. */
   assertSyntheticData(): Promise<void>;
 }

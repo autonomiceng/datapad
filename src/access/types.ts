@@ -52,9 +52,17 @@ export interface CustomerAccess {
   staffRoles: StaffRole[];
 }
 
-/** Called within the domain transaction; mutations lock current authority rows. */
+/** Authorization uses caller transactions; readScope computes current visibility. */
 export interface AccessPolicy {
+  /**
+   * Recheck the verified, unexpired session and return current staff roles
+   * and organization memberships.
+   */
   readScope(actor: HumanActor): Promise<AccessResult<CustomerReadScope>>;
+  /**
+   * Check a capability for the caller-resolved current customer binding in
+   * its transaction. Set mutation to hold shared authority locks until commit.
+   */
   authorizeCustomer(
     tx: NodePgDatabase,
     actor: HumanActor,
@@ -62,6 +70,10 @@ export interface AccessPolicy {
     capability: CustomerCapability,
     mutation: boolean,
   ): Promise<AccessResult<CustomerAccess>>;
+  /**
+   * Require at least one listed staff role in the caller transaction;
+   * mutation locks current authority rows.
+   */
   authorizeStaff(
     tx: NodePgDatabase,
     actor: HumanActor,
@@ -165,10 +177,12 @@ export type AuditEntry = AuditEntryIdentity &
 export interface AuditWriter {
   /** Locks and checks an identity without reserving it for a no-op. */
   assertRequestUnused(tx: NodePgDatabase, requestId: string): Promise<void>;
+  /** Read the manifest digest recorded for a bootstrap key; malformed receipts throw. */
   getServicesBootstrap(
     tx: NodePgDatabase,
     bootstrapKey: string,
   ): Promise<{ manifestDigest: string } | null>;
+  /** Append the bootstrap receipt in the caller transaction; the caller owns replay checks. */
   recordServicesBootstrap(
     tx: NodePgDatabase,
     input: {
@@ -178,6 +192,10 @@ export interface AuditWriter {
     },
   ): Promise<void>;
 
+  /**
+   * Append an operator audit record in the caller transaction; operator
+   * authorization belongs to composition.
+   */
   recordOperator(
     tx: NodePgDatabase,
     entry: {
@@ -197,6 +215,10 @@ export interface AuditWriter {
       | { action: "invoice_group.sealed"; requestId: string }
     ),
   ): Promise<void>;
+  /**
+   * Record changed profile fields atomically with the caller write. Reused
+   * profile request IDs throw AuditRequestConflict.
+   */
   append(tx: NodePgDatabase, entry: AuditEntry): Promise<void>;
 }
 
@@ -208,7 +230,15 @@ export interface AuthenticationSession {
 }
 /** Better Auth adapter; no raw token or SDK object crosses this interface. */
 export interface AuthenticationGateway {
+  /**
+   * Read the library session with cookie caching disabled; callers must check
+   * email verification and current domain authority.
+   */
   getSession(headers: Headers): Promise<AuthenticationSession | null>;
+  /**
+   * Invoke library invitation acceptance for the supplied session. The
+   * access facade owns recipient checks and organization serialization.
+   */
   acceptInvitation(
     headers: Headers,
     invitationId: string,
@@ -219,53 +249,102 @@ export interface AccessOptions {
   /** Separate bounded pool to the same database; authentication needs data-pool capacity while a lock is held. */
   lockPool: Pool;
   authentication: AuthenticationGateway;
+  /**
+   * Resolve the current customer-to-organization mapping, or null if
+   * absent; this lookup grants no authority.
+   */
   getCustomerTarget: (
     customerId: string,
   ) => Promise<CustomerAccessTarget | null>;
+  /**
+   * Resolve an invitation organization to its customer, or null when no
+   * customer is bound.
+   */
   getOrganizationTarget: (
     organizationId: string,
   ) => Promise<CustomerAccessTarget | null>;
+  /**
+   * Approve invitation recipients against the reviewed synthetic dataset;
+   * creation passes a lowercase email.
+   */
   allowInvitation: (email: string) => boolean;
   signInMethods: AccessSessionResponse["signInMethods"];
   synthetic: boolean;
   baseURL: string;
+  /**
+   * Deliver an already committed invitation. Pending request replays may
+   * call again; rejection leaves delivery pending.
+   */
   sendInvitation: (message: {
     email: string;
     invitationId: string;
     customerId: string;
   }) => Promise<void>;
 }
+/** Membership commands require a verified session and the configured Origin. */
 export interface Access {
   readonly policy: AccessPolicy;
   readonly audit: AuditWriter;
+  /**
+   * Resolve identity only for an email-verified session; each domain
+   * operation must recheck current authority.
+   */
   resolveActor(headers: Headers): Promise<HumanActor | null>;
+  /**
+   * Return sign-in options and current staff roles; absent or expired
+   * sessions appear signed out.
+   */
   getSession(headers: Headers): Promise<AccessSessionResponse>;
+  /**
+   * List recognized roles in the customer organization after checking
+   * read_members authority, with bounded pagination.
+   */
   listMembers(
     actor: HumanActor,
     customerId: string,
     page?: Partial<AccountPagination>,
   ): Promise<AccessResult<MembersResponse>>;
+  /**
+   * List invitations for the customer organization after checking
+   * read_members authority; expiry is evaluated at read time.
+   */
   listInvitations(
     actor: HumanActor,
     customerId: string,
     page?: Partial<AccountPagination>,
   ): Promise<AccessResult<InvitationsResponse>>;
+  /**
+   * Require member-management authority, persist an invitation, then
+   * deliver it. Matching request replays resume pending delivery.
+   */
   inviteMember(
     headers: Headers,
     customerId: string,
     input: InviteMemberRequest,
   ): Promise<AccessResult<AccessActionResponse>>;
+  /**
+   * Require the verified recipient session and reconcile library acceptance
+   * under the organization lock; pending is not a membership grant.
+   */
   acceptInvitation(
     headers: Headers,
     invitationId: string,
     input: AcceptInvitationRequest,
   ): Promise<AccessResult<AccessActionResponse>>;
+  /**
+   * Cancel a scoped invitation under current member-management authority;
+   * accepted invitations conflict and matching request IDs replay.
+   */
   revokeInvitation(
     headers: Headers,
     customerId: string,
     invitationId: string,
     input: RevokeInvitationRequest,
   ): Promise<AccessResult<AccessActionResponse>>;
+  /**
+   * Remove a scoped membership under current member-management authority;
+   * preserve the last administrator and replay matching request IDs.
+   */
   revokeMember(
     headers: Headers,
     customerId: string,

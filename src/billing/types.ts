@@ -32,6 +32,10 @@ export interface BillingOptions extends BillingReaderOptions {
   provider: BillingProvider;
   resolutionProvider?: InvoiceResolutionProvider;
   customers: CustomerRegistry;
+  /**
+   * Supply the clock for UTC issuance guards, retry eligibility and stored
+   * timestamps; defaults to wall time.
+   */
   now?: () => Date;
 }
 export interface ReconciliationCursor {
@@ -43,7 +47,9 @@ export interface SyntheticInvoice {
   customerId: string;
   billTo: InvoiceResponse["invoice"]["billTo"];
 }
+/** Approves an exact synthetic request with its operational customer and frozen bill-to facts. */
 export type SyntheticInvoicePolicy = (invoice: SyntheticInvoice) => boolean;
+/** Allows a reviewed setup-backed mapping with no invoice; names alone must not establish synthetic provenance. */
 export type SyntheticCustomerMappingPolicy = (mapping: {
   id: string;
   customerId: string;
@@ -51,8 +57,9 @@ export type SyntheticCustomerMappingPolicy = (mapping: {
   name: string;
 }) => boolean;
 export interface BillingReader {
-  /** Previously persisted account identity, never inferred from a name or email. */
+  /** Returns persisted account identity; inconsistent deployment or account facts throw. */
   storedProviderAccountId(): Promise<string | null>;
+  /** Reads a bounded deployment-only page of provider-linked invoices. Carry next with the same through cursor; invalid cursors throw. */
   reconciliationPage(input?: {
     limit?: number;
     after?: ReconciliationCursor | null;
@@ -62,6 +69,7 @@ export interface BillingReader {
     next: ReconciliationCursor | null;
     through: ReconciliationCursor | null;
   }>;
+  /** Reads all stored billing facts and throws on foreign ownership or unapproved intentions; setup-only mappings need explicit approval. */
   assertSyntheticPolicy(
     allowRequest: SyntheticInvoicePolicy,
     accountId?: string,
@@ -69,17 +77,37 @@ export interface BillingReader {
     allowCustomerMapping?: SyntheticCustomerMappingPolicy,
   ): Promise<void>;
 
+  /**
+   * Read invoices for this deployment in creation order, newest first;
+   * callers enforce read authority and invalid pagination throws.
+   */
   listInvoices(page?: Partial<BillingPagination>): Promise<InvoicesResponse>;
+  /**
+   * Read one deployment-owned invoice; invalid or absent IDs return null
+   * and the hosted link is visible only for finalized states.
+   */
   getInvoice(invoiceId: string): Promise<InvoiceResponse | null>;
+  /**
+   * Restrict deployment reads to caller-authorized customer IDs; an empty
+   * scope returns no invoices and invalid IDs throw.
+   */
   listInvoicesForCustomers(
     customerIds: string[],
     page?: Partial<BillingPagination>,
   ): Promise<InvoicesResponse>;
+  /**
+   * Read within the supplied customer scope; out-of-scope invoices return
+   * null. Callers must derive scope from current authority.
+   */
   getInvoiceForCustomers(
     customerIds: string[],
     invoiceId: string,
   ): Promise<InvoiceResponse | null>;
   providerProfile: ProviderProfileReader;
+  /**
+   * Inspect all stored billing rows against approved requests, recipients
+   * and account ownership; reject unapproved data without provider calls.
+   */
   assertSyntheticData(
     allowedRequests: InvoiceRequest[],
     accountId?: string,
@@ -98,14 +126,47 @@ export type PendingWork =
   | { kind: "issue"; invoiceId: string }
   | { kind: "event"; eventId: string };
 export interface BillingCommands {
+  /**
+   * Stage an immutable request and customer profile snapshot atomically.
+   * Matching deployment/origin-key content replays; changed content
+   * conflicts without provider effects.
+   */
   requestInvoice(input: unknown): Promise<RequestResult>;
+  /**
+   * Persist issuance intent for a ready, not-past-due invoice under its
+   * locks. Review state blocks requests; existing intent replays and no
+   * provider effect runs here.
+   */
   requestIssue(invoiceId: string): Promise<IssueResult>;
+  /**
+   * Resume requested issuance under customer and invoice locks, recovering
+   * provider receipts before effects and persisting retry or review
+   * outcomes.
+   */
   issueInvoice(invoiceId: string): Promise<WorkResult>;
+  /**
+   * Retrieve and project current provider state under invoice locks; this
+   * check does not authorize new issuance.
+   */
   refreshInvoice(invoiceId: string): Promise<WorkResult>;
+  /**
+   * Persist a verified event retrieval obligation for one owned,
+   * issuance-requested invoice; repeated event IDs return duplicate and
+   * unrelated events are ignored.
+   */
   acceptEvent(
     event: VerifiedInvoiceEvent,
   ): Promise<"accepted" | "duplicate" | "ignored">;
+  /**
+   * Retrieve current invoice state for a stored event under invoice locks;
+   * honor retry eligibility and mark processed with the committed
+   * projection or an unrelated receipt rejection.
+   */
   processEvent(eventId: string): Promise<WorkResult>;
+  /**
+   * List due issuance and event obligations without claiming them; limit is
+   * 1 through 100 and consumers must tolerate repeated delivery.
+   */
   pendingWork(limit?: number): Promise<PendingWork[]>;
 }
 export interface Billing extends BillingReader, BillingCommands {}
@@ -115,22 +176,27 @@ export interface BillingWorkflowOptions extends BillingOptions {
   audit: AuditWriter;
   allowRequest: SyntheticInvoicePolicy;
 }
+/** Scoped staff billing preparation and confirmation; no provider effects run inside authority transactions. */
 export interface BillingWorkflow {
+  /** Persists immutable bill-to and lines without issuing. Requires manage_billing; identical request IDs replay and changed content conflicts. */
   prepareInvoice(
     actor: HumanActor,
     customerId: string,
     input: PrepareInvoiceRequest,
   ): Promise<AccessResult<PrepareInvoiceResponse>>;
+  /** Requires scoped manage_billing and reads the persisted review with current issue blockers, without provider I/O. */
   getPreparation(
     actor: HumanActor,
     customerId: string,
     invoiceId: string,
   ): Promise<AccessResult<InvoicePreparationResponse>>;
+  /** Atomically records first issuance authority and audit under manage_billing; repeats are unchanged. Caller schedules work after commit. */
   confirmIssue(
     actor: HumanActor,
     customerId: string,
     invoiceId: string,
   ): Promise<AccessResult<ConfirmIssueResponse>>;
+  /** Requires scoped manage_billing, retrieves the existing provider receipt outside the authority transaction, then returns the scoped projection. */
   checkInvoice(
     actor: HumanActor,
     customerId: string,

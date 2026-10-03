@@ -3,11 +3,20 @@ import type { Pool } from "pg";
 import type { CustomerProfile } from "./contract";
 import { customers } from "./internal/schema";
 import { profileOf } from "./validation";
+/**
+ * Inspect all stored customer identities and profiles; throw on any
+ * unapproved registry key, organization binding or profile without changing
+ * data.
+ */
 export async function assertSyntheticCustomers(
   pool: Pool,
   policy: {
     registryKeys: readonly string[];
     organizationIds: readonly string[];
+    /**
+     * Approve each stored customer profile against the reviewed synthetic
+     * dataset; this check does not authorize edits.
+     */
     allowProfile: (profile: CustomerProfile) => boolean;
   },
 ): Promise<void> {

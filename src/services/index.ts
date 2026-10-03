@@ -24,6 +24,8 @@ export type {
   ServiceBootstrapOptions,
 } from "./types";
 
+/** Builds scoped local inventory operations and validates credential-free HTTPS login URLs.
+ * Preference and attachment edits are audited locally; no provider provisioning occurs. */
 export function createServices(options: ServicesOptions): Services {
   const db = drizzle(options.pool);
   const links = new Map<string, string>();

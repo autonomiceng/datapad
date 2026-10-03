@@ -84,6 +84,8 @@ function label(value: string) {
     !/[\uD800-\uDFFF]/u.test(value)
   );
 }
+/** Validates and captures the billing calendar for audited local commercial agreements.
+ * The caller supplies customer authorization and a synthetic policy; this module performs no provider I/O. */
 export function createSubscriptions(
   options: SubscriptionsOptions,
 ): Subscriptions {

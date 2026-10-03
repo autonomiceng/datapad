@@ -81,26 +81,55 @@ export class BillingProviderError extends Error {
 /** Transport failures throw; ambiguous recovery is an explicit result. */
 export interface BillingProvider {
   readonly ownership: ProviderOwnership;
+  /**
+   * Look up a customer by owned durable intent; incomplete or multiple
+   * matches are ambiguous and absence does not prove a prior create failed.
+   */
   findCustomer(intent: CustomerIntent): Promise<Lookup<ProviderCustomer>>;
+  /**
+   * Create an owned sandbox customer using the supplied stable effect key;
+   * retries must preserve intent and key.
+   */
   createCustomer(
     intent: CustomerIntent,
     effect: ProviderEffect,
   ): Promise<ProviderCustomer>;
+  /**
+   * Look up an owned invoice by durable intent and verify its receipt;
+   * incomplete or multiple matches are ambiguous.
+   */
   findInvoice(intent: InvoiceIntent): Promise<Lookup<ProviderInvoice>>;
+  /**
+   * Create a draft manual-collection invoice without pending items or
+   * automatic advancement, using the stable effect key.
+   */
   createInvoice(
     intent: InvoiceIntent,
     effect: ProviderEffect,
   ): Promise<ProviderInvoice>;
+  /**
+   * Retrieve the identified invoice and verify ownership and intended
+   * content; draft receipts may contain only some intended lines.
+   */
   retrieveInvoice(
     intent: InvoiceIntent,
     providerInvoiceId: string,
   ): Promise<ProviderInvoice>;
+  /**
+   * Add an intended line to its owned draft invoice using the stable effect
+   * key; callers recover existing lines before replaying this operation.
+   */
   addLine(
     intent: InvoiceIntent,
     providerInvoiceId: string,
     line: LineIntent,
     effect: ProviderEffect,
   ): Promise<ProviderLine>;
+  /**
+   * Verify complete intended lines and total before finalizing with
+   * automatic advancement disabled; an already finalized receipt is
+   * returned.
+   */
   finalizeInvoice(
     intent: InvoiceIntent,
     providerInvoiceId: string,
@@ -110,6 +139,10 @@ export interface BillingProvider {
 
 /** Kept outside BillingProvider so billing never handles HTTP or signatures. */
 export interface BillingEventVerifier {
+  /**
+   * Verify the original body bytes and signature, sandbox mode and account.
+   * Unhandled event types return null; rejected evidence throws.
+   */
   verifyEvent(
     rawBody: string,
     signature: string,
@@ -169,16 +202,19 @@ export interface VerifiedPaymentSetupEvent extends ProviderOwnership {
 /** Capability composed with the existing verified client; never charges. */
 export interface PaymentSettingsProvider {
   readonly ownership: ProviderOwnership;
+  /** Creates a hosted save-card session using persisted intent and the caller's stable effect key; retries must preserve both and never charge. */
   createSetup(
     intent: PaymentSetupIntent,
     effect: ProviderEffect,
   ): Promise<ProviderPaymentSetup>;
   /** Fully paginate the owned customer's Sessions; incomplete inspection is ambiguous. */
   findSetup(intent: PaymentSetupIntent): Promise<Lookup<ProviderPaymentSetup>>;
+  /** Retrieves and verifies the exact owned Session and its SetupIntent; a completed browser redirect is insufficient evidence. */
   retrieveSetup(
     intent: PaymentSetupIntent,
     providerSessionId: string,
   ): Promise<ProviderPaymentSetup>;
+  /** Retrieves safe card facts with verified account/mode ownership; a detached method may have no customer, so callers must check attachment and expiry. */
   retrieveSavedMethod(
     intent: PaymentSetupIntent,
     providerPaymentMethodId: string,
@@ -213,16 +249,19 @@ export interface CollectionInspection {
 /** Added to the existing provider factory; ownership must equal BillingProvider ownership. */
 export interface InvoiceResolutionProvider {
   readonly ownership: ProviderOwnership;
+  /** Retrieves complete owned invoice/payment allocations without charging; incomplete or unsupported evidence must fail closed. */
   inspectCollection(
     intent: InvoiceIntent,
     id: string,
   ): Promise<CollectionInspection>;
-  /** Replays use exactly the same expanded pay parameters and key. */
+  /** Records the full remaining balance as paid off-provider without charging.
+   * Caller verifies received funds; recovery preserves the exact pay parameters and key. */
   settleExternally(
     intent: InvoiceIntent,
     id: string,
     effect: ProviderEffect,
   ): Promise<{ invoice: ProviderInvoice; paidOffStripeMinor: number }>;
+  /** Voids the exact owned invoice with the supplied stable key; caller must first exclude conflicting payment evidence and preserve recovery intent. */
   voidInvoice(
     intent: InvoiceIntent,
     id: string,

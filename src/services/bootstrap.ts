@@ -12,6 +12,8 @@ import {
   domainRegistrations,
 } from "./internal/schema";
 import { validateManifest } from "./internal/validation";
+/** Call within a caller-owned transaction so inserts and audit roll back together.
+ * The same bootstrap key and manifest replay unchanged; a changed manifest throws. */
 export async function bootstrapSyntheticServices(
   tx: NodePgDatabase,
   options: ServiceBootstrapOptions,

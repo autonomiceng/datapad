@@ -16,6 +16,8 @@ import { createLifecycle } from "./lifecycle";
 import { ensureMapping, persistInvoice } from "./requests";
 import { isUuid, requestDigest, validateRequest } from "./validate";
 
+/** Composes scoped staff billing operations with audited synthetic intentions.
+ * Provider ownership must match the deployment; callers dispatch issuance only after confirmation commits. */
 export function createBillingWorkflow(
   options: BillingWorkflowOptions,
 ): BillingWorkflow {

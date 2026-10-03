@@ -16,6 +16,8 @@ import {
   immutableRecord,
   validateManifest,
 } from "./internal/validation";
+/** Reads the full inventory and throws if immutable facts differ from the approved manifest.
+ * Preferences and attachments may vary only when the supplied record policy permits them. */
 export async function assertSyntheticServices(
   pool: Pool,
   policy: ServicePolicy,

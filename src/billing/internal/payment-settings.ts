@@ -87,6 +87,8 @@ async function result<T>(work: () => Promise<T>): Promise<AccessResult<T>> {
     throw error;
   }
 }
+/** Composes administrator consent and hosted card setup with matching sandbox ownership.
+ * A null provider supports persisted reads; setup effects run outside transactions and never collect payment. */
 export function createPaymentSettings(
   options: PaymentSettingsOptions,
 ): PaymentSettings {

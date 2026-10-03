@@ -79,6 +79,8 @@ function result(error: unknown): AccessResult<never> {
   throw error;
 }
 
+/** Composes local schedule sealing with verified sandbox ownership and a worker audit identity.
+ * Sweeps persist issue obligations; the caller dispatches returned invoice IDs after commit. */
 export function createScheduledBilling(
   options: ScheduledBillingOptions,
 ): ScheduledBilling {

@@ -12,12 +12,24 @@ export interface AuthenticationOptions {
   secret: string;
   synthetic: true;
   allowedEmails: readonly string[];
+  /**
+   * Deliver the generated sign-in URL to an allowlisted address; treat the
+   * URL as a credential.
+   */
   sendMagicLink: (message: { email: string; url: string }) => Promise<void>;
   google?: { clientId: string; clientSecret: string };
   microsoft?: { clientId: string; clientSecret: string; tenantId: string };
 }
+/**
+ * Construct synthetic authentication with an email allowlist and strong
+ * secret; expose only the reviewed sign-in routes.
+ */
 export function createAuthentication(options: AuthenticationOptions): {
   gateway: AuthenticationGateway;
+  /**
+   * Serve allowlisted authentication routes with no-store responses; POST
+   * requests require the configured Origin.
+   */
   handler: (request: Request) => Promise<Response>;
 } {
   if (options.synthetic !== true || options.secret.length < 32)

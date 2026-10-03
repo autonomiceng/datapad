@@ -82,6 +82,7 @@ export type SyntheticServiceRecord =
   | { recordType: "domain_registration"; record: RegistrationRecord };
 export interface ServicePolicy {
   manifest: ServiceManifest;
+  /** Approves synthetic bootstrap records and local edits; false rejects the candidate. */
   allowRecord: (record: SyntheticServiceRecord) => boolean;
 }
 export interface ServicesOptions {
@@ -96,17 +97,21 @@ export interface ServiceBootstrapOptions extends ServicePolicy {
   bootstrapKey: string;
   audit: AuditWriter;
 }
+/** Reads require customer read access; edits require manage_services and preserve provider state. */
 export interface Services {
+  /** Lists only this customer's inventory, including attached add-ons; performs no provider reads. */
   listServices(
     actor: HumanActor,
     customerId: string,
     page?: Partial<AccountPagination>,
   ): Promise<AccessResult<ServicesResponse>>;
+  /** Reads scoped components and observed provider state; missing or foreign services return not_found. */
   getService(
     actor: HumanActor,
     customerId: string,
     serviceId: string,
   ): Promise<AccessResult<ServiceResponse>>;
+  /** Audits a local requested setting under the expected version. Stale versions conflict; no provider effect runs. */
   setComponentPreference(
     actor: HumanActor,
     customerId: string,
@@ -114,6 +119,7 @@ export interface Services {
     componentId: string,
     input: SetComponentPreferenceRequest,
   ): Promise<AccessResult<ServiceResponse>>;
+  /** Attaches or detaches an add-on within the same customer under the expected version; cross-customer targets are not_found. */
   attachAddon(
     actor: HumanActor,
     customerId: string,
