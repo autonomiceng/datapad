@@ -208,7 +208,7 @@ export function invoiceWorkflowRoutes(config?: InvoiceWorkflowHttp) {
         response: { 200: InvoiceResponseSchema, ...accessErrorResponses },
         detail: {
           operationId: "checkCustomerInvoice",
-          summary: "Retrieve the existing invoice status",
+          summary: "Check invoice status and payment availability",
         },
       },
     );

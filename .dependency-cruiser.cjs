@@ -15,7 +15,7 @@ module.exports = {
       to: {
         path: "^src/(server|import-review|billing|stripe|worker|access|customers|services)/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
     },
     {
@@ -70,19 +70,19 @@ module.exports = {
       name: "contract-browser-safe",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
       to: {
         path: "^src/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
     },
     {
       name: "contract-no-node",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract|collection-contract))\\.ts$",
       },
       to: { dependencyTypes: ["core"] },
     },

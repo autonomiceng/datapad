@@ -213,6 +213,52 @@ export interface AuditWriter {
             | "invoice.resolution_needs_review";
         }
       | { action: "invoice_group.sealed"; requestId: string }
+      | {
+          action: "invoice.collection_attempted";
+          invoiceId: string;
+          attemptId: string;
+          dispatchCount: number;
+          enrollmentId: string;
+        }
+      | {
+          action:
+            | "invoice.collection_processing"
+            | "invoice.collection_succeeded";
+          invoiceId: string;
+          attemptId: string;
+        }
+      | {
+          action: "invoice.collection_failed";
+          invoiceId: string;
+          attemptId: string;
+          reason: "declined";
+        }
+      | {
+          action: "invoice.collection_requires_action";
+          invoiceId: string;
+          attemptId: string;
+          reason: "authentication_required";
+        }
+      | {
+          action: "invoice.collection_needs_review";
+          invoiceId: string;
+          attemptId: string;
+          reason:
+            | "provider_unavailable"
+            | "consent_changed"
+            | "method_unavailable"
+            | "resolution_conflict"
+            | "amount_changed"
+            | "competing_payment"
+            | "provider_mismatch"
+            | "uncertain_outcome"
+            | "retry_exhausted";
+        }
+      | {
+          action: "invoice.collection_missed";
+          invoiceId: string;
+          reason: "missed";
+        }
     ),
   ): Promise<void>;
   /**

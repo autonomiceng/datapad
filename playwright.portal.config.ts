@@ -8,7 +8,11 @@ if (!process.env.TEST_BASE_URL || !process.env.PORTAL_TEST_MAILPIT_URL) {
 
 export default defineConfig({
   outputDir: "test-results/portal",
-  testDir: "tests/portal-browser",
+  testDir: "tests",
+  testMatch: [
+    "portal-browser/**/*.spec.ts",
+    "portal-billing-browser/collection-display.spec.ts",
+  ],
   workers: 1,
   retries: 0,
   use: {

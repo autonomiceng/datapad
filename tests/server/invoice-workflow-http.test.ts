@@ -21,6 +21,12 @@ const input = {
   lines: [{ description: "Sample hosting", amountMinor: 500 }],
 };
 const invoice: InvoiceDetail = {
+  collection: {
+    chargeAt: null,
+    checkedAt: null,
+    disposition: { kind: "defer", reason: "not_payable" },
+    attempt: null,
+  },
   calendar: null,
   resolution: null,
   id: invoiceId,

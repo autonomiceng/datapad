@@ -6,6 +6,7 @@ const billingEvents = [
   "invoice.finalization_failed",
   "invoice.paid",
   "invoice.payment_failed",
+  "invoice.payment_action_required",
   "invoice.voided",
   "invoice.marked_uncollectible",
 ];

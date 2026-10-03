@@ -3,13 +3,19 @@ import type {
   ScheduledBilling,
   ScheduleSweepInput,
 } from "../billing/scheduled-types";
-import type { BillingCommands, PendingWork } from "../billing/types";
+import type {
+  BillingCommands,
+  PendingWork,
+  ReconciliationCursor,
+} from "../billing/types";
 import type { InvoiceResolutions } from "../billing/resolutions-types";
+import type { InvoiceCollections } from "../billing/collection-types";
 import type { PaymentSettings } from "../billing/payment-settings-types";
 type BillingWork =
   | PendingWork
   | { kind: "resolution"; resolutionId: string }
-  | { kind: "payment_setup"; setupId: string };
+  | { kind: "payment_setup"; setupId: string }
+  | { kind: "collection"; invoiceId: string };
 
 const queue = "datapad-billing";
 interface BillingWorker {
@@ -30,6 +36,10 @@ export async function createBillingWorker(options: {
     "pendingResolutions" | "processResolution"
   >;
   paymentSettings?: Pick<PaymentSettings, "pendingSetups" | "processSetup">;
+  collections?: Pick<
+    InvoiceCollections,
+    "pendingCollections" | "collectDueInvoice"
+  >;
   onError?: () => void;
 }): Promise<BillingWorker> {
   const boss = new PgBoss({
@@ -41,6 +51,10 @@ export async function createBillingWorker(options: {
   let stopped = false;
   let sweeping: Promise<void> | undefined;
   let scheduleCursor: Pick<ScheduleSweepInput, "after" | "through"> = {};
+  let collectionCursor: {
+    after?: ReconciliationCursor | null;
+    through?: ReconciliationCursor | null;
+  } = {};
   async function enqueue(work: BillingWork) {
     if (stopped) throw new Error("Billing worker stopped.");
     const singletonKey =
@@ -48,9 +62,11 @@ export async function createBillingWorker(options: {
         ? `issue:${work.invoiceId}`
         : work.kind === "event"
           ? `event:${work.eventId}`
-          : work.kind === "resolution"
-            ? `resolution:${work.resolutionId}`
-            : `payment_setup:${work.setupId}`;
+          : work.kind === "collection"
+            ? `collection:${work.invoiceId}`
+            : work.kind === "resolution"
+              ? `resolution:${work.resolutionId}`
+              : `payment_setup:${work.setupId}`;
     await boss.send(queue, work, { singletonKey });
   }
   async function sweep() {
@@ -63,6 +79,24 @@ export async function createBillingWorker(options: {
             ? { after: page.next, through: page.through }
             : {};
           if (page.results.some((result) => result.failure !== null)) report();
+        } catch {
+          report();
+        }
+      }
+      if (options.collections) {
+        try {
+          const page = await options.collections.pendingCollections({
+            ...collectionCursor,
+            limit: 100,
+          });
+          // Advance the bounded pass even if a delivery fails. Durable work returns next pass.
+          collectionCursor = page.next
+            ? { after: page.next, through: page.through }
+            : {};
+          for (const invoiceId of page.invoiceIds) {
+            if (stopped) return;
+            await enqueue({ kind: "collection", invoiceId }).catch(report);
+          }
         } catch {
           report();
         }
@@ -105,6 +139,8 @@ export async function createBillingWorker(options: {
         await options.billing.issueInvoice(work.invoiceId);
       else if (work.kind === "event")
         await options.billing.processEvent(work.eventId);
+      else if (work.kind === "collection" && options.collections)
+        await options.collections.collectDueInvoice(work.invoiceId);
       else if (work.kind === "resolution" && options.resolutions)
         await options.resolutions.processResolution(work.resolutionId);
       else if (work.kind === "payment_setup" && options.paymentSettings)

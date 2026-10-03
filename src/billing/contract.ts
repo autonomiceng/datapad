@@ -1,5 +1,6 @@
 import { Type, type Static, type TProperties } from "@sinclair/typebox";
 import { CalendarPolicySchema } from "./subscriptions-contract";
+import { InvoiceCollectionSchema } from "./collection-contract";
 import { ResolutionSummarySchema } from "./resolutions-contract";
 
 const object = <T extends TProperties>(properties: T) =>
@@ -71,6 +72,7 @@ export const ProviderReceiptStateSchema = Type.Union([
   Type.Literal("mismatch"),
 ]);
 export const InvoiceDetailSchema = object({
+  collection: InvoiceCollectionSchema,
   resolution: Type.Union([ResolutionSummarySchema, Type.Null()]),
   calendar: Type.Union([CalendarPolicySchema, Type.Null()]),
   providerReceipt: object({

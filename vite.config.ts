@@ -79,7 +79,7 @@ export default defineConfig({
       },
       {
         files: [
-          "src/billing/internal/{workflow,subscriptions,scheduled,payment-settings,customer-receipt,resolutions}.ts",
+          "src/billing/internal/{workflow,subscriptions,scheduled,payment-settings,customer-receipt,resolutions,collection}.ts",
         ],
         rules: {
           "jsdoc-js/require-jsdoc": [
@@ -88,7 +88,7 @@ export default defineConfig({
               enableFixer: false,
               require: { FunctionDeclaration: false },
               contexts: [
-                "FunctionDeclaration[id.name=/^create(BillingWorkflow|Subscriptions|ScheduledBilling|PaymentSettings|CustomerReceipt|InvoiceResolutions)$/]",
+                "FunctionDeclaration[id.name=/^create(BillingWorkflow|Subscriptions|ScheduledBilling|PaymentSettings|CustomerReceipt|InvoiceResolutions|InvoiceCollections)$/]",
               ],
             },
           ],

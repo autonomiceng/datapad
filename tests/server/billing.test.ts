@@ -177,8 +177,19 @@ test("concurrent workers and process restart issue one owned invoice and preserv
       issuedAt: "2030-01-01T12:00:00.000Z",
       totalMinor: 1500,
       providerStatus: "open",
-      hostedInvoiceUrl: `https://invoice.stripe.com/i/in_${id}`,
+      hostedInvoiceUrl: null,
+      collection: { disposition: { kind: "defer", reason: "not_payable" } },
     });
+    expect(
+      (
+        await pool.query(
+          "SELECT hosted_invoice_url FROM invoices WHERE id=$1",
+          [id],
+        )
+      ).rows,
+    ).toEqual([
+      { hosted_invoice_url: `https://invoice.stripe.com/i/in_${id}` },
+    ]);
     expect(await restarted.pendingWork()).toEqual([]);
   } finally {
     await otherPool.end();
@@ -354,7 +365,8 @@ test("durable events arriving before create receipts recover Paid, reject unrela
     state: "paid",
     reviewReason: null,
     providerReceipt: { state: "verified", reason: null },
-    hostedInvoiceUrl: `https://invoice.stripe.com/i/in_${id}`,
+    hostedInvoiceUrl: null,
+    collection: { disposition: { kind: "suppress", reason: "paid" } },
   });
   state.provider.retrieveInvoice = retrieveInvoice;
   const current = state.provider.invoices.get(`in_${id}`)!;
@@ -406,7 +418,8 @@ test("pending work survives a lost enqueue and transient event retrieval; exhaus
     providerStatus: "open",
     reviewReason: null,
     providerReceipt: { state: "verified", reason: null },
-    hostedInvoiceUrl: `https://invoice.stripe.com/i/in_${exhausted}`,
+    hostedInvoiceUrl: null,
+    collection: { disposition: { kind: "defer", reason: "not_payable" } },
   });
   expect(await state.billing.pendingWork()).toEqual([]);
 });

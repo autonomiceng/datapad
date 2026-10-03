@@ -9,15 +9,47 @@ import {
   createAuditWriter,
   bootstrapSyntheticAccess,
 } from "../../src/access";
-import { user, session, auditEntries } from "../../src/access/internal/schema";
+import {
+  user,
+  session,
+  member,
+  auditEntries,
+} from "../../src/access/internal/schema";
 import type { HumanActor } from "../../src/access/types";
 import type { StaffRole } from "../../src/access/contract";
 import { createCustomers, createCustomerRegistry } from "../../src/customers";
 import type { Customers } from "../../src/customers/types";
-import { createBilling, createBillingWorkflow } from "../../src/billing";
+import {
+  createBilling,
+  createBillingWorkflow,
+  createInvoiceCollections,
+} from "../../src/billing";
 import type { PrepareInvoiceRequest } from "../../src/billing/contract";
 import type { SyntheticInvoicePolicy } from "../../src/billing/types";
 import { SyntheticBillingProvider } from "./billing-provider";
+import { ENROLLMENT_TERMS_VERSION } from "../../src/billing/payment-settings-contract";
+import {
+  invoices,
+  invoiceLines,
+  billingCustomers,
+} from "../../src/billing/internal/invoice-schema";
+import {
+  billingSchedules,
+  billingInvoiceGroups,
+} from "../../src/billing/internal/scheduled-schema";
+import {
+  billingPaymentSetups,
+  billingPaymentMethods,
+  billingEnrollments,
+} from "../../src/billing/internal/payment-settings-schema";
+import { billingPaymentAttempts } from "../../src/billing/internal/collection-schema";
+import {
+  billingPeriods,
+  billingSubscriptions,
+  billingSubscriptionTerms,
+} from "../../src/billing/internal/subscriptions-schema";
+import { billingEnrollmentScopes } from "../../src/billing/internal/payment-scope-schema";
+import type { InvoiceCollectionProvider } from "../../src/billing/provider";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url) throw new Error("TEST_DATABASE_URL is required");
@@ -86,7 +118,10 @@ async function setup() {
           id: "elm-org",
           name: "Elm (sample)",
           slug: "elm",
-          members: [{ userId: "member", role: "administrator" }],
+          members: [
+            { userId: "member", role: "member" },
+            { userId: "staff", role: "administrator" },
+          ],
         },
         {
           id: "birch-org",
@@ -162,6 +197,31 @@ async function setup() {
     providerProfile: async () => "not_linked",
   });
   const provider = new SyntheticBillingProvider();
+  let detached = false,
+    methodReads = 0;
+  const collectionProvider: InvoiceCollectionProvider = {
+    ownership: provider.ownership,
+    inspectCollection: (...args) => provider.inspectCollection(...args),
+    async retrieveSavedMethod(intent, providerPaymentMethodId) {
+      methodReads++;
+      return {
+        ...provider.ownership,
+        providerPaymentMethodId,
+        providerCustomerId: detached ? null : intent.providerCustomerId,
+        livemode: false,
+        type: "card",
+        card: {
+          brand: "visa",
+          last4: "4242",
+          expiryMonth: 12,
+          expiryYear: 2035,
+        },
+      };
+    },
+    async payInvoice() {
+      throw new Error("Invoice checks cannot charge");
+    },
+  };
   let now = new Date("2030-01-01T12:00:00Z");
   const allowRequest: SyntheticInvoicePolicy = ({
     request,
@@ -196,6 +256,19 @@ async function setup() {
     customers,
     provider,
     options,
+    collectionOptions: {
+      pool,
+      deploymentKey: options.deploymentKey,
+      provider: collectionProvider,
+      audit,
+      workerId: "billing-workflow-test",
+      wallNow: options.now,
+      businessNow: options.now,
+    },
+    setMethodDetached: () => {
+      detached = true;
+    },
+    methodReads: () => methodReads,
     workflow: createBillingWorkflow(options),
     billing: createBilling(options),
     setDate: (date: string) => {
@@ -309,10 +382,408 @@ test("billing authority, atomic audit and first-mapping concurrency prevent unap
       value(prepared[1]).invoice.id,
     ),
   ).toEqual({ ok: false, code: "unauthenticated" });
-  expect(await s.workflow.checkInvoice(s.actors.admin, s.ids.elm, id)).toEqual({
-    ok: false,
-    code: "forbidden",
+  expect(
+    value(await s.workflow.checkInvoice(s.actors.admin, s.ids.elm, id)).invoice
+      .id,
+  ).toBe(id);
+  expect(
+    value(await s.workflow.checkInvoice(s.actors.member, s.ids.elm, id)).invoice
+      .id,
+  ).toBe(id);
+  expect(
+    await s.workflow.checkInvoice(s.actors.member, s.ids.birch, id),
+  ).toEqual({ ok: false, code: "not_found" });
+  expect(
+    await s.workflow.checkInvoice(s.actors.outsider, s.ids.elm, id),
+  ).toEqual({ ok: false, code: "not_found" });
+  expect(
+    await s.workflow.checkInvoice(s.actors.support, s.ids.elm, id),
+  ).toEqual({ ok: false, code: "forbidden" });
+});
+
+test("member checks inspect manual payment availability once for queued callers and recheck membership after waiting", async () => {
+  const s = await setup();
+  const id = value(
+    await s.workflow.prepareInvoice(s.actors.billing, s.ids.elm, input()),
+  ).invoice.id;
+  value(await s.workflow.confirmIssue(s.actors.billing, s.ids.elm, id));
+  await s.billing.issueInvoice(id);
+  const workflow = createBillingWorkflow({
+    ...s.options,
+    collectionProvider: s.provider,
+    invoiceCollections: createInvoiceCollections(s.collectionOptions),
   });
+  const inspect = s.provider.inspectCollection.bind(s.provider);
+  let entered = Promise.withResolvers<void>();
+  let release = Promise.withResolvers<void>();
+  s.provider.inspectCollection = async (...args) => {
+    entered.resolve();
+    await release.promise;
+    return inspect(...args);
+  };
+  const first = workflow.checkInvoice(s.actors.member, s.ids.elm, id);
+  await entered.promise;
+  const queued = workflow.checkInvoice(s.actors.member, s.ids.elm, id);
+  let waiting = false;
+  try {
+    for (let poll = 0; poll < 100; poll++) {
+      const result = await lockPool.query(
+        "SELECT count(*)::int AS total FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND wait_event='advisory'",
+      );
+      if (result.rows[0].total > 0) {
+        waiting = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  } finally {
+    release.resolve();
+  }
+  expect(waiting).toBe(true);
+  const responses = await Promise.all([first, queued]);
+  expect(responses.map((r) => value(r).invoice.id)).toEqual([id, id]);
+  expect(s.provider.calls.inspect).toBe(1);
+  expect(
+    (
+      await pool.query("SELECT collection_state FROM invoices WHERE id=$1", [
+        id,
+      ])
+    ).rows,
+  ).toEqual([{ collection_state: "idle" }]);
+  const calls = { ...s.provider.calls };
+  expect(await workflow.checkInvoice(s.actors.outsider, s.ids.elm, id)).toEqual(
+    { ok: false, code: "not_found" },
+  );
+  expect(s.provider.calls).toEqual(calls);
+  // Background refresh is unconditional even immediately after an explicit check.
+  await createBilling({
+    ...s.options,
+    collectionProvider: s.provider,
+  }).refreshInvoice(id);
+  expect(s.provider.calls.inspect).toBe(1);
+  expect(s.provider.calls.retrieve).toBe(calls.retrieve + 1);
+  s.setDate("2030-01-01T12:00:06Z");
+  entered = Promise.withResolvers<void>();
+  release = Promise.withResolvers<void>();
+  const removedWhileWaiting = workflow.checkInvoice(
+    s.actors.member,
+    s.ids.elm,
+    id,
+  );
+  await entered.promise;
+  await db.delete(member).where(eq(member.userId, s.actors.member.userId));
+  release.resolve();
+  expect(await removedWhileWaiting).toEqual({ ok: false, code: "not_found" });
+  expect(s.provider.calls.inspect).toBe(2);
+  expect(s.provider.calls.invoice).toBe(1);
+});
+
+test("member checks preserve collection inspection budgets and allow fresh customer Pay for a detached card", async () => {
+  const s = await setup();
+  s.setDate(new Date().toISOString());
+  const due = new Date();
+  due.setUTCDate(due.getUTCDate() + 21);
+  const request = { ...input(), dueDate: due.toISOString().slice(0, 10) };
+  const id = value(
+    await s.workflow.prepareInvoice(s.actors.billing, s.ids.elm, request),
+  ).invoice.id;
+  value(await s.workflow.confirmIssue(s.actors.billing, s.ids.elm, id));
+  await s.billing.issueInvoice(id);
+  const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+  const [mapping] = await db
+    .select()
+    .from(billingCustomers)
+    .where(eq(billingCustomers.id, invoice.billingCustomerId));
+  const [membership] = await db
+    .select()
+    .from(member)
+    .where(eq(member.userId, s.actors.member.userId));
+  const setupId = randomUUID(),
+    methodId = randomUUID(),
+    enrollmentId = randomUUID(),
+    groupId = randomUUID(),
+    attemptId = randomUUID();
+  const stamp = s.options.now().toISOString();
+  const owner = {
+    customerId: s.ids.elm,
+    deploymentKey: s.options.deploymentKey,
+  };
+  const methodOwner = {
+    ...owner,
+    billingCustomerId: mapping.id,
+    providerAccountId: s.provider.ownership.accountId,
+  };
+  const consent = {
+    actorUserId: s.actors.member.userId,
+    actorSessionId: s.actors.member.sessionId,
+    consentingMembershipId: membership.id,
+    membershipProvenance: {
+      invitationId: null,
+      invitedByUserId: null,
+      invitedByStaff: null,
+    },
+    acceptedAt: stamp,
+    requestDigest: "0".repeat(64),
+    requestId: randomUUID(),
+  };
+  // Seed only the durable guard dependencies. Collection eligibility and dispatch have their own suite.
+  await db.transaction(async (tx) => {
+    await tx.insert(billingPaymentSetups).values({
+      ...methodOwner,
+      ...consent,
+      id: setupId,
+      saveTermsVersion: "synthetic",
+      saveTermsDigest: "0".repeat(64),
+      successUrl: "http://localhost:4321/return",
+      cancelUrl: "http://localhost:4321/return",
+      integrationIdentifier: "synthetic-abcdefgh",
+      status: "verified",
+      lastCheckedAt: stamp,
+      retrievalRequestedAt: stamp,
+      providerSessionId: "cs_guard",
+      providerSetupIntentId: "seti_guard",
+      providerPaymentMethodId: "pm_guard",
+    });
+    await tx.insert(billingPaymentMethods).values({
+      ...methodOwner,
+      id: methodId,
+      setupId,
+      providerPaymentMethodId: "pm_guard",
+      brand: "visa",
+      last4: "4242",
+      expiryMonth: 12,
+      expiryYear: 2035,
+      verifiedAt: stamp,
+    });
+    await tx.insert(billingEnrollments).values({
+      ...owner,
+      ...consent,
+      requestId: randomUUID(),
+      id: enrollmentId,
+      version: 1,
+      decision: "authorize",
+      paymentMethodId: methodId,
+      termsVersion: ENROLLMENT_TERMS_VERSION,
+      termsDigest: "0".repeat(64),
+      request: {
+        requestId: randomUUID(),
+        expectedVersion: 0,
+        paymentMethodId: methodId,
+        termsVersion: ENROLLMENT_TERMS_VERSION,
+        acceptTerms: true,
+        selections: [],
+      },
+    });
+    await tx.insert(billingSchedules).values({
+      ...owner,
+      createdAt: stamp,
+      updatedAt: stamp,
+      createdBy: s.actors.billing.userId,
+      updatedBy: s.actors.billing.userId,
+    });
+    await tx.insert(billingInvoiceGroups).values({
+      ...owner,
+      id: groupId,
+      invoiceId: id,
+      billingCustomerId: mapping.id,
+      dueDate: invoice.dueDate,
+      currency: "USD",
+      paymentArrangement: "automatic",
+      calendar: { timeZone: "UTC", issueHour: 9, chargeHour: 9 },
+      outcome: "invoice_requested",
+      sealedAt: stamp,
+      totalMinor: invoice.totalMinor,
+      billToName: invoice.billToName,
+      billToProfileVersion: invoice.billToProfileVersion,
+      enrollmentId,
+      paymentMethodId: methodId,
+    });
+    await tx.insert(billingPaymentAttempts).values({
+      ...methodOwner,
+      id: attemptId,
+      invoiceId: id,
+      groupId,
+      enrollmentId,
+      paymentMethodId: methodId,
+      chargeAt: stamp,
+      dueEndAt: invoice.dueEndAt,
+      currency: "USD",
+      remainingMinor: invoice.totalMinor,
+      request: {
+        providerInvoiceId: invoice.providerInvoiceId!,
+        providerPaymentMethodId: "pm_guard",
+        offSession: true,
+      },
+      requestDigest: "0".repeat(64),
+      idempotencyKey: `datapad:${owner.deploymentKey}:payment:${attemptId}:pay`,
+      firstAttemptedAt: stamp,
+      lastDispatchedAt: stamp,
+      baselineObservedAt: stamp,
+      baselinePaidMinor: 0,
+      baselinePaidOffStripeMinor: 0,
+      baselineOverpaidMinor: 0,
+      baselinePayments: [],
+      state: "pending",
+      dispatchCount: 1,
+      inspectionFailures: 3,
+    });
+  });
+  s.provider.unavailable = true;
+  const workflow = createBillingWorkflow({
+    ...s.options,
+    collectionProvider: s.provider,
+    invoiceCollections: createInvoiceCollections(s.collectionOptions),
+  });
+  const calls = { ...s.provider.calls };
+  const methodReads = s.methodReads();
+  for (const state of ["pending", "processing"] as const) {
+    await db
+      .update(billingPaymentAttempts)
+      .set({ state })
+      .where(eq(billingPaymentAttempts.id, attemptId));
+    expect(
+      (await workflow.checkInvoice(s.actors.member, s.ids.elm, id)).ok,
+    ).toBe(true);
+    expect(s.provider.calls).toEqual(calls);
+    expect(s.methodReads()).toBe(methodReads);
+    const [attempt] = await db
+      .select()
+      .from(billingPaymentAttempts)
+      .where(eq(billingPaymentAttempts.id, attemptId));
+    expect(attempt).toMatchObject({
+      state,
+      inspectionFailures: 3,
+      dispatchCount: 1,
+    });
+  }
+  expect(
+    (await workflow.checkInvoice(s.actors.billing, s.ids.elm, id)).ok,
+  ).toBe(true);
+  expect(s.provider.calls.inspect).toBe(calls.inspect + 1);
+  const [attempt] = await db
+    .select()
+    .from(billingPaymentAttempts)
+    .where(eq(billingPaymentAttempts.id, attemptId));
+  expect(attempt.inspectionFailures).toBe(4);
+  // Turn the same synthetic group into a fully covered automatic invoice with no attempt.
+  // Only a live method read can distinguish the detached card from local permission.
+  const subscriptionId = randomUUID(),
+    periodId = randomUUID();
+  const calendar = { timeZone: "UTC", issueHour: 9, chargeHour: 9 };
+  const start = new Date(`${invoice.dueDate}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() + 1);
+  const periodStart = start.toISOString().slice(0, 10);
+  start.setUTCMonth(start.getUTCMonth() + 1);
+  const periodEnd = start.toISOString().slice(0, 10);
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(billingPaymentAttempts)
+      .where(eq(billingPaymentAttempts.id, attemptId));
+    await tx.update(invoices).set({ calendar }).where(eq(invoices.id, id));
+    await tx.insert(billingSubscriptions).values({
+      ...owner,
+      id: subscriptionId,
+      createRequestId: randomUUID(),
+      createDigest: "0".repeat(64),
+      periodAnchorDate: periodStart,
+      dueAnchorDate: invoice.dueDate,
+      intervalMonths: 1,
+      firstUnbilledPeriodIndex: 0,
+      calendar,
+      createdAt: stamp,
+      updatedAt: stamp,
+    });
+    await tx.insert(billingSubscriptionTerms).values([
+      {
+        ...owner,
+        subscriptionId,
+        revision: 1,
+        effectivePeriodIndex: 0,
+        kind: "commercial",
+        label: "Synthetic one-time support",
+        amountMinor: 1200,
+        currency: "USD",
+        paymentArrangement: "automatic",
+      },
+      {
+        ...owner,
+        subscriptionId,
+        revision: 2,
+        effectivePeriodIndex: 0,
+        kind: "state",
+        billingState: "billable",
+      },
+    ]);
+    await tx.insert(billingEnrollmentScopes).values({
+      ...owner,
+      enrollmentId,
+      subscriptionId,
+      commercialRevision: 1,
+      fromPeriodIndex: 0,
+      periodStart,
+      dueDate: invoice.dueDate,
+      calendar,
+    });
+    await tx.insert(billingPeriods).values({
+      ...owner,
+      id: periodId,
+      subscriptionId,
+      periodIndex: 0,
+      periodStart,
+      periodEnd,
+      dueDate: invoice.dueDate,
+      commercialRevision: 1,
+      stateRevision: 2,
+      label: "Synthetic one-time support",
+      amountMinor: 1200,
+      currency: "USD",
+      paymentArrangement: "automatic",
+      billingState: "billable",
+      calendar,
+      readinessDate: invoice.readinessDate,
+      chargeAt: `${invoice.dueDate}T09:00:00Z`,
+      dueEndAt: invoice.dueEndAt,
+      sealedAt: stamp,
+      invoiceGroupId: groupId,
+    });
+    await tx
+      .update(invoiceLines)
+      .set({ originRef: periodId })
+      .where(eq(invoiceLines.invoiceId, id));
+  });
+  s.provider.unavailable = false;
+  s.setDate(`${invoice.dueDate}T12:00:00Z`);
+  s.setMethodDetached();
+  const collections = createInvoiceCollections({
+    ...s.collectionOptions,
+    wallNow: () => new Date(),
+  });
+  const detachedWorkflow = createBillingWorkflow({
+    ...s.options,
+    now: () => new Date(),
+    businessNow: s.options.now,
+    invoiceCollections: collections,
+  });
+  const inspected = s.provider.calls.inspect;
+  const checked = value(
+    await detachedWorkflow.checkInvoice(s.actors.member, s.ids.elm, id),
+  );
+  expect(checked.invoice).toMatchObject({
+    state: "open",
+    providerReceipt: { state: "verified", reason: null },
+    hostedInvoiceUrl: `https://invoice.stripe.com/i/in_${id}`,
+    collection: {
+      attempt: null,
+      disposition: { kind: "payable", reason: "not_authorized" },
+    },
+  });
+  expect(s.provider.calls.inspect).toBe(inspected + 1);
+  expect(s.methodReads()).toBe(1);
+  expect(
+    (await detachedWorkflow.checkInvoice(s.actors.member, s.ids.elm, id)).ok,
+  ).toBe(true);
+  expect(s.provider.calls.inspect).toBe(inspected + 1);
+  expect((await db.select().from(billingPaymentAttempts)).length).toBe(0);
 });
 
 test("frozen recipients and verified terminal receipts prevent misleading provider links after profile or receipt changes", async () => {

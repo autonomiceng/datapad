@@ -63,6 +63,23 @@ class SetupReview extends Error {}
 function review(): never {
   throw new SetupReview("Payment setup needs review");
 }
+export function paymentSetupIntent(
+  row: typeof setups.$inferSelect,
+  providerCustomerId: string,
+): PaymentSetupIntent {
+  return {
+    deploymentKey: row.deploymentKey,
+    accountId: row.providerAccountId,
+    setupId: row.id,
+    customerId: row.billingCustomerId,
+    providerCustomerId,
+    currency: "USD",
+    successUrl: row.successUrl,
+    cancelUrl: row.cancelUrl,
+    integrationIdentifier: row.integrationIdentifier,
+  };
+}
+
 export function createSetupRecovery(options: PaymentSettingsOptions) {
   const {
       pool,
@@ -74,22 +91,6 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
     db = drizzle(pool);
   const scope = (id: string) =>
     and(eq(setups.id, id), eq(setups.deploymentKey, deploymentKey));
-  function intent(
-    row: typeof setups.$inferSelect,
-    providerCustomerId: string,
-  ): PaymentSetupIntent {
-    return {
-      deploymentKey,
-      accountId: row.providerAccountId,
-      setupId: row.id,
-      customerId: row.billingCustomerId,
-      providerCustomerId,
-      currency: "USD",
-      successUrl: row.successUrl,
-      cancelUrl: row.cancelUrl,
-      integrationIdentifier: row.integrationIdentifier,
-    };
-  }
   function verify(
     expected: PaymentSetupIntent,
     receipt: ProviderPaymentSetup,
@@ -231,7 +232,7 @@ export function createSetupRecovery(options: PaymentSettingsOptions) {
               mapping.providerCustomerId !== providerCustomerId)
           )
             review();
-          const expected = intent(row, providerCustomerId);
+          const expected = paymentSetupIntent(row, providerCustomerId);
           let receipt: ProviderPaymentSetup;
           if (row.providerSessionId || row.pendingSessionId) {
             receipt = await provider.retrieveSetup(

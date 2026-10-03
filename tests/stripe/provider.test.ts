@@ -125,6 +125,7 @@ async function provider(
               typeof init?.body === "string" ? init.body : undefined,
               new Headers(init?.headers).get("Idempotency-Key"),
             );
+      if (value instanceof Response) return value;
       return new Response(JSON.stringify(value), {
         headers: { "Content-Type": "application/json" },
       });
@@ -299,6 +300,23 @@ test("signature verification preserves raw bytes and rejects live/foreign events
     invoiceId: intent.invoiceId,
     providerInvoiceId: "in_synthetic",
   });
+  const actionPayload = JSON.stringify({
+    ...event,
+    type: "invoice.payment_action_required",
+  });
+  expect(
+    await verifier.verifyEvent(
+      actionPayload,
+      await stripe.webhooks.generateTestHeaderStringAsync({
+        payload: actionPayload,
+        secret,
+      }),
+    ),
+  ).toMatchObject({
+    eventType: "invoice.payment_action_required",
+    invoiceId: intent.invoiceId,
+    providerInvoiceId: "in_synthetic",
+  });
   await rejects(verifier.verifyEvent(`${payload} `, signature), {
     reason: "ownership_mismatch",
   });
@@ -372,7 +390,11 @@ test("collection inspection paginates allocations, independently retrieves inten
               amount_requested: 30,
               payment: {
                 type: "payment_intent",
-                payment_intent: { id: "pi_paid", status: "processing" },
+                payment_intent: {
+                  id: "pi_paid",
+                  status: "processing",
+                  payment_method: "pm_untrusted",
+                },
               },
             },
           ])
@@ -387,6 +409,7 @@ test("collection inspection paginates allocations, independently retrieves inten
             status: "succeeded",
             amount: 30,
             amount_received: 30,
+            payment_method: { id: "pm_paid" },
           }
         : { ...paymentIntent, amount: 70 };
     }
@@ -403,9 +426,11 @@ test("collection inspection paginates allocations, independently retrieves inten
     collectionState: "idle",
   });
   expect(inspection.payments).toHaveLength(2);
+  expect(inspection.payments[0].providerPaymentMethodId).toBeNull();
   expect(inspection.payments[1]).toMatchObject({
     invoicePaymentId: "inpay_paid",
     paymentIntentId: "pi_paid",
+    providerPaymentMethodId: "pm_paid",
     paidMinor: 30,
     intentState: "succeeded",
   });
@@ -469,6 +494,7 @@ test("collection inspection paginates allocations, independently retrieves inten
         {
           invoicePaymentId: "inpay_synthetic",
           paymentIntentId: "pi_synthetic",
+          providerPaymentMethodId: null,
           status: "canceled",
           receivedMinor: 0,
           capturableMinor: 0,
@@ -496,8 +522,24 @@ test("collection never treats active, unallocated, foreign or incomplete evidenc
     return adapter.inspectCollection(intent, "in_synthetic");
   }
   expect(
-    await inspect(invoicePayment, { ...paymentIntent, status: "processing" }),
-  ).toMatchObject({ collectionState: "active" });
+    await inspect(invoicePayment, {
+      ...paymentIntent,
+      status: "processing",
+      payment_method: null,
+    }),
+  ).toMatchObject({
+    collectionState: "active",
+    payments: [{ providerPaymentMethodId: null }],
+  });
+  expect(
+    await inspect(invoicePayment, {
+      ...paymentIntent,
+      payment_method: "pm_synthetic",
+    }),
+  ).toMatchObject({
+    collectionState: "idle",
+    payments: [{ providerPaymentMethodId: "pm_synthetic" }],
+  });
   expect(
     await inspect(invoicePayment, {
       ...paymentIntent,
@@ -510,7 +552,11 @@ test("collection never treats active, unallocated, foreign or incomplete evidenc
     { kind: "review", reason: "ownership_mismatch" },
   );
   await rejects(
-    inspect(invoicePayment, { ...paymentIntent, customer: "cus_foreign" }),
+    inspect(invoicePayment, {
+      ...paymentIntent,
+      customer: "cus_foreign",
+      payment_method: "pm_synthetic",
+    }),
     { kind: "review", reason: "ownership_mismatch" },
   );
   await rejects(
@@ -554,6 +600,204 @@ test("collection never treats active, unallocated, foreign or incomplete evidenc
     kind: "review",
     reason: "provider_conflict",
   });
+});
+
+test("scheduled pay replays only the frozen invoice, method, off-session flag and key", async () => {
+  const requests: {
+    method: string;
+    path: string;
+    body: string | undefined;
+    key: string | null;
+  }[] = [];
+  let loseResponse = true;
+  const adapter = await provider((url, method, body, key) => {
+    requests.push({ method, path: url.pathname, body, key });
+    if (url.pathname.endsWith("/lines"))
+      throw new Error("Synthetic read outage after successful pay response");
+    expect(url.pathname).toBe("/v1/invoices/in_synthetic/pay");
+    if (loseResponse) {
+      loseResponse = false;
+      throw new Error("Synthetic lost response");
+    }
+    return {
+      ...collectionInvoice("paid", 100),
+      payments: list([
+        {
+          ...invoicePayment,
+          is_default: true,
+          status: "paid",
+          amount_paid: 100,
+          payment: {
+            type: "payment_intent",
+            payment_intent: {
+              ...paymentIntent,
+              status: "succeeded",
+              amount_received: 100,
+              payment_method: "pm_synthetic",
+            },
+          },
+        },
+      ]),
+    };
+  });
+  const request = {
+    providerInvoiceId: "in_synthetic",
+    providerPaymentMethodId: "pm_synthetic",
+    offSession: true,
+  } satisfies Parameters<typeof adapter.payInvoice>[1];
+  const effect = { idempotencyKey: "datapad:synthetic:payment:synthetic:pay" };
+  await rejects(adapter.payInvoice(intent, request, effect), {
+    kind: "retryable",
+  });
+  expect(requests).toHaveLength(1);
+  expect(await adapter.payInvoice(intent, request, effect)).toMatchObject({
+    kind: "response",
+    receipt: {
+      status: "paid",
+      providerInvoiceId: "in_synthetic",
+      payment: {
+        invoicePaymentId: "inpay_synthetic",
+        paymentIntentId: "pi_synthetic",
+        providerPaymentMethodId: "pm_synthetic",
+      },
+    },
+  });
+  expect(requests).toHaveLength(2); // The successful POST returns before the failing line read can run.
+  const pays = requests.filter((entry) => entry.method === "POST");
+  expect(pays).toHaveLength(2);
+  expect(pays[0]).toEqual(pays[1]);
+  expect(pays[0]).toMatchObject({
+    method: "POST",
+    path: "/v1/invoices/in_synthetic/pay",
+    key: effect.idempotencyKey,
+  });
+  expect([...new URLSearchParams(pays[0].body).entries()]).toEqual([
+    ["payment_method", "pm_synthetic"],
+    ["off_session", "true"],
+    ["expand[0]", "payments.data.payment.payment_intent"],
+  ]);
+  await rejects(
+    adapter.payInvoice(
+      { ...intent, accountId: "acct_foreign" },
+      request,
+      effect,
+    ),
+    { kind: "review", reason: "ownership_mismatch" },
+  );
+  expect(requests.filter((entry) => entry.method === "POST")).toHaveLength(2);
+  const foreign = await provider((url) =>
+    url.pathname.endsWith("/lines")
+      ? list([line])
+      : { ...collectionInvoice("paid", 100), customer: "cus_foreign" },
+  );
+  await rejects(foreign.payInvoice(intent, request, effect), {
+    kind: "review",
+    receiptMismatch: true,
+  });
+});
+
+test("scheduled pay classifies definitive card outcomes before safe errors and exposes only correlation hints", async () => {
+  const cases = [
+    { type: "card_error", code: "card_declined", kind: "declined" },
+    { type: "card_error", code: "processing_error", kind: "declined" },
+    {
+      type: "card_error",
+      code: "authentication_required",
+      kind: "requires_action",
+    },
+    {
+      type: "card_error",
+      code: "invoice_payment_intent_requires_action",
+      kind: "requires_action",
+    },
+    {
+      type: "card_error",
+      code: "payment_intent_action_required",
+      kind: "requires_action",
+    },
+    {
+      type: "card_error",
+      code: "card_declined",
+      decline_code: "authentication_required",
+      kind: "requires_action",
+    },
+    {
+      type: "card_error",
+      code: "card_declined",
+      payment_intent: {
+        ...paymentIntent,
+        customer: "cus_foreign",
+        status: "requires_action",
+      },
+      kind: "requires_action",
+    },
+    {
+      type: "invalid_request_error",
+      status: 402,
+      payment_intent: { ...paymentIntent, status: "requires_action" },
+      kind: "review",
+    },
+    { type: "invalid_request_error", status: 400, kind: "review" },
+    { type: "invalid_request_error", status: 422, kind: "review" },
+    { type: "api_error", status: 500, kind: "retryable" },
+  ] satisfies Array<{
+    type: string;
+    code?: string;
+    decline_code?: string;
+    status?: number;
+    payment_intent?: typeof paymentIntent;
+    kind: "declined" | "requires_action" | "review" | "retryable";
+  }>;
+  for (const scenario of cases) {
+    let calls = 0;
+    const adapter = await provider((url) => {
+      calls++;
+      expect(url.pathname).toBe("/v1/invoices/in_synthetic/pay");
+      return new Response(
+        JSON.stringify({
+          error: {
+            message: "Synthetic provider detail must stay private",
+            type: scenario.type,
+            code: scenario.code,
+            decline_code: scenario.decline_code,
+            payment_intent: scenario.payment_intent,
+          },
+        }),
+        {
+          status: scenario.status ?? 402,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    });
+    const outcome = adapter.payInvoice(
+      intent,
+      {
+        providerInvoiceId: "in_synthetic",
+        providerPaymentMethodId: "pm_synthetic",
+        offSession: true,
+      },
+      { idempotencyKey: "synthetic_collection_pay" },
+    );
+    if (scenario.type === "card_error") {
+      if (scenario.kind !== "declined" && scenario.kind !== "requires_action")
+        throw new Error("Invalid synthetic card outcome");
+      expect(await outcome).toEqual({
+        kind: scenario.kind,
+        paymentIntentId: scenario.payment_intent?.id ?? null,
+      });
+    } else {
+      await rejects(outcome, (error: unknown) => {
+        expect(error).toBeInstanceOf(BillingProviderError);
+        expect(error).toMatchObject({
+          kind: scenario.kind,
+          reason: "provider_conflict",
+        });
+        expect(String(error)).not.toContain("Synthetic provider detail");
+        return true;
+      });
+    }
+    expect(calls).toBe(1);
+  }
 });
 
 test("external pay replays immutable expanded parameters and void verifies the owned invoice before mutation", async () => {

@@ -232,6 +232,7 @@ export interface CollectionInspection {
   payments: Array<{
     invoicePaymentId: string;
     paymentIntentId: string;
+    providerPaymentMethodId: string | null;
     status: "open" | "paid" | "canceled";
     paidMinor: number | null;
     intentState:
@@ -267,4 +268,39 @@ export interface InvoiceResolutionProvider {
     id: string,
     effect: ProviderEffect,
   ): Promise<ProviderInvoice>;
+}
+
+export interface CollectionPayRequest {
+  providerInvoiceId: string;
+  providerPaymentMethodId: string;
+  offSession: true;
+}
+/** Owned metadata and payment correlation from the pay response itself; not a complete financial inspection. */
+export interface CollectionPayReceipt extends ProviderOwnership {
+  invoiceId: string;
+  providerInvoiceId: string;
+  providerCustomerId: string;
+  status: ProviderInvoiceStatus;
+  payment: null | {
+    invoicePaymentId: string;
+    paymentIntentId: string;
+    providerPaymentMethodId: string;
+  };
+}
+export type CollectionPayOutcome =
+  | { kind: "response"; receipt: CollectionPayReceipt }
+  | {
+      kind: "declined" | "requires_action";
+      paymentIntentId: string | null;
+    };
+export interface InvoiceCollectionProvider
+  extends
+    Pick<InvoiceResolutionProvider, "ownership" | "inspectCollection">,
+    Pick<PaymentSettingsProvider, "retrieveSavedMethod"> {
+  /** Pays the exact owned invoice off-session with the frozen card and durable effect key; returns the pay response correlation before any further inspection. */
+  payInvoice(
+    intent: InvoiceIntent,
+    request: CollectionPayRequest,
+    effect: ProviderEffect,
+  ): Promise<CollectionPayOutcome>;
 }

@@ -8,6 +8,12 @@ import { createBillingWorker } from "../worker";
 
 export async function startPortal(
   options: Parameters<typeof createPortalRuntime>[1] = {},
+  acceptance?: (
+    runtime: Pick<
+      Awaited<ReturnType<typeof createPortalRuntime>>,
+      "invoiceCollections"
+    >,
+  ) => Promise<void>,
 ) {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
   if (process.env.HOST && process.env.HOST !== "127.0.0.1")
@@ -54,7 +60,9 @@ export async function startPortal(
         scheduled: runtime.scheduledBilling,
         paymentSettings: runtime.paymentSettingsWork,
         resolutions: runtime.invoiceResolutions,
+        collections: runtime.invoiceCollections,
       });
+    await acceptance?.({ invoiceCollections: runtime.invoiceCollections });
     console.log(`Listening on http://127.0.0.1:${app.server!.port}`);
     const listeningApp = app;
     let stopping = false;

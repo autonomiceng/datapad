@@ -64,6 +64,20 @@
       "when": 1791032546963,
       "tag": "0008_payment_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791040457931,
+      "tag": "0009_due_day_collection",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791049560598,
+      "tag": "0010_ordinary_tana_nile",
+      "breakpoints": true
     }
   ]
 }

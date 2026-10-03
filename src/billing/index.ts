@@ -50,3 +50,6 @@ export type * from "./payment-settings-types";
 export { createCustomerReceipt } from "./internal/customer-receipt";
 export { createInvoiceResolutions } from "./internal/resolutions";
 export type * from "./resolutions-types";
+
+export { createInvoiceCollections } from "./internal/collection";
+export type * from "./collection-types";
