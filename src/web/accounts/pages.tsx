@@ -404,6 +404,12 @@ export function CustomerPage({ customerId }: { customerId: string }) {
             Services
           </Link>
         )}
+        {customer &&
+          (customer.role || session.data?.staffRoles.includes("support")) && (
+            <Link to="/customers/$customerId/tickets" params={{ customerId }}>
+              Support
+            </Link>
+          )}
         {customer && session.data?.staffRoles.includes("billing") && (
           <Link
             to="/customers/$customerId/invoices/new"

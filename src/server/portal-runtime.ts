@@ -1,3 +1,4 @@
+import { createSupport } from "../support";
 import nodemailer from "nodemailer";
 import { createInvoiceNotices } from "../notifications";
 import { createNoticeSmtp } from "./notice-smtp";
@@ -129,6 +130,12 @@ export async function createPortalRuntime(
     allowRecord: servicePolicy.allowRecord,
     providerLinks: {},
   });
+  const support = createSupport({
+    pool,
+    authorizeCustomer: customers.authorizeCustomer.bind(customers),
+    audit: access.audit,
+    readTarget: services.readTarget.bind(services),
+  });
   const subscriptions = await createPortalSubscriptions({
     pool,
     deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
@@ -216,6 +223,7 @@ export async function createPortalRuntime(
     invoiceWorkflow: portalBilling.http,
     commands: portalBilling.commands,
     services: { services, access, origin: configuration.origin },
+    support: { support, access, origin: configuration.origin },
     billing,
     accounts: {
       routes: { access, customers, origin: configuration.origin },

@@ -1,3 +1,8 @@
+import {
+  SupportTicketsPage,
+  SupportNewTicketPage,
+  SupportTicketPage,
+} from "./support/tickets";
 import { PaginationSchema } from "../import-review/contract";
 import { AccountPaginationSchema } from "../access/contract";
 import type { ReactNode } from "react";
@@ -181,6 +186,52 @@ const serviceRoute = createRoute({
     );
   },
 });
+const ticketsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/tickets",
+  component: () => {
+    const { customerId } = ticketsRoute.useParams();
+    return <SupportTicketsPage key={customerId} customerId={customerId} />;
+  },
+});
+const newTicketRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/tickets/new",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { serviceId?: string; componentId?: string } => ({
+    serviceId:
+      typeof search.serviceId === "string" ? search.serviceId : undefined,
+    componentId:
+      typeof search.componentId === "string" ? search.componentId : undefined,
+  }),
+  component: () => {
+    const { customerId } = newTicketRoute.useParams();
+    const { serviceId, componentId } = newTicketRoute.useSearch();
+    return (
+      <SupportNewTicketPage
+        key={`${customerId}:${serviceId}:${componentId}`}
+        customerId={customerId}
+        serviceId={serviceId}
+        componentId={componentId}
+      />
+    );
+  },
+});
+const ticketRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/tickets/$ticketId",
+  component: () => {
+    const { customerId, ticketId } = ticketRoute.useParams();
+    return (
+      <SupportTicketPage
+        key={`${customerId}:${ticketId}`}
+        customerId={customerId}
+        ticketId={ticketId}
+      />
+    );
+  },
+});
 const prepareInvoiceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/customers/$customerId/invoices/new",
@@ -288,6 +339,9 @@ export const router = createRouter({
     invitationRoute,
     servicesRoute,
     serviceRoute,
+    ticketsRoute,
+    newTicketRoute,
+    ticketRoute,
     prepareInvoiceRoute,
     reviewInvoiceRoute,
     subscriptionsRoute,

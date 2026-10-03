@@ -35,6 +35,8 @@ Before adding modules, changing application structure or changing import-review 
 
 Before changing invoice persistence, provider effects, payment events or invoice UI, read [the billing architecture and contracts](docs/billing.md).
 
+Before changing tickets, proposals, approvals or support UI, read [the support contract](docs/support.md).
+
 ## Taste
 
 - Check maintained open-source libraries before building infrastructure.

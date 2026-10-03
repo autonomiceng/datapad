@@ -1,0 +1,109 @@
+.support-page {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.support-form textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+.support-form label {
+  max-width: none;
+}
+.support-form button {
+  width: fit-content;
+}
+.support-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  padding: 14px 0;
+}
+.support-list .account-note {
+  grid-column: 1 / -1;
+}
+.support-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.support-thread {
+  display: grid;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.support-entry {
+  display: grid;
+  gap: 8px;
+}
+.support-entry + .support-entry {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.support-entry-meta {
+  display: grid;
+  gap: 4px;
+}
+.support-entry.support-internal {
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+}
+.support-prose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.support-approval {
+  display: grid;
+  gap: 4px;
+}
+.support-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+.support-proposal-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.support-facts dt {
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+.support-facts dd {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  margin: 2px 0 0;
+  min-width: 0;
+}
+.support-disclosure-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  align-items: start;
+}
+.support-disclosure-field {
+  display: grid;
+  gap: 16px;
+}
+.support-warning {
+  color: var(--danger);
+  font-size: var(--text-support);
+  font-weight: 400;
+}
+@media (max-width: 600px) {
+  .support-proposal-facts,
+  .support-disclosure-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

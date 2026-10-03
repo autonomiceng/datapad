@@ -8,6 +8,7 @@ export default defineConfig({
     "./src/customers/internal/schema.ts",
     "./src/services/internal/schema.ts",
     "./src/notifications/internal/schema.ts",
+    "./src/support/internal/schema.ts",
   ],
   out: "./drizzle",
 });
