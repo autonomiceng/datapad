@@ -13,6 +13,7 @@ import {
   foreignKey,
   index,
 } from "drizzle-orm/pg-core";
+import { billingInvoiceGroups } from "./scheduled-schema";
 import { customers } from "../../customers/schema";
 import { services } from "../../services/schema";
 import type {
@@ -40,6 +41,9 @@ export const billingSubscriptions = pgTable(
       .$type<CreateSubscriptionRequest["intervalMonths"]>()
       .notNull(),
     firstUnbilledPeriodIndex: integer("first_unbilled_period_index").notNull(),
+    activationFromPeriodIndex: integer("activation_from_period_index"),
+    activatedAt: instant("activated_at"),
+    activatedBy: text("activated_by"),
     calendar: jsonb("calendar").$type<CalendarPolicy>().notNull(),
     cancellationStatus: text("cancellation_status")
       .$type<"none" | "requested" | "declined" | "approved">()
@@ -72,6 +76,10 @@ export const billingSubscriptions = pgTable(
       sql`${t.firstUnbilledPeriodIndex} between 0 and 120000`,
     ),
     check("subscription_version", sql`${t.version}>0`),
+    check(
+      "subscription_activation",
+      sql`(${t.activationFromPeriodIndex} IS NULL AND ${t.activatedAt} IS NULL AND ${t.activatedBy} IS NULL) OR (${t.activationFromPeriodIndex} IS NOT NULL AND ${t.activatedAt} IS NOT NULL AND ${t.activatedBy} IS NOT NULL AND ${t.activationFromPeriodIndex} BETWEEN ${t.firstUnbilledPeriodIndex} AND 120000)`,
+    ),
     check(
       "subscription_cancel",
       sql`${t.cancellationStatus} in ('none','requested','declined','approved') and ((${t.cancellationStatus}='none' and ${t.cancellationReason} is null) or (${t.cancellationStatus}<>'none' and ${t.cancellationReason} is not null)) and ((${t.cancellationStatus}='approved' and ${t.cancellationEffectivePeriodIndex} is not null and ${t.cancellationEffectivePeriodIndex} >= ${t.firstUnbilledPeriodIndex} and ${t.cancellationEffectivePeriodIndex} <= 120000) or (${t.cancellationStatus}<>'approved' and ${t.cancellationEffectivePeriodIndex} is null))`,
@@ -161,9 +169,23 @@ export const billingPeriods = pgTable(
     dueEndAt: instant("due_end_at"),
     chargeAt: instant("charge_at"),
     sealedAt: instant("sealed_at"),
+    invoiceGroupId: uuid("invoice_group_id"),
   },
   (t) => [
     unique("billing_period_identity").on(t.subscriptionId, t.periodIndex),
+    foreignKey({
+      name: "billing_period_invoice_group",
+      columns: [t.invoiceGroupId, t.customerId, t.deploymentKey],
+      foreignColumns: [
+        billingInvoiceGroups.id,
+        billingInvoiceGroups.customerId,
+        billingInvoiceGroups.deploymentKey,
+      ],
+    }),
+    check(
+      "billing_period_sealed_claim",
+      sql`${t.invoiceGroupId} IS NULL OR ${t.sealedAt} IS NOT NULL`,
+    ),
     foreignKey({
       name: "billing_period_owner",
       columns: [t.subscriptionId, t.customerId, t.deploymentKey],

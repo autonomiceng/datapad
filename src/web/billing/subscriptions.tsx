@@ -24,7 +24,7 @@ import {
   useRequestId,
   useSession,
 } from "../accounts/api";
-import { date, money } from "./invoices";
+import { date, dateRange, money } from "./format";
 import "./subscriptions.css";
 
 const pageSize = 50;
@@ -58,12 +58,8 @@ function parameters(values: object) {
 type Boundary = SubscriptionBoundariesResponse["boundaries"][number];
 type Choice = SubscriptionOptionsResponse["choices"][number];
 type BillingState = SubscriptionSummary["billingState"];
-const range = (start: string, end: string) =>
-  start.slice(0, 4) === end.slice(0, 4)
-    ? `${date(start).replace(/, \d{4}$/, "")} to ${date(end)}`
-    : `${date(start)} to ${date(end)}`;
 const boundaryLabel = (boundary: Boundary) =>
-  `${range(boundary.periodStart, boundary.periodEnd)}, due ${date(boundary.dueDate)}`;
+  `${dateRange(boundary.periodStart, boundary.periodEnd)}, due ${date(boundary.dueDate)}`;
 const periodNames: Record<number, string> = {
   1: "month",
   3: "3 months",
@@ -717,7 +713,9 @@ function BoundaryDates({
 }) {
   return (
     <span>
-      {boundary ? range(boundary.periodStart, boundary.periodEnd) : fallback}
+      {boundary
+        ? dateRange(boundary.periodStart, boundary.periodEnd)
+        : fallback}
       {boundary && (
         <span className="subscription-support">
           Due {date(boundary.dueDate)}
@@ -887,7 +885,7 @@ function Facts({
       <div>
         <dt>First unbilled period</dt>
         <dd>
-          {range(
+          {dateRange(
             subscription.firstUnbilled.periodStart,
             subscription.firstUnbilled.periodEnd,
           )}
@@ -1518,7 +1516,8 @@ function Forecast(scope: Scope) {
                         )}
                       </span>
                       <span className="subscription-support">
-                        Service {range(period.periodStart, period.periodEnd)}
+                        Service{" "}
+                        {dateRange(period.periodStart, period.periodEnd)}
                         {zones.size > 1 && `, ${period.calendar.timeZone}`}
                         {period.id === null && (
                           <span className="subscription-flag">

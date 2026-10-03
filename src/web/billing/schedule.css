@@ -1,0 +1,168 @@
+.schedule-page {
+  overflow-wrap: anywhere;
+}
+.schedule-list,
+.schedule-groups,
+.schedule-periods,
+.schedule-review {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.schedule-support {
+  display: block;
+  color: var(--muted);
+  font-size: var(--text-support);
+  font-weight: 400;
+}
+.schedule-warning {
+  color: var(--danger);
+  font-size: var(--text-support);
+}
+/* A note placed under the control it explains. */
+.schedule-below {
+  margin-top: -8px;
+}
+.schedule-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Subscription rows and continuing invoices */
+.schedule-list > li {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+}
+.schedule-list > li:first-child {
+  padding-top: 0;
+}
+.schedule-list > li:last-child {
+  padding-bottom: 0;
+}
+.schedule-list > li + li {
+  border-top: 1px solid var(--border);
+}
+.schedule-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+.schedule-facts dt {
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+.schedule-add,
+.schedule-continuing {
+  display: grid;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Date ranges: two dates and their action on one row. */
+.schedule-window {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 180px));
+  justify-content: start;
+  align-items: end;
+  gap: 12px 16px;
+}
+.schedule-range {
+  grid-template-columns: repeat(2, minmax(0, 180px)) auto;
+}
+.schedule-window label {
+  max-width: none;
+}
+
+/* Invoice groups by due date */
+.schedule-groups {
+  display: grid;
+  border-bottom: 1px solid var(--border);
+}
+.schedule-group {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.schedule-group-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(7em, auto);
+  align-items: baseline;
+  gap: 2px 16px;
+}
+.schedule-group-head .account-note {
+  grid-row: 2;
+}
+.schedule-group-head .schedule-amount {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.schedule-group-head .status-tag {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: start;
+  justify-self: end;
+}
+.schedule-review {
+  display: grid;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
+  font-size: var(--text-support);
+}
+.schedule-periods {
+  display: grid;
+  gap: 10px;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
+}
+.schedule-periods > li {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px 16px;
+}
+.schedule-periods .schedule-amount {
+  font-weight: 400;
+}
+.status-tag.schedule-kind-review,
+.status-tag.schedule-kind-late,
+.status-tag.schedule-kind-missed {
+  border-color: var(--danger);
+  background: var(--danger-surface);
+  color: var(--danger);
+}
+.status-tag.schedule-kind-excluded {
+  background: transparent;
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  .schedule-window,
+  .schedule-range {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .schedule-range button {
+    grid-column: 1 / -1;
+  }
+  .schedule-periods {
+    margin-left: 0;
+  }
+  .schedule-periods > li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .schedule-periods > li > .schedule-support {
+    grid-column: 1;
+  }
+  .schedule-periods .schedule-amount {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}

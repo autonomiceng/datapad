@@ -12,6 +12,7 @@ import {
   subscriptionRoutes,
   type SubscriptionHttp,
 } from "./subscription-routes";
+import { scheduledRoutes, type ScheduledHttp } from "./scheduled-routes";
 import { billingRoutes, type BillingHttp } from "./billing-routes";
 import {
   CustomerObservationSchema,
@@ -74,6 +75,7 @@ export function createApp({
   services,
   invoiceWorkflow,
   subscriptions,
+  scheduled,
   accounts,
 }: {
   importReview: ImportReviewReader;
@@ -82,6 +84,7 @@ export function createApp({
   services?: ServiceHttp;
   invoiceWorkflow?: InvoiceWorkflowHttp;
   subscriptions?: SubscriptionHttp;
+  scheduled?: ScheduledHttp;
   accounts?: {
     routes: Parameters<typeof accountRoutes>[0];
     authHandler: (request: Request) => Promise<Response>;
@@ -250,7 +253,8 @@ export function createApp({
   app
     .use(serviceRoutes(services))
     .use(invoiceWorkflowRoutes(invoiceWorkflow))
-    .use(subscriptionRoutes(subscriptions));
+    .use(subscriptionRoutes(subscriptions))
+    .use(scheduledRoutes(scheduled));
   if (accounts) {
     app.use(accountRoutes(accounts.routes));
     app.get("/api/auth/*", ({ request }) => accounts.authHandler(request), {

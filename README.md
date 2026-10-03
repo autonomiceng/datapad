@@ -53,3 +53,5 @@ Local tasks bind to loopback and serve synthetic fixtures. Real-data ingestion a
 ## License
 
 [MIT](LICENSE). Reused generic stack tooling retains applicable notices; dependencies retain their own licenses and notices.
+
+See [scheduled billing](docs/scheduled-billing.md) for explicit schedule activation, grouped invoices and issuance holds.

@@ -22,6 +22,7 @@ export interface InvoiceIntent extends ProviderOwnership {
   providerCustomerId: string;
   issueDate: string;
   dueDate: string;
+  dueEndAt: string;
   currency: "USD";
   totalMinor: number;
   lines: LineIntent[];

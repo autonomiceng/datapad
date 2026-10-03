@@ -3,6 +3,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { openSandbox, availableLoopbackPort } from "./billing-sandbox";
+import { prepareScheduledAcceptance } from "./scheduled-acceptance";
 import { startStripeListener } from "./stripe-listener";
 
 const mode = process.argv[2];
@@ -16,26 +17,30 @@ if (
     "portal",
     "portal-billing",
     "portal-billing-test",
+    "portal-scheduled-test",
     "portal-test",
     "portal-destroy",
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-test or portal-destroy.",
   );
 }
 const portal =
   mode === "portal" ||
   mode === "portal-billing" ||
   mode === "portal-billing-test" ||
+  mode === "portal-scheduled-test" ||
   mode === "portal-test" ||
   mode === "portal-destroy";
 const sandboxMode =
   mode === "billing" ||
   mode === "portal-billing" ||
-  mode === "portal-billing-test";
+  mode === "portal-billing-test" ||
+  mode === "portal-scheduled-test";
 const isolated = mode === "test" || mode === "portal-test";
-const testing = isolated || mode === "portal-billing-test";
+const scheduledTesting = mode === "portal-scheduled-test";
+const testing = isolated || mode === "portal-billing-test" || scheduledTesting;
 const { values } = parseArgs({
   args: process.argv.slice(3),
   options: {
@@ -43,6 +48,7 @@ const { values } = parseArgs({
     "run-dir": { type: "string" },
     origin: { type: "string" },
     "inbox-origin": { type: "string" },
+    "time-zone": { type: "string" },
   },
   strict: true,
 });
@@ -69,7 +75,7 @@ const project = isolated
       : `datapad-${localId}`;
 const lock = resolve(
   root,
-  mode === "portal-billing-test"
+  mode === "portal-billing-test" || scheduledTesting
     ? ".scratch/billing-test.lock"
     : sandboxMode
       ? ".scratch/billing-run.lock"
@@ -158,7 +164,11 @@ async function startServer(): Promise<string> {
   const child = Bun.spawn(
     [
       process.execPath,
-      portal ? "src/server/portal-index.ts" : "src/server/index.ts",
+      scheduledTesting
+        ? "tests/portal-scheduled-entry.ts"
+        : portal
+          ? "src/server/portal-index.ts"
+          : "src/server/index.ts",
     ],
     {
       cwd: root,
@@ -282,6 +292,11 @@ try {
         throw new Error("Expected loopback-only test mail ports.");
       // Provider credentials are injected only by the explicit sandbox mode below.
       delete env.PORTAL_BILLING_SANDBOX;
+      delete env.PORTAL_SCHEDULE_TEST_CLOCK;
+      delete env.PORTAL_SCHEDULE_TEST_PLAN;
+      env.PORTAL_DEMO_TIME_ZONE =
+        values["time-zone"] ??
+        (scheduledTesting ? "America/Los_Angeles" : "UTC");
       for (const key of Object.keys(env)) {
         if (key.startsWith("STRIPE_") || key.startsWith("BILLING_"))
           delete env[key];
@@ -315,6 +330,14 @@ try {
       env.BILLING_DEPLOYMENT_KEY = sandbox.deploymentKey;
       if (portal) {
         env.PORTAL_BILLING_SANDBOX = "true";
+        if (scheduledTesting) {
+          const acceptance = await prepareScheduledAcceptance(
+            sandbox.directory,
+            env.PORTAL_DEMO_TIME_ZONE!,
+          );
+          env.PORTAL_SCHEDULE_TEST_CLOCK = acceptance.clockPath;
+          env.PORTAL_SCHEDULE_TEST_PLAN = acceptance.planPath;
+        }
       } else {
         env.BILLING_ISSUE_DATE = sandbox.issueDate;
         await command([
@@ -335,9 +358,11 @@ try {
         ...(portal
           ? [
               "--config",
-              mode === "portal-billing-test"
-                ? "playwright.billing.config.ts"
-                : "playwright.portal.config.ts",
+              scheduledTesting
+                ? "playwright.scheduled.config.ts"
+                : mode === "portal-billing-test"
+                  ? "playwright.billing.config.ts"
+                  : "playwright.portal.config.ts",
             ]
           : []),
       ]);

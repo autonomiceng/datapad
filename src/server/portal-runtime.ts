@@ -28,7 +28,13 @@ import {
   readPortalConfiguration,
 } from "./portal-demo";
 
-export async function createPortalRuntime(pool: Pool) {
+export async function createPortalRuntime(
+  pool: Pool,
+  options: {
+    calendar?: import("../billing/subscriptions-contract").CalendarPolicy;
+    now?: () => Date;
+  } = {},
+) {
   const configuration = readPortalConfiguration();
   await assertSyntheticAccess(pool, {
     users: [
@@ -119,12 +125,24 @@ export async function createPortalRuntime(pool: Pool) {
     allowRecord: servicePolicy.allowRecord,
     providerLinks: {},
   });
+  const subscriptions = await createPortalSubscriptions({
+    pool,
+    deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
+    customers,
+    access,
+    customerIds: { elm: elm.customerId, birch: birch.customerId },
+    origin: configuration.origin,
+    calendar: options.calendar ?? configuration.calendar,
+    now: options.now,
+  });
   const portalBilling = await createPortalBilling({
     pool,
     reader,
     customers,
     access,
     configuration: configuration.billing,
+    subscriptionPolicy: subscriptions,
+    now: options.now,
     customerIds: { elm: elm.customerId, birch: birch.customerId },
     origin: configuration.origin,
   });
@@ -147,16 +165,15 @@ export async function createPortalRuntime(pool: Pool) {
       };
     },
   };
-  const subscriptions = await createPortalSubscriptions({
-    pool,
-    deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
-    customers,
-    access,
-    customerIds: { elm: elm.customerId, birch: birch.customerId },
-    origin: configuration.origin,
-  });
+
   return {
-    subscriptions,
+    subscriptions: subscriptions.http,
+    scheduled: {
+      access,
+      scheduled: portalBilling.scheduled,
+      origin: configuration.origin,
+    },
+    scheduledBilling: portalBilling.scheduled,
     invoiceWorkflow: portalBilling.http,
     commands: portalBilling.commands,
     services: { services, access, origin: configuration.origin },

@@ -6,6 +6,8 @@ import { createCustomerRegistry, type Customers } from "../customers";
 import {
   createBilling,
   createBillingWorkflow,
+  createScheduledBilling,
+  type SyntheticScheduledInvoice,
   type BillingReader,
   type SyntheticInvoicePolicy,
 } from "../billing";
@@ -14,6 +16,7 @@ import {
   createStripeEventVerifier,
 } from "../stripe";
 import type { VerifiedInvoiceEvent } from "../billing/provider";
+import type { createPortalSubscriptions } from "./portal-subscriptions";
 import type { InvoiceWorkflowHttp } from "./invoice-workflow-routes";
 import { allowPortalProfile, portalCustomers } from "./portal-demo";
 
@@ -30,6 +33,11 @@ export async function createPortalBilling(options: {
   access: Access;
   customerIds: Record<"elm" | "birch", string>;
   origin: string;
+  subscriptionPolicy: Pick<
+    Awaited<ReturnType<typeof createPortalSubscriptions>>,
+    "allowSubscription" | "choices" | "calendar"
+  >;
+  now?: () => Date;
   configuration?: {
     deploymentKey: string;
     apiKey: string;
@@ -44,6 +52,8 @@ export async function createPortalBilling(options: {
     customerIds,
     configuration,
     origin,
+    subscriptionPolicy,
+    now,
   } = options;
   const allowRequest: SyntheticInvoicePolicy = ({
     request,
@@ -80,6 +90,46 @@ export async function createPortalBilling(options: {
       )
     );
   };
+  const allowScheduledRequest = ({
+    request,
+    customerId,
+    billTo,
+  }: SyntheticScheduledInvoice) => {
+    const sample = portalCustomers.find(
+      (entry) => customerIds[entry.key as "elm" | "birch"] === customerId,
+    );
+    if (!sample) return false;
+    const names = [sample.name, sample.updatedName];
+    const choices = subscriptionPolicy.choices(customerId);
+    const calendar = subscriptionPolicy.calendar;
+    return (
+      /^scheduled:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        request.originKey,
+      ) &&
+      request.customer.key === `customer:${customerId}` &&
+      names.includes(request.customer.name) &&
+      names.includes(billTo.legalName) &&
+      (billTo.billingEmail === null ||
+        billTo.billingEmail === sample.billingEmail) &&
+      request.currency === "USD" &&
+      request.calendar.timeZone === calendar.timeZone &&
+      request.calendar.issueHour === calendar.issueHour &&
+      request.calendar.chargeHour === calendar.chargeHour &&
+      request.lines.length > 0 &&
+      request.lines.length <= 100 &&
+      new Set(request.lines.map((line) => line.originRef)).size ===
+        request.lines.length &&
+      request.lines.every(
+        (line) =>
+          line.originRef !== null &&
+          choices.some(
+            (choice) =>
+              choice.label === line.description &&
+              choice.amountMinor === line.amountMinor,
+          ),
+      )
+    );
+  };
   const provider = configuration
     ? await createStripeBillingProvider({
         apiKey: configuration.apiKey,
@@ -89,6 +139,7 @@ export async function createPortalBilling(options: {
   await reader.assertSyntheticPolicy(
     allowRequest,
     provider?.ownership.accountId,
+    allowScheduledRequest,
   );
   const billingOptions =
     provider && configuration
@@ -96,6 +147,7 @@ export async function createPortalBilling(options: {
           pool,
           provider,
           deploymentKey: configuration.deploymentKey,
+          now,
           customers: createCustomerRegistry({
             operatorId: "synthetic-portal-invoices",
             audit: access.audit,
@@ -112,6 +164,21 @@ export async function createPortalBilling(options: {
         allowRequest,
       })
     : undefined;
+  const scheduled =
+    provider && configuration
+      ? createScheduledBilling({
+          pool,
+          deploymentKey: configuration.deploymentKey,
+          providerOwnership: provider.ownership,
+          customerAccess: customers,
+          audit: access.audit,
+          workerId: "synthetic-scheduled-billing",
+          allowSubscription: subscriptionPolicy.allowSubscription,
+          allowRequest: allowScheduledRequest,
+          now,
+        })
+      : undefined;
+  await scheduled?.assertSyntheticData();
   const http: InvoiceWorkflowHttp = {
     access,
     workflow,
@@ -125,7 +192,11 @@ export async function createPortalBilling(options: {
         false,
       );
       if (!authorization.ok) return authorization;
-      const issueDate = Temporal.Now.plainDateISO("UTC");
+      const issueDate = Temporal.Instant.from(
+        (now?.() ?? new Date()).toISOString(),
+      )
+        .toZonedDateTimeISO("UTC")
+        .toPlainDate();
       return {
         ok: true,
         value: {
@@ -138,6 +209,7 @@ export async function createPortalBilling(options: {
     },
   };
   return {
+    scheduled,
     commands,
     http,
     webhook:

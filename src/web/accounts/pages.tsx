@@ -420,6 +420,14 @@ export function CustomerPage({ customerId }: { customerId: string }) {
             Subscriptions
           </Link>
         )}
+        {customer && (
+          <Link
+            to="/customers/$customerId/billing-schedule"
+            params={{ customerId }}
+          >
+            Invoice schedule
+          </Link>
+        )}
       </header>
       {detail.isPending && (
         <p className="panel state-panel" role="status">

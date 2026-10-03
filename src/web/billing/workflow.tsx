@@ -17,7 +17,8 @@ import {
   useRequestId,
   useSession,
 } from "../accounts/api";
-import { Invoice, date, money } from "./invoices";
+import { Invoice } from "./invoices";
+import { date, money } from "./format";
 import "./workflow.css";
 
 // The invoice's status and review warning already explain the other blockers.

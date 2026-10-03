@@ -43,6 +43,13 @@
       "when": 1791015507689,
       "tag": "0005_billing_forecast",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791018203892,
+      "tag": "0006_scheduled_invoices",
+      "breakpoints": true
     }
   ]
 }

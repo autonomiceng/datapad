@@ -139,5 +139,20 @@ export function readPortalConfiguration() {
       throw new Error("Incomplete or invalid portal sandbox configuration.");
     billing = { deploymentKey, apiKey, signingSecret };
   }
-  return { origin, secret, smtp, inbox, billing };
+  const timeZone = process.env.PORTAL_DEMO_TIME_ZONE ?? "UTC";
+  try {
+    // The portal requires a named zone, not an offset or an ISO timestamp.
+    if (/^[+-]/.test(timeZone)) throw new RangeError("Fixed offset");
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(0);
+  } catch {
+    throw new Error(
+      "Invalid portal demo time zone. Use a named IANA time zone.",
+    );
+  }
+  const calendar = {
+    timeZone,
+    issueHour: 9,
+    chargeHour: 9,
+  };
+  return { origin, secret, smtp, inbox, billing, calendar };
 }

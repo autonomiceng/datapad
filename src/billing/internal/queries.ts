@@ -23,7 +23,14 @@ import {
   invoices,
   stripeEvents,
 } from "./schema";
-import { isUuid, requestDigest, validateRequest } from "./validate";
+import {
+  isUuid,
+  requestDigest,
+  validateRequest,
+  validateScheduledRequest,
+} from "./validate";
+import { billingInvoiceGroups } from "./scheduled-schema";
+import type { SyntheticScheduledInvoice } from "../scheduled-types";
 
 export function createReader({
   pool,
@@ -88,6 +95,7 @@ export function createReader({
     const [row] = await db
       .select({
         ...selection,
+        calendar: invoices.calendar,
         hostedInvoiceUrl: invoices.hostedInvoiceUrl,
         receiptState: invoices.providerReceiptState,
         billTo: {
@@ -147,6 +155,7 @@ export function createReader({
   async function assertSyntheticPolicy(
     allowRequest: SyntheticInvoicePolicy,
     accountId?: string,
+    allowScheduledRequest?: (invoice: SyntheticScheduledInvoice) => boolean,
   ) {
     const fail = () => {
       throw new Error("Billing data is outside the reviewed synthetic dataset");
@@ -158,6 +167,7 @@ export function createReader({
       .from(invoiceLines)
       .orderBy(asc(invoiceLines.position));
     const events = await db.select().from(stripeEvents);
+    const groups = await db.select().from(billingInvoiceGroups);
     if (
       customers.some(
         (customer) =>
@@ -190,20 +200,50 @@ export function createReader({
             originRef: line.originRef,
           })),
       };
+      const group = groups.find((group) => group.invoiceId === row.id);
+      const billTo = {
+        legalName: row.billToName,
+        billingEmail: row.billToEmail,
+        profileVersion: row.billToProfileVersion,
+      };
+      const normalized = group
+        ? validateScheduledRequest({
+            ...request,
+            calendar: row.calendar,
+            issueNotBefore: instant(row.issueNotBefore),
+            firstAttemptBefore: instant(row.firstAttemptBefore),
+            dueEndAt: instant(row.dueEndAt),
+          })
+        : validateRequest(request);
       if (
-        !validateRequest(request) ||
-        requestDigest(request) !== row.requestDigest ||
-        !allowRequest({
-          request,
-          customerId: customer.customerId,
-          billTo: {
-            legalName: row.billToName,
-            billingEmail: row.billToEmail,
-            profileVersion: row.billToProfileVersion,
-          },
-        }) ||
+        !normalized ||
+        requestDigest(normalized) !== row.requestDigest ||
         request.lines.reduce((sum, line) => sum + line.amountMinor, 0) !==
           row.totalMinor
+      )
+        return fail();
+      if (group) {
+        const scheduled = validateScheduledRequest(normalized);
+        if (
+          !scheduled ||
+          !allowScheduledRequest ||
+          group.customerId !== customer.customerId ||
+          group.deploymentKey !== deploymentKey ||
+          group.billingCustomerId !== customer.id ||
+          !allowScheduledRequest({
+            request: scheduled,
+            customerId: customer.customerId,
+            billTo,
+          })
+        )
+          fail();
+      } else if (
+        row.calendar !== null ||
+        instant(row.issueNotBefore) !== `${request.issueDate}T00:00:00.000Z` ||
+        instant(row.firstAttemptBefore) !==
+          `${request.dueDate}T00:00:00.000Z` ||
+        instant(row.dueEndAt) !== `${request.dueDate}T23:59:59.000Z` ||
+        !allowRequest({ request, customerId: customer.customerId, billTo })
       )
         fail();
     }

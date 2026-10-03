@@ -68,7 +68,7 @@ export function createBillingWorkflow(
     if (row.invoice.state === "needs_review") return "needs_review";
     if (row.invoice.billToName !== row.mapping.name)
       return "provider_profile_pending";
-    if (now().toISOString().slice(0, 10) >= row.invoice.dueDate)
+    if (now().getTime() >= Date.parse(row.invoice.firstAttemptBefore))
       return "past_due";
     return null;
   }
@@ -291,7 +291,7 @@ export function createBillingWorkflow(
             return { ok: true, value: { outcome: "unchanged", invoiceId } };
           if (
             blocker(row) ||
-            now().toISOString().slice(0, 10) < row.invoice.issueDate ||
+            now().getTime() < Date.parse(row.invoice.issueNotBefore) ||
             now().toISOString().slice(0, 10) < row.invoice.readinessDate
           )
             return { ok: false, code: "conflict" };

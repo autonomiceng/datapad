@@ -1,4 +1,5 @@
 import { Type, type Static, type TProperties } from "@sinclair/typebox";
+import { CalendarPolicySchema } from "./subscriptions-contract";
 
 const object = <T extends TProperties>(properties: T) =>
   Type.Object(properties, { additionalProperties: false });
@@ -69,6 +70,7 @@ export const ProviderReceiptStateSchema = Type.Union([
   Type.Literal("mismatch"),
 ]);
 export const InvoiceDetailSchema = object({
+  calendar: Type.Union([CalendarPolicySchema, Type.Null()]),
   providerReceipt: object({
     state: ProviderReceiptStateSchema,
     reason: Type.Union([...ReviewReasonSchema.anyOf, Type.Null()]),
@@ -87,7 +89,7 @@ export const InvoiceDetailSchema = object({
       id,
       position: Type.Integer({ minimum: 0, maximum: 99 }),
       description: label,
-      amountMinor: amount,
+      amountMinor: Type.Integer({ minimum: 0, maximum: 99999999 }),
       originRef: Type.Union([key, Type.Null()]),
     }),
     { minItems: 1, maxItems: 100 },

@@ -48,7 +48,7 @@ const review = (
 const objectId = (value: string | { id: string } | null) =>
   typeof value === "string" ? value : value?.id;
 const dueSeconds = (intent: InvoiceIntent) =>
-  Date.parse(`${intent.dueDate}T23:59:59Z`) / 1000;
+  Date.parse(intent.dueEndAt) / 1000;
 
 function metadata(
   intent: CustomerIntent | InvoiceIntent,
@@ -313,6 +313,7 @@ export async function createStripeBillingProvider(
       recipientEmail: value.customer_email,
       issueDate: value.metadata![metadataKeys.issueDate],
       dueDate: value.metadata![metadataKeys.dueDate],
+      dueEndAt: new Date(value.due_date! * 1000).toISOString(),
       currency: "USD",
       totalMinor: value.total,
       providerInvoiceId: value.id,
