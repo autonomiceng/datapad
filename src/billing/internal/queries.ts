@@ -6,6 +6,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  ne,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -30,6 +31,7 @@ import {
   validateScheduledRequest,
 } from "./validate";
 import { billingInvoiceGroups } from "./scheduled-schema";
+import { billingInvoiceResolutions } from "./resolutions-schema";
 import type { SyntheticScheduledInvoice } from "../scheduled-types";
 
 export function createReader({
@@ -122,6 +124,28 @@ export function createReader({
       .from(invoiceLines)
       .where(eq(invoiceLines.invoiceId, invoiceId))
       .orderBy(asc(invoiceLines.position));
+    const [resolution] = await db
+      .select({
+        id: billingInvoiceResolutions.id,
+        kind: billingInvoiceResolutions.kind,
+        state: billingInvoiceResolutions.state,
+        amountMinor: billingInvoiceResolutions.amountMinor,
+        receivedDate: billingInvoiceResolutions.receivedDate,
+        method: billingInvoiceResolutions.method,
+        createdAt: billingInvoiceResolutions.createdAt,
+        confirmedAt: billingInvoiceResolutions.confirmedAt,
+        reviewReason: billingInvoiceResolutions.reviewReason,
+      })
+      .from(billingInvoiceResolutions)
+      .where(
+        and(
+          eq(billingInvoiceResolutions.invoiceId, invoiceId),
+          eq(billingInvoiceResolutions.deploymentKey, deploymentKey),
+          ne(billingInvoiceResolutions.state, "withdrawn"),
+        ),
+      );
+    const resolutionHoldsPayment =
+      resolution?.state === "pending" || resolution?.state === "needs_review";
     const visible = ["open", "paid", "void", "uncollectible"].includes(
       row.state,
     );
@@ -130,6 +154,13 @@ export function createReader({
     return {
       invoice: {
         ...detail,
+        resolution: resolution
+          ? {
+              ...resolution,
+              createdAt: new Date(resolution.createdAt).toISOString(),
+              confirmedAt: instant(resolution.confirmedAt),
+            }
+          : null,
         providerReceipt: {
           state: receiptState,
           reason: receiptState === "mismatch" ? row.reviewReason : null,
@@ -138,6 +169,7 @@ export function createReader({
         issuedAt: instant(row.issuedAt),
         lines,
         hostedInvoiceUrl:
+          !resolutionHoldsPayment &&
           receiptState === "verified" &&
           visible &&
           url &&

@@ -18,12 +18,13 @@ if (
     "portal-billing",
     "portal-billing-test",
     "portal-scheduled-test",
+    "portal-resolutions-test",
     "portal-test",
     "portal-destroy",
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-test or portal-destroy.",
   );
 }
 const portal =
@@ -31,16 +32,23 @@ const portal =
   mode === "portal-billing" ||
   mode === "portal-billing-test" ||
   mode === "portal-scheduled-test" ||
+  mode === "portal-resolutions-test" ||
   mode === "portal-test" ||
   mode === "portal-destroy";
 const sandboxMode =
   mode === "billing" ||
   mode === "portal-billing" ||
   mode === "portal-billing-test" ||
-  mode === "portal-scheduled-test";
+  mode === "portal-scheduled-test" ||
+  mode === "portal-resolutions-test";
 const isolated = mode === "test" || mode === "portal-test";
 const scheduledTesting = mode === "portal-scheduled-test";
-const testing = isolated || mode === "portal-billing-test" || scheduledTesting;
+const resolutionsTesting = mode === "portal-resolutions-test";
+const testing =
+  isolated ||
+  mode === "portal-billing-test" ||
+  scheduledTesting ||
+  resolutionsTesting;
 const { values } = parseArgs({
   args: process.argv.slice(3),
   options: {
@@ -75,7 +83,7 @@ const project = isolated
       : `datapad-${localId}`;
 const lock = resolve(
   root,
-  mode === "portal-billing-test" || scheduledTesting
+  mode === "portal-billing-test" || scheduledTesting || resolutionsTesting
     ? ".scratch/billing-test.lock"
     : sandboxMode
       ? ".scratch/billing-run.lock"
@@ -294,6 +302,7 @@ try {
       delete env.PORTAL_BILLING_SANDBOX;
       delete env.PORTAL_SCHEDULE_TEST_CLOCK;
       delete env.PORTAL_SCHEDULE_TEST_PLAN;
+      delete env.PORTAL_RESOLUTION_TEST_ARTIFACTS;
       env.PORTAL_DEMO_TIME_ZONE =
         values["time-zone"] ??
         (scheduledTesting ? "America/Los_Angeles" : "UTC");
@@ -330,6 +339,8 @@ try {
       env.BILLING_DEPLOYMENT_KEY = sandbox.deploymentKey;
       if (portal) {
         env.PORTAL_BILLING_SANDBOX = "true";
+        if (resolutionsTesting)
+          env.PORTAL_RESOLUTION_TEST_ARTIFACTS = sandbox.directory;
         if (scheduledTesting) {
           const acceptance = await prepareScheduledAcceptance(
             sandbox.directory,
@@ -360,9 +371,11 @@ try {
               "--config",
               scheduledTesting
                 ? "playwright.scheduled.config.ts"
-                : mode === "portal-billing-test"
-                  ? "playwright.billing.config.ts"
-                  : "playwright.portal.config.ts",
+                : resolutionsTesting
+                  ? "playwright.resolutions.config.ts"
+                  : mode === "portal-billing-test"
+                    ? "playwright.billing.config.ts"
+                    : "playwright.portal.config.ts",
             ]
           : []),
       ]);

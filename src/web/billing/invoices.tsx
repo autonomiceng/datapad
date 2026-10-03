@@ -9,8 +9,9 @@ import type {
   ReviewReason,
 } from "../../billing/contract";
 import { useSession } from "../accounts/api";
-import { date, invoiceStateLabels, money } from "./format";
+import { date, instant, invoiceStateLabels, money } from "./format";
 import "./invoices.css";
+import { RecordedResolution } from "./resolutions";
 
 const pageSize = 50;
 const notes: Partial<Record<InvoiceState, string>> = {
@@ -32,15 +33,6 @@ const reasons: Record<ReviewReason, string> = {
     "The request or invoice status could not be confirmed with Stripe.",
   retry_exhausted: "Processing stopped after repeated failures.",
 };
-const instant = (value: string) =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(new Date(value));
 class InvoiceReadError extends Error {
   constructor(readonly status: number) {
     super(
@@ -261,7 +253,13 @@ export function Invoices() {
     </>
   );
 }
-export function Invoice({ invoice }: { invoice: InvoiceDetail }) {
+export function Invoice({
+  invoice,
+  showResolution = true,
+}: {
+  invoice: InvoiceDetail;
+  showResolution?: boolean;
+}) {
   return (
     <>
       <header className="invoice-header">
@@ -298,6 +296,12 @@ export function Invoice({ invoice }: { invoice: InvoiceDetail }) {
             unavailable.
           </p>
         )}
+      {showResolution && invoice.resolution && (
+        <RecordedResolution
+          resolution={invoice.resolution}
+          currency={invoice.currency}
+        />
+      )}
       <dl className="invoice-facts">
         <div>
           <dt>Billing contact</dt>

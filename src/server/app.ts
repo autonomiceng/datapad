@@ -13,6 +13,7 @@ import {
   type SubscriptionHttp,
 } from "./subscription-routes";
 import { scheduledRoutes, type ScheduledHttp } from "./scheduled-routes";
+import { resolutionRoutes, type ResolutionHttp } from "./resolution-routes";
 import { billingRoutes, type BillingHttp } from "./billing-routes";
 import {
   CustomerObservationSchema,
@@ -76,6 +77,7 @@ export function createApp({
   invoiceWorkflow,
   subscriptions,
   scheduled,
+  resolutions,
   accounts,
 }: {
   importReview: ImportReviewReader;
@@ -85,6 +87,7 @@ export function createApp({
   invoiceWorkflow?: InvoiceWorkflowHttp;
   subscriptions?: SubscriptionHttp;
   scheduled?: ScheduledHttp;
+  resolutions?: ResolutionHttp;
   accounts?: {
     routes: Parameters<typeof accountRoutes>[0];
     authHandler: (request: Request) => Promise<Response>;
@@ -254,7 +257,8 @@ export function createApp({
     .use(serviceRoutes(services))
     .use(invoiceWorkflowRoutes(invoiceWorkflow))
     .use(subscriptionRoutes(subscriptions))
-    .use(scheduledRoutes(scheduled));
+    .use(scheduledRoutes(scheduled))
+    .use(resolutionRoutes(resolutions));
   if (accounts) {
     app.use(accountRoutes(accounts.routes));
     app.get("/api/auth/*", ({ request }) => accounts.authHandler(request), {

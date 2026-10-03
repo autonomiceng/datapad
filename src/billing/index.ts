@@ -35,3 +35,6 @@ export type * from "./subscriptions-types";
 
 export { createScheduledBilling } from "./internal/scheduled";
 export type * from "./scheduled-types";
+
+export { createInvoiceResolutions } from "./internal/resolutions";
+export type * from "./resolutions-types";

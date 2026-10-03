@@ -25,3 +25,12 @@ export const dateRange = (start: string, end: string) =>
   start.slice(0, 4) === end.slice(0, 4)
     ? `${date(start).replace(/, \d{4}$/, "")} to ${date(end)}`
     : `${date(start)} to ${date(end)}`;
+export const instant = (value: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(new Date(value));

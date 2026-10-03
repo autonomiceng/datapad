@@ -19,6 +19,7 @@ import {
 } from "../accounts/api";
 import { Invoice } from "./invoices";
 import { date, money } from "./format";
+import { InvoiceResolutions } from "./resolutions";
 import "./workflow.css";
 
 // The invoice's status and review warning already explain the other blockers.
@@ -380,7 +381,7 @@ function Review({
       )}
       {!preparation.isError && preparation.data && (
         <>
-          <Invoice invoice={preparation.data.invoice} />
+          <Invoice invoice={preparation.data.invoice} showResolution={false} />
           <div className="invoice-workflow">
             {blocker && blockers[blocker] && (
               <p className="invoice-review">{blockers[blocker]}</p>
@@ -437,6 +438,12 @@ function Review({
               Stripe sandbox uses a placeholder address; no email is sent.
             </p>
           </div>
+          <InvoiceResolutions
+            userId={userId}
+            customerId={customerId}
+            invoiceId={invoiceId}
+            currency={preparation.data.invoice.currency}
+          />
         </>
       )}
     </section>

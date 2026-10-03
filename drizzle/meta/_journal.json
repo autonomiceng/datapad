@@ -50,6 +50,13 @@
       "when": 1791018203892,
       "tag": "0006_scheduled_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791030038352,
+      "tag": "0007_invoice_resolutions",
+      "breakpoints": true
     }
   ]
 }

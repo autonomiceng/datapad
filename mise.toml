@@ -184,3 +184,8 @@ run = "bun scripts/local.ts portal-billing-test"
 description = "Verify scheduled sandbox invoice grouping and recovery with a private acceptance clock"
 depends = ["build", "browser:install"]
 run = "bun scripts/local.ts portal-scheduled-test"
+
+[tasks."test:portal:resolutions"]
+description = "Verify received external payments and invoice voids in an explicit Stripe sandbox"
+depends = ["build", "browser:install"]
+run = "bun scripts/local.ts portal-resolutions-test"

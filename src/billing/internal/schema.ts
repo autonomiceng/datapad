@@ -10,3 +10,4 @@ export {
   billingPeriods,
 } from "./subscriptions-schema";
 export { billingSchedules, billingInvoiceGroups } from "./scheduled-schema";
+export { billingInvoiceResolutions } from "./resolutions-schema";

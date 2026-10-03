@@ -100,7 +100,12 @@ function list(data: unknown[], hasMore = false) {
   return { object: "list", data, has_more: hasMore, url: "/v1/invoices" };
 }
 async function provider(
-  route: (url: URL, method: string, body: string | undefined) => unknown,
+  route: (
+    url: URL,
+    method: string,
+    body: string | undefined,
+    key: string | null,
+  ) => unknown,
   maxPages = 100,
 ) {
   const fetcher = Object.assign(
@@ -118,6 +123,7 @@ async function provider(
               url,
               init?.method ?? "GET",
               typeof init?.body === "string" ? init.body : undefined,
+              new Headers(init?.headers).get("Idempotency-Key"),
             );
       return new Response(JSON.stringify(value), {
         headers: { "Content-Type": "application/json" },
@@ -312,4 +318,317 @@ test("signature verification preserves raw bytes and rejects live/foreign events
       { reason: "ownership_mismatch" },
     );
   }
+});
+
+function collectionInvoice(status = "open", paid = 0, offStripe = 0) {
+  return {
+    ...invoice(status, 100),
+    amount_due: 100,
+    amount_remaining: status === "void" ? 0 : 100 - paid,
+    amount_paid: paid,
+    amount_paid_off_stripe: offStripe,
+    amount_overpaid: 0,
+  };
+}
+const invoicePayment = {
+  id: "inpay_synthetic",
+  object: "invoice_payment",
+  invoice: "in_synthetic",
+  currency: "usd",
+  livemode: false,
+  amount_requested: 100,
+  amount_paid: null,
+  status: "open",
+  payment: { type: "payment_intent", payment_intent: "pi_synthetic" },
+};
+const paymentIntent = {
+  id: "pi_synthetic",
+  object: "payment_intent",
+  customer: intent.providerCustomerId,
+  currency: "usd",
+  livemode: false,
+  status: "requires_payment_method",
+  amount: 100,
+  amount_received: 0,
+  amount_capturable: 0,
+};
+
+test("collection inspection paginates allocations, independently retrieves intents and rereads expanded amounts", async () => {
+  const cursors: (string | null)[] = [];
+  const intentIds: string[] = [];
+  let invoiceReads = 0;
+  const adapter = await provider((url) => {
+    if (url.pathname.endsWith("/lines")) return list([line]);
+    if (url.pathname === "/v1/invoice_payments") {
+      expect(url.searchParams.get("invoice")).toBe("in_synthetic");
+      cursors.push(url.searchParams.get("starting_after"));
+      return url.searchParams.has("starting_after")
+        ? list([
+            {
+              ...invoicePayment,
+              id: "inpay_paid",
+              status: "paid",
+              amount_paid: 30,
+              amount_requested: 30,
+              payment: {
+                type: "payment_intent",
+                payment_intent: { id: "pi_paid", status: "processing" },
+              },
+            },
+          ])
+        : list([{ ...invoicePayment, amount_requested: 70 }], true);
+    }
+    if (url.pathname.startsWith("/v1/payment_intents/")) {
+      intentIds.push(url.pathname);
+      return url.pathname.endsWith("pi_paid")
+        ? {
+            ...paymentIntent,
+            id: "pi_paid",
+            status: "succeeded",
+            amount: 30,
+            amount_received: 30,
+          }
+        : { ...paymentIntent, amount: 70 };
+    }
+    invoiceReads++;
+    expect(url.searchParams.get("expand[0]")).toBe("amount_paid_off_stripe");
+    return collectionInvoice("open", 30);
+  });
+  const inspection = await adapter.inspectCollection(intent, "in_synthetic");
+  expect(inspection).toMatchObject({
+    remainingMinor: 70,
+    paidMinor: 30,
+    paidOffStripeMinor: 0,
+    overpaidMinor: 0,
+    collectionState: "idle",
+  });
+  expect(inspection.payments).toHaveLength(2);
+  expect(inspection.payments[1]).toMatchObject({
+    invoicePaymentId: "inpay_paid",
+    paymentIntentId: "pi_paid",
+    paidMinor: 30,
+    intentState: "succeeded",
+  });
+  expect(cursors).toEqual([null, "inpay_synthetic"]);
+  expect(intentIds).toEqual([
+    "/v1/payment_intents/pi_synthetic",
+    "/v1/payment_intents/pi_paid",
+  ]);
+  expect(invoiceReads).toBe(2);
+  const settled = await provider((url) => {
+    if (url.pathname.endsWith("/lines")) return list([line]);
+    if (url.pathname === "/v1/invoice_payments")
+      return list([
+        {
+          ...invoicePayment,
+          id: "inpay_external",
+          status: "paid",
+          amount_paid: 100,
+          payment: {
+            type: "payment_record",
+            payment_record: "pr_test_synthetic",
+          },
+        },
+        { ...invoicePayment, status: "canceled" },
+      ]);
+    if (url.pathname === "/v1/payment_records/pr_test_synthetic")
+      return {
+        id: "pr_test_synthetic",
+        object: "payment_record",
+        livemode: false,
+        customer_details: { customer: intent.providerCustomerId },
+        reported_by: "self",
+        payment_method_details: {
+          type: "custom",
+          custom: { display_name: "Paid out of band", type: null },
+        },
+        processor_details: {
+          type: "custom",
+          custom: { payment_reference: "Out of band payment for in_synthetic" },
+        },
+        amount: { currency: "usd", value: 100 },
+        amount_requested: { currency: "usd", value: 100 },
+        amount_authorized: { currency: "usd", value: 100 },
+        amount_guaranteed: { currency: "usd", value: 100 },
+        amount_canceled: { currency: "usd", value: 0 },
+        amount_failed: { currency: "usd", value: 0 },
+        amount_refunded: { currency: "usd", value: 0 },
+      };
+    if (url.pathname.startsWith("/v1/payment_intents/"))
+      return { ...paymentIntent, status: "canceled" };
+    return collectionInvoice("paid", 100, 100);
+  });
+  expect(await settled.inspectCollection(intent, "in_synthetic")).toMatchObject(
+    {
+      remainingMinor: 0,
+      paidMinor: 100,
+      paidOffStripeMinor: 100,
+      overpaidMinor: 0,
+      collectionState: "idle",
+      payments: [
+        {
+          invoicePaymentId: "inpay_synthetic",
+          paymentIntentId: "pi_synthetic",
+          status: "canceled",
+          receivedMinor: 0,
+          capturableMinor: 0,
+        },
+      ],
+    },
+  );
+});
+
+test("collection never treats active, unallocated, foreign or incomplete evidence as idle", async () => {
+  async function inspect(
+    payment: unknown,
+    pi: unknown,
+    current: unknown = collectionInvoice(),
+    hasMore = false,
+    maxPages = 100,
+  ) {
+    const adapter = await provider((url) => {
+      if (url.pathname.endsWith("/lines")) return list([line]);
+      if (url.pathname === "/v1/invoice_payments")
+        return list([payment], hasMore);
+      if (url.pathname.startsWith("/v1/payment_intents/")) return pi;
+      return current;
+    }, maxPages);
+    return adapter.inspectCollection(intent, "in_synthetic");
+  }
+  expect(
+    await inspect(invoicePayment, { ...paymentIntent, status: "processing" }),
+  ).toMatchObject({ collectionState: "active" });
+  expect(
+    await inspect(invoicePayment, {
+      ...paymentIntent,
+      status: "succeeded",
+      amount_received: 100,
+    }),
+  ).toMatchObject({ collectionState: "unknown" });
+  await rejects(
+    inspect({ ...invoicePayment, invoice: "in_foreign" }, paymentIntent),
+    { kind: "review", reason: "ownership_mismatch" },
+  );
+  await rejects(
+    inspect(invoicePayment, { ...paymentIntent, customer: "cus_foreign" }),
+    { kind: "review", reason: "ownership_mismatch" },
+  );
+  await rejects(
+    inspect(
+      { ...invoicePayment, payment: { type: "payment_record" } },
+      paymentIntent,
+    ),
+    { kind: "review", reason: "provider_conflict" },
+  );
+  await rejects(
+    inspect(invoicePayment, paymentIntent, {
+      ...collectionInvoice(),
+      amount_paid_off_stripe: undefined,
+    }),
+    { kind: "review", reason: "provider_conflict" },
+  );
+  await rejects(
+    inspect(invoicePayment, paymentIntent, collectionInvoice(), true, 1),
+    { kind: "review", reason: "provider_conflict" },
+  );
+  const incompletePagination = await provider((url) => {
+    if (url.pathname.endsWith("/lines")) return list([line]);
+    if (url.pathname === "/v1/invoice_payments")
+      return { object: "list", data: [] };
+    return collectionInvoice();
+  });
+  await rejects(
+    incompletePagination.inspectCollection(intent, "in_synthetic"),
+    { kind: "review", reason: "provider_conflict" },
+  );
+  let reads = 0;
+  const racing = await provider((url) => {
+    if (url.pathname.endsWith("/lines")) return list([line]);
+    if (url.pathname === "/v1/invoice_payments") return list([invoicePayment]);
+    if (url.pathname.startsWith("/v1/payment_intents/")) return paymentIntent;
+    return ++reads === 1
+      ? collectionInvoice()
+      : collectionInvoice("paid", 100, 100);
+  });
+  await rejects(racing.inspectCollection(intent, "in_synthetic"), {
+    kind: "review",
+    reason: "provider_conflict",
+  });
+});
+
+test("external pay replays immutable expanded parameters and void verifies the owned invoice before mutation", async () => {
+  const requests: {
+    method: string;
+    path: string;
+    body: string | undefined;
+    key: string | null;
+  }[] = [];
+  let loseResponse = true;
+  const adapter = await provider((url, method, body, key) => {
+    requests.push({ method, path: url.pathname, body, key });
+    if (url.pathname.endsWith("/lines")) return list([line]);
+    if (url.pathname.endsWith("/pay")) {
+      if (loseResponse) {
+        loseResponse = false;
+        throw new Error("Synthetic lost response");
+      }
+      return collectionInvoice("paid", 100, 100);
+    }
+    if (url.pathname.endsWith("/void")) return collectionInvoice("void");
+    return collectionInvoice();
+  });
+  const effect = {
+    idempotencyKey: "datapad:synthetic:resolution:synthetic:settle",
+  };
+  await rejects(adapter.settleExternally(intent, "in_synthetic", effect), {
+    kind: "retryable",
+  });
+  expect(
+    await adapter.settleExternally(intent, "in_synthetic", effect),
+  ).toMatchObject({
+    invoice: { status: "paid", providerInvoiceId: "in_synthetic" },
+    paidOffStripeMinor: 100,
+  });
+  const pays = requests.filter((request) => request.path.endsWith("/pay"));
+  expect(pays).toHaveLength(2);
+  expect(pays[0]).toEqual(pays[1]);
+  expect(pays[0].method).toBe("POST");
+  expect(pays[0].key).toBe(effect.idempotencyKey);
+  const params = new URLSearchParams(pays[0].body);
+  expect([...params.entries()]).toEqual([
+    ["paid_out_of_band", "true"],
+    ["expand[0]", "amount_paid_off_stripe"],
+  ]);
+  expect(
+    await adapter.voidInvoice(intent, "in_synthetic", {
+      idempotencyKey: "synthetic_void",
+    }),
+  ).toMatchObject({ status: "void", providerInvoiceId: "in_synthetic" });
+  expect(
+    requests.find((request) => request.path.endsWith("/void")),
+  ).toMatchObject({ method: "POST", key: "synthetic_void" });
+  let mutations = 0;
+  const foreign = await provider((url, method) => {
+    if (method === "POST") mutations++;
+    return url.pathname.endsWith("/lines")
+      ? list([line])
+      : { ...collectionInvoice(), customer: "cus_foreign" };
+  });
+  await rejects(foreign.voidInvoice(intent, "in_synthetic", effect), {
+    kind: "review",
+    receiptMismatch: true,
+  });
+  expect(mutations).toBe(0);
+  const missingExpansion = await provider((url) =>
+    url.pathname.endsWith("/lines")
+      ? list([line])
+      : {
+          ...collectionInvoice("paid", 100, 100),
+          amount_paid_off_stripe: undefined,
+        },
+  );
+  await rejects(
+    missingExpansion.settleExternally(intent, "in_synthetic", effect),
+    { kind: "review", reason: "provider_conflict" },
+  );
 });

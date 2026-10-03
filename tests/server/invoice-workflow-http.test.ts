@@ -22,6 +22,7 @@ const input = {
 };
 const invoice: InvoiceDetail = {
   calendar: null,
+  resolution: null,
   id: invoiceId,
   customer: { id: customerId, name: "Sample customer" },
   billTo: {
