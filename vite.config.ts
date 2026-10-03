@@ -42,5 +42,62 @@ export default defineConfig({
   lint: {
     ignorePatterns: ["dist/**", ".scratch/**", "node_modules/**"],
     options: { typeAware: true, typeCheck: true },
+    jsPlugins: [{ name: "jsdoc-js", specifier: "eslint-plugin-jsdoc" }],
+    overrides: [
+      {
+        files: [
+          "src/{access,customers,services,import-review,billing}/{index,types,provider,audit,bootstrap,inspection,authentication,registry,*-types}.ts",
+        ],
+        rules: {
+          "jsdoc-js/require-jsdoc": [
+            "error",
+            {
+              publicOnly: {
+                esm: true,
+                cjs: false,
+                window: false,
+                ancestorsOnly: false,
+              },
+              enableFixer: false,
+              require: {
+                FunctionDeclaration: true,
+                ArrowFunctionExpression: true,
+                FunctionExpression: true,
+              },
+              contexts: [
+                "TSMethodSignature",
+                "TSPropertySignature[typeAnnotation.typeAnnotation.type='TSFunctionType']",
+                "TSTypeAliasDeclaration[typeAnnotation.type='TSFunctionType']",
+              ],
+            },
+          ],
+          "jsdoc-js/require-description": [
+            "error",
+            { contexts: ["any"], descriptionStyle: "body", exemptedBy: [] },
+          ],
+        },
+      },
+      {
+        files: [
+          "src/billing/internal/{workflow,subscriptions,scheduled,payment-settings,customer-receipt,resolutions}.ts",
+        ],
+        rules: {
+          "jsdoc-js/require-jsdoc": [
+            "error",
+            {
+              enableFixer: false,
+              require: { FunctionDeclaration: false },
+              contexts: [
+                "FunctionDeclaration[id.name=/^create(BillingWorkflow|Subscriptions|ScheduledBilling|PaymentSettings|CustomerReceipt|InvoiceResolutions)$/]",
+              ],
+            },
+          ],
+          "jsdoc-js/require-description": [
+            "error",
+            { contexts: ["any"], descriptionStyle: "body", exemptedBy: [] },
+          ],
+        },
+      },
+    ],
   },
 });

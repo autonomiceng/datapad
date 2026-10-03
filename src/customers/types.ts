@@ -40,19 +40,37 @@ export interface Customers {
     customerId: string,
     options?: { lock?: boolean },
   ): Promise<RegisteredCustomer | null>;
+  /**
+   * Resolve current billing visibility: billing staff and account
+   * administrators see all, other actors use their organization
+   * memberships.
+   */
   billingScope(
     actor: HumanActor,
   ): Promise<
     AccessResult<{ kind: "all" } | { kind: "customers"; customerIds: string[] }>
   >;
+  /**
+   * List customers visible to the current actor, ordered by display name
+   * and ID with bounded pagination.
+   */
   listCustomers(
     actor: HumanActor,
     page?: Partial<AccountPagination>,
   ): Promise<AccessResult<CustomersResponse>>;
+  /**
+   * Read an authorized customer profile and local provider-profile
+   * projection; absent or out-of-scope customers return not_found.
+   */
   getCustomer(
     actor: HumanActor,
     customerId: string,
   ): Promise<AccessResult<CustomerResponse>>;
+  /**
+   * Require current profile-management authority and expectedVersion.
+   * Commit changed fields with audit; unchanged profiles consume no request
+   * ID.
+   */
   updateCustomer(
     actor: HumanActor,
     customerId: string,
@@ -62,6 +80,10 @@ export interface Customers {
   getOrganizationTarget(
     organizationId: string,
   ): Promise<CustomerAccessTarget | null>;
+  /**
+   * Resolve customer identity and organization binding without
+   * authorization; null means no matching customer.
+   */
   getAccessTarget(customerId: string): Promise<CustomerAccessTarget | null>;
   /** Billing and later modules check customer scope within their own transaction. */
   authorizeCustomer(
@@ -80,10 +102,19 @@ export interface RegisteredCustomer {
   version: number;
 }
 export interface CustomerRegistry {
+  /**
+   * Bind an unbound customer in the caller transaction with operator audit;
+   * the same binding is a no-op and a different binding throws.
+   */
   bindOrganization(
     tx: NodePgDatabase,
     input: { customerId: string; organizationId: string },
   ): Promise<void>;
+  /**
+   * Resolve a durable registry key or create its customer and operator
+   * audit in the caller transaction. Existing profiles are preserved and
+   * checked against policy.
+   */
   ensureCustomer(
     tx: NodePgDatabase,
     input: {
@@ -96,5 +127,9 @@ export interface CustomerRegistry {
 export interface CustomerRegistryOptions {
   audit: AuditWriter;
   operatorId: string;
+  /**
+   * Approve both newly supplied and existing registry profiles against the
+   * reviewed synthetic dataset.
+   */
   allowProfile: (profile: CustomerProfile) => boolean;
 }

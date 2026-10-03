@@ -4,6 +4,10 @@ import type { CustomerRegistry, CustomerRegistryOptions } from "./types";
 import { customers } from "./internal/schema";
 import { validateProfile, profileOf } from "./validation";
 
+/**
+ * Construct operator-only customer identity operations using caller
+ * transactions; a nonblank operator identity is required.
+ */
 export function createCustomerRegistry(
   options: CustomerRegistryOptions,
 ): CustomerRegistry {

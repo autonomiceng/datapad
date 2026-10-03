@@ -15,6 +15,10 @@ async function assertRequestUnused(tx: NodePgDatabase, requestId: string) {
   if (existing)
     throw new AuditRequestConflict("Mutation request identity already used");
 }
+/**
+ * Create audit operations using caller transactions; profile request
+ * identities are serialized and cannot be reused.
+ */
 export function createAuditWriter(): AuditWriter {
   return {
     assertRequestUnused,

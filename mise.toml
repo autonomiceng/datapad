@@ -56,6 +56,7 @@ depends = [
   "test:portal",
   "test:billing-proof",
   "test:stripe",
+  "test:documentation",
 ]
 
 [tasks."test:changelog"]
@@ -210,3 +211,8 @@ run = "bun scripts/local.ts portal-resolutions-test"
 description = "Verify hosted card setup and explicit automatic-payment consent in a Stripe sandbox"
 depends = ["build", "browser:install"]
 run = "bun scripts/local.ts portal-payment-settings-test"
+
+[tasks."test:documentation"]
+description = "Verify public documentation rules and helper exclusions"
+depends = ["deps:install"]
+run = "bun scripts/check-documentation.ts"

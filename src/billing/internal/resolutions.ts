@@ -321,6 +321,8 @@ export async function reconcileResolutionSnapshot(
     });
 }
 
+/** Composes scoped staff receipt/void intentions and worker recovery for one verified deployment.
+ * Session locks span provider I/O; durable intentions and audit commit in short transactions. */
 export function createInvoiceResolutions(
   options: InvoiceResolutionsOptions,
 ): InvoiceResolutions {

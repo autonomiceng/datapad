@@ -19,6 +19,10 @@ const pagination = (page?: { limit?: number; offset?: number }) => ({
   limit: Math.min(100, Math.max(1, page?.limit ?? 50)),
   offset: Math.max(0, page?.offset ?? 0),
 });
+/**
+ * Compose customer reads and audited profile changes with injected
+ * authority and synthetic-profile policy; providerProfile is read-only.
+ */
 export function createCustomers(options: CustomersOptions): Customers {
   const db = drizzle(options.pool);
   const target = (row: typeof customers.$inferSelect) => ({

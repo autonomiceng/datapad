@@ -56,6 +56,10 @@ const outcome = (
   },
 });
 
+/**
+ * Compose current-authority checks and audited membership commands;
+ * lockPool must be a separate pool to the same database.
+ */
 export function createAccess(options: AccessOptions): Access {
   if (options.lockPool === options.pool)
     throw new Error("Access requires a separate organization lock pool");

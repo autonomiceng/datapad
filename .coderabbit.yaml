@@ -4,6 +4,9 @@ reviews:
   request_changes_workflow: false
   poem: false
   sequence_diagrams: false
+  pre_merge_checks:
+    docstrings:
+      mode: off
   path_instructions:
     - path: "**/*"
       instructions: >-
@@ -14,6 +17,10 @@ reviews:
         identify missing decisions rather than inventing interfaces.
         Apply the review expectations in AGENTS.md and CONTRIBUTING.md,
         including cleanup within the PR and interface hierarchy.
+        Review public callable contracts for useful explanations of permissions,
+        tenant scope, side effects, retry behavior and caller obligations.
+        Local lint enforces scoped JSDoc presence; assess accuracy and usefulness
+        without requiring comments on every internal helper or repeating types.
         Avoid formatter or style duplication and speculative abstractions.
         Public code, fixtures and documentation must remain reusable and free
         of private deployment details, credentials and production records.

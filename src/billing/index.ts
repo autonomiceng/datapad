@@ -9,6 +9,10 @@ import { createRequester } from "./internal/requests";
 import { createLifecycle } from "./internal/lifecycle";
 
 export type * from "./types";
+/**
+ * Construct deployment-scoped local invoice reads; callers supply
+ * authorization and deploymentKey must be a bounded identifier.
+ */
 export function createBillingReader(
   options: BillingReaderOptions,
 ): BillingReader {
@@ -16,6 +20,10 @@ export function createBillingReader(
     throw new Error("Invalid billing deployment");
   return createReader(options);
 }
+/**
+ * Compose immutable request staging and recoverable provider work; reject
+ * missing account ownership or a mismatched deployment.
+ */
 export function createBilling(options: BillingOptions): Billing {
   if (
     options.deploymentKey !== options.provider.ownership.deploymentKey ||
