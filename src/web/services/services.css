@@ -1,0 +1,107 @@
+.service-page,
+.service-list,
+.service-component {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.service-list,
+.service-addons,
+.service-names {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.service-list > li + li {
+  border-top: 1px solid var(--border);
+}
+.service-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 16px;
+  padding: 12px 0;
+}
+.service-addons {
+  margin: 0 0 12px 8px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
+}
+.service-addons .service-row {
+  padding: 6px 0;
+}
+.service-support {
+  display: block;
+}
+.service-components {
+  display: grid;
+  padding: 0 24px;
+}
+.service-component {
+  display: grid;
+  gap: 16px;
+  padding: 20px 0 24px;
+}
+.service-component + .service-component {
+  border-top: 1px solid var(--border);
+}
+.service-component-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+}
+.service-compare {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.service-compare > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.service-compare dt {
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+.service-compare select {
+  width: 100%;
+  max-width: 160px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+.service-form {
+  display: grid;
+  gap: 16px;
+}
+.service-names {
+  display: grid;
+  gap: 4px;
+}
+.service-websites {
+  gap: 8px;
+}
+.service-warning {
+  color: var(--danger);
+  font-size: var(--text-support);
+}
+@media (max-width: 600px) {
+  .service-components {
+    padding: 0 16px;
+  }
+  .service-compare {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .service-compare select {
+    max-width: none;
+  }
+}
+.service-list + .pagination {
+  margin-top: 0;
+}

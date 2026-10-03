@@ -11,6 +11,7 @@ import {
 import { Invoices } from "./billing/invoices";
 import { ImportReview } from "./import-review/viewer";
 import { useSession } from "./accounts/api";
+import { ServicesPage, ServicePage } from "./services/pages";
 import {
   SignOutButton,
   SignIn,
@@ -121,6 +122,28 @@ const invitationRoute = createRoute({
     return <AcceptInvitation invitationId={invitationId} />;
   },
 });
+const servicesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/services",
+  component: () => {
+    const { customerId } = servicesRoute.useParams();
+    return <ServicesPage key={customerId} customerId={customerId} />;
+  },
+});
+const serviceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/services/$serviceId",
+  component: () => {
+    const { customerId, serviceId } = serviceRoute.useParams();
+    return (
+      <ServicePage
+        key={`${customerId}:${serviceId}`}
+        customerId={customerId}
+        serviceId={serviceId}
+      />
+    );
+  },
+});
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     entryRoute,
@@ -130,6 +153,8 @@ export const router = createRouter({
     customersRoute,
     customerRoute,
     invitationRoute,
+    servicesRoute,
+    serviceRoute,
   ]),
 });
 declare module "@tanstack/react-router" {

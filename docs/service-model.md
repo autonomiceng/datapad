@@ -1,6 +1,6 @@
 # Service packages and components
 
-Accepted design for the operational portal. The current application only reviews imported records; it does not implement these subscriptions, controls or staff workflows. See the [import model](data-model.md) for what exists today.
+Accepted design for the operational portal. The [customer services module](services.md) implements service records, staff-recorded preferences and add-on attachment. Provider execution and commercial subscriptions remain separate increments. See the [import model](data-model.md) for immutable source observations.
 
 ## What a customer buys and uses
 

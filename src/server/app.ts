@@ -3,6 +3,7 @@ import { staticPlugin } from "@elysia/static";
 import { Type } from "@sinclair/typebox";
 import { Elysia, t } from "elysia";
 import { join } from "node:path";
+import { serviceRoutes, type ServiceHttp } from "./service-routes";
 import { billingRoutes, type BillingHttp } from "./billing-routes";
 import {
   CustomerObservationSchema,
@@ -62,11 +63,13 @@ export function createApp({
   importReview,
   assetsDir,
   billing,
+  services,
   accounts,
 }: {
   importReview: ImportReviewReader;
   assetsDir?: string;
   billing?: BillingHttp;
+  services?: ServiceHttp;
   accounts?: {
     routes: Parameters<typeof accountRoutes>[0];
     authHandler: (request: Request) => Promise<Response>;
@@ -232,6 +235,7 @@ export function createApp({
     );
 
   app.use(billingRoutes(billing));
+  app.use(serviceRoutes(services));
   if (accounts) {
     app.use(accountRoutes(accounts.routes));
     app.get("/api/auth/*", ({ request }) => accounts.authHandler(request), {

@@ -17,6 +17,7 @@ try {
   const app = createApp({
     importReview,
     billing: runtime.billing,
+    services: runtime.services,
     accounts: runtime.accounts,
     assetsDir: process.env.ASSETS_DIR
       ? resolve(process.env.ASSETS_DIR)

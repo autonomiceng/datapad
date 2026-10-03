@@ -11,10 +11,10 @@ export default defineConfig({
           const normalized = id.replaceAll("\\", "/");
           if (
             /\/src\/(server|stripe|worker)\//.test(normalized) ||
-            (/\/src\/(import-review|billing|access|customers)\//.test(
+            (/\/src\/(import-review|billing|access|customers|services)\//.test(
               normalized,
             ) &&
-              !/\/src\/(import-review|billing|access|customers)\/contract\.ts$/.test(
+              !/\/src\/(import-review|billing|access|customers|services)\/contract\.ts$/.test(
                 normalized,
               )) ||
             /\/node_modules\/(?:elysia|@elysia|drizzle-orm|pg|pg-pool|pg-protocol|pg-boss|stripe|better-auth|@better-auth|nodemailer)\//.test(

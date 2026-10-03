@@ -17,6 +17,8 @@ Staff can edit customer profiles and manage members. Customer administrators man
 
 Profile edits are limited to reviewed sample values. Elm accepts `Elm Studio (sample)` or `Elm Studio Updated (sample)` for display/legal names, and an empty billing email or `billing-elm@example.test`. Birch uses the corresponding `Birch Works (sample)`, `Birch Works Updated (sample)` and `billing-birch@example.test`. Changing a billing contact does not invite a member. Provider-profile changes remain pending when a linked provider still has different details; this account slice sends no provider updates. Historical invoice bill-to details remain unchanged.
 
+Open **Services** from a customer account. Elm has two websites, an alias, separate mail delivery, a registration without hosting, and storage add-ons. Staff can save a requested component setting and attach or detach an add-on; provider state and billing stay unchanged. The sample provider states are fixture observations, never live checks. The demo omits external control-panel links; deployments can supply reviewed HTTPS links without credentials.
+
 Sign out before trying another identity. Google and Microsoft are prepared in the authentication adapter; the synthetic demo leaves them unavailable. Their actual sign-in flows remain unverified until credentials and callback URLs are configured in a separately reviewed composition.
 
 Ctrl+C stops the owned server and containers while retaining customer data. Restart preserves profile changes and membership removals. Run `mise run portal:destroy` while the demo is stopped to remove its disposable database. The anonymous import viewer and invoice sandbox use separate databases and entry points.
