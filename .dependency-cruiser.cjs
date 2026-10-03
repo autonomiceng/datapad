@@ -15,7 +15,7 @@ module.exports = {
       to: {
         path: "^src/(server|import-review|billing|stripe|worker|access|customers|services)/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
       },
     },
     {
@@ -42,7 +42,7 @@ module.exports = {
       name: "http-no-sql",
       severity: "error",
       from: {
-        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|subscription-routes|scheduled-routes|resolution-routes|portal-app)\\.ts$",
+        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|subscription-routes|scheduled-routes|resolution-routes|payment-settings-routes|portal-app)\\.ts$",
       },
       to: {
         path: "(src/(import-review|billing|access|customers|services)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",
@@ -70,19 +70,19 @@ module.exports = {
       name: "contract-browser-safe",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
       },
       to: {
         path: "^src/",
         pathNot:
-          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract))\\.ts$",
+          "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
       },
     },
     {
       name: "contract-no-node",
       severity: "error",
       from: {
-        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract))\\.ts$",
+        path: "^src/((import-review|billing|access|customers|services)/contract|billing/(subscriptions-contract|scheduled-contract|resolutions-contract|payment-settings-contract))\\.ts$",
       },
       to: { dependencyTypes: ["core"] },
     },

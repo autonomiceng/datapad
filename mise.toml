@@ -11,7 +11,16 @@ uv = "0.12.22"
 
 [tasks.check]
 description = "Check application code, API contract and repository conventions without rewriting sources"
-depends = ["format:check", "check:editorconfig", "check:workflows", "check:scripts", "changelog:check", "app:check", "openapi:check", "check:architecture"]
+depends = [
+  "format:check",
+  "check:editorconfig",
+  "check:workflows",
+  "check:scripts",
+  "changelog:check",
+  "app:check",
+  "openapi:check",
+  "check:architecture",
+]
 
 [tasks."pr:check"]
 description = "Run all current checks and tests before opening or updating a PR"
@@ -40,7 +49,14 @@ run = "shellcheck .mise/tasks/format .mise/tasks/test/format .mise/tasks/changel
 
 [tasks.test]
 description = "Run tooling safeguards and isolated application tests"
-depends = ["test:format", "test:changelog", "test:app", "test:portal", "test:billing-proof", "test:stripe"]
+depends = [
+  "test:format",
+  "test:changelog",
+  "test:app",
+  "test:portal",
+  "test:billing-proof",
+  "test:stripe",
+]
 
 [tasks."test:changelog"]
 description = "Test fragment policy, comparison context and read-only previews"
@@ -189,3 +205,8 @@ run = "bun scripts/local.ts portal-scheduled-test"
 description = "Verify received external payments and invoice voids in an explicit Stripe sandbox"
 depends = ["build", "browser:install"]
 run = "bun scripts/local.ts portal-resolutions-test"
+
+[tasks."test:portal:payment-settings"]
+description = "Verify hosted card setup and explicit automatic-payment consent in a Stripe sandbox"
+depends = ["build", "browser:install"]
+run = "bun scripts/local.ts portal-payment-settings-test"

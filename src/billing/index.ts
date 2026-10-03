@@ -36,5 +36,9 @@ export type * from "./subscriptions-types";
 export { createScheduledBilling } from "./internal/scheduled";
 export type * from "./scheduled-types";
 
+export { createPaymentSettings } from "./internal/payment-settings";
+export type * from "./payment-settings-types";
+
+export { createCustomerReceipt } from "./internal/customer-receipt";
 export { createInvoiceResolutions } from "./internal/resolutions";
 export type * from "./resolutions-types";

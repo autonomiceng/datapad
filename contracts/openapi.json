@@ -3289,8 +3289,8 @@
     },
     "/api/billing/webhooks/stripe": {
       "post": {
-        "operationId": "receiveStripeInvoiceEvent",
-        "summary": "Receive a signed Stripe sandbox invoice event",
+        "operationId": "receiveStripeBillingEvent",
+        "summary": "Receive a signed Stripe sandbox billing event",
         "parameters": [
           {
             "in": "header",
@@ -16271,6 +16271,2024 @@
                               "type": "null"
                             }
                           ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/payment-settings": {
+      "get": {
+        "operationId": "getCustomerPaymentSettings",
+        "summary": "Read saved cards and automatic payment consent",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "canManage",
+                    "setupAvailable",
+                    "saveTerms",
+                    "enrollmentTerms",
+                    "methods",
+                    "enrollment",
+                    "consentAdministratorOrigin",
+                    "subscriptions",
+                    "affectedInvoices"
+                  ],
+                  "properties": {
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "setupAvailable": {
+                      "type": "boolean"
+                    },
+                    "saveTerms": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "text"
+                      ],
+                      "properties": {
+                        "version": {
+                          "const": "save-card-v1",
+                          "type": "string"
+                        },
+                        "text": {
+                          "const": "Save this card with the payment provider for future use. Saving does not authorize automatic payments.",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "enrollmentTerms": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "text"
+                      ],
+                      "properties": {
+                        "version": {
+                          "const": "automatic-payments-v1",
+                          "type": "string"
+                        },
+                        "text": {
+                          "const": "Authorize one automatic payment attempt for each eligible invoice covering only the selected agreements and effective periods, using their scheduled prices and frequency. Changes to commercial terms require renewed consent. You can stop new attempts at any time; an attempt already started may finish. Changing this authorization requires customer payment for invoices already sealed under the previous authorization.",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "methods": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "brand",
+                          "last4",
+                          "expiryMonth",
+                          "expiryYear",
+                          "verifiedAt",
+                          "usable"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "brand": {
+                            "minLength": 1,
+                            "maxLength": 32,
+                            "type": "string"
+                          },
+                          "last4": {
+                            "pattern": "^[0-9]{4}$",
+                            "type": "string"
+                          },
+                          "expiryMonth": {
+                            "minimum": 1,
+                            "maximum": 12,
+                            "type": "integer"
+                          },
+                          "expiryYear": {
+                            "minimum": 2000,
+                            "maximum": 9999,
+                            "type": "integer"
+                          },
+                          "verifiedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "usable": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "enrollment": {
+                      "additionalProperties": false,
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "required": [
+                        "id",
+                        "version",
+                        "predecessorId",
+                        "decision",
+                        "paymentMethodId",
+                        "acceptedAt",
+                        "termsVersion",
+                        "scopes"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "predecessorId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "decision": {
+                          "type": "string",
+                          "enum": [
+                            "authorize",
+                            "reduce"
+                          ]
+                        },
+                        "paymentMethodId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "acceptedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "termsVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "scopes": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "subscriptionId",
+                              "commercialRevision",
+                              "fromPeriodIndex",
+                              "untilPeriodIndex",
+                              "periodStart",
+                              "dueDate",
+                              "calendar"
+                            ],
+                            "properties": {
+                              "subscriptionId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "commercialRevision": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "fromPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": "integer"
+                              },
+                              "untilPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "periodStart": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "dueDate": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "calendar": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "timeZone",
+                                  "issueHour",
+                                  "chargeHour"
+                                ],
+                                "properties": {
+                                  "timeZone": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "type": "string"
+                                  },
+                                  "issueHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  },
+                                  "chargeHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "consentAdministratorOrigin": {
+                      "anyOf": [
+                        {
+                          "const": "staff_invited",
+                          "type": "string"
+                        },
+                        {
+                          "const": "customer_invited",
+                          "type": "string"
+                        },
+                        {
+                          "const": "unknown",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "subscriptions": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "label",
+                          "version",
+                          "calendar",
+                          "intervalMonths",
+                          "retainedScope",
+                          "boundaries",
+                          "blocker"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "label": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "maximum": 2147483647,
+                            "type": "integer"
+                          },
+                          "calendar": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "timeZone",
+                              "issueHour",
+                              "chargeHour"
+                            ],
+                            "properties": {
+                              "timeZone": {
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "type": "string"
+                              },
+                              "issueHour": {
+                                "minimum": 0,
+                                "maximum": 23,
+                                "type": "integer"
+                              },
+                              "chargeHour": {
+                                "minimum": 0,
+                                "maximum": 23,
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "intervalMonths": {
+                            "minimum": 1,
+                            "maximum": 36,
+                            "type": "integer"
+                          },
+                          "retainedScope": {
+                            "additionalProperties": false,
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "required": [
+                              "subscriptionId",
+                              "commercialRevision",
+                              "fromPeriodIndex",
+                              "untilPeriodIndex",
+                              "periodStart",
+                              "dueDate",
+                              "calendar",
+                              "label",
+                              "amountMinor",
+                              "currency",
+                              "intervalMonths",
+                              "untilPeriodStart"
+                            ],
+                            "properties": {
+                              "subscriptionId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "commercialRevision": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "fromPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": "integer"
+                              },
+                              "untilPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "periodStart": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "dueDate": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "calendar": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "timeZone",
+                                  "issueHour",
+                                  "chargeHour"
+                                ],
+                                "properties": {
+                                  "timeZone": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "type": "string"
+                                  },
+                                  "issueHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  },
+                                  "chargeHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  }
+                                }
+                              },
+                              "label": {
+                                "minLength": 1,
+                                "maxLength": 256,
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "minimum": 0,
+                                "maximum": 99999999,
+                                "type": "integer"
+                              },
+                              "currency": {
+                                "const": "USD",
+                                "type": "string"
+                              },
+                              "intervalMonths": {
+                                "type": "string",
+                                "enum": [
+                                  1,
+                                  3,
+                                  6,
+                                  12,
+                                  24,
+                                  36
+                                ]
+                              },
+                              "untilPeriodStart": {
+                                "format": "date",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          },
+                          "boundaries": {
+                            "maxItems": 38,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "fromPeriodIndex",
+                                "untilPeriodStart",
+                                "periodStart",
+                                "dueDate",
+                                "commercialRevision",
+                                "untilPeriodIndex",
+                                "label",
+                                "amountMinor",
+                                "paymentArrangement"
+                              ],
+                              "properties": {
+                                "fromPeriodIndex": {
+                                  "minimum": 0,
+                                  "maximum": 120000,
+                                  "type": "integer"
+                                },
+                                "untilPeriodStart": {
+                                  "format": "date",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "periodStart": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "dueDate": {
+                                  "format": "date",
+                                  "type": "string"
+                                },
+                                "commercialRevision": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "untilPeriodIndex": {
+                                  "minimum": 0,
+                                  "maximum": 120000,
+                                  "type": [
+                                    "integer",
+                                    "null"
+                                  ]
+                                },
+                                "label": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "type": "string"
+                                },
+                                "amountMinor": {
+                                  "minimum": -99999999,
+                                  "maximum": 99999999,
+                                  "type": "integer"
+                                },
+                                "paymentArrangement": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "automatic"
+                                  ]
+                                }
+                              }
+                            }
+                          },
+                          "blocker": {
+                            "const": "no_future_boundary",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "affectedInvoices": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "invoiceId",
+                          "groupId",
+                          "dueDate",
+                          "totalMinor"
+                        ],
+                        "properties": {
+                          "invoiceId": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "groupId": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "dueDate": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "totalMinor": {
+                            "minimum": 50,
+                            "maximum": 99999999,
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/payment-setups": {
+      "post": {
+        "operationId": "startCustomerPaymentSetup",
+        "summary": "Record save permission and start hosted card setup",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "saveTermsVersion",
+                  "acceptSaveTerms"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "saveTermsVersion": {
+                    "const": "save-card-v1",
+                    "type": "string"
+                  },
+                  "acceptSaveTerms": {
+                    "const": true,
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "setupId",
+                    "status",
+                    "paymentMethodId",
+                    "checkoutUrl"
+                  ],
+                  "properties": {
+                    "setupId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "verified",
+                        "expired",
+                        "needs_review"
+                      ]
+                    },
+                    "paymentMethodId": {
+                      "format": "uuid",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "checkoutUrl": {
+                      "maxLength": 4096,
+                      "pattern": "^https://checkout\\.stripe\\.com/",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/payment-setups/{setupId}/refresh": {
+      "post": {
+        "operationId": "refreshCustomerPaymentSetup",
+        "summary": "Verify a customer-scoped local card setup",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "setupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {}
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "setupId",
+                    "status",
+                    "paymentMethodId",
+                    "checkoutUrl"
+                  ],
+                  "properties": {
+                    "setupId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "verified",
+                        "expired",
+                        "needs_review"
+                      ]
+                    },
+                    "paymentMethodId": {
+                      "format": "uuid",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "checkoutUrl": {
+                      "maxLength": 4096,
+                      "pattern": "^https://checkout\\.stripe\\.com/",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/automatic-payment-enrollment": {
+      "post": {
+        "operationId": "replaceCustomerAutomaticPaymentEnrollment",
+        "summary": "Confirm a saved card and selected agreement scope",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "expectedVersion",
+                  "paymentMethodId",
+                  "termsVersion",
+                  "acceptTerms",
+                  "selections"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "minimum": 0,
+                    "maximum": 2147483647,
+                    "type": "integer"
+                  },
+                  "paymentMethodId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "termsVersion": {
+                    "const": "automatic-payments-v1",
+                    "type": "string"
+                  },
+                  "acceptTerms": {
+                    "const": true,
+                    "type": "boolean"
+                  },
+                  "selections": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "subscriptionId",
+                        "expectedSubscriptionVersion",
+                        "fromPeriodIndex"
+                      ],
+                      "properties": {
+                        "subscriptionId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "expectedSubscriptionVersion": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "fromPeriodIndex": {
+                          "minimum": 0,
+                          "maximum": 120000,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "outcome",
+                    "enrollment"
+                  ],
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "changed",
+                        "unchanged"
+                      ]
+                    },
+                    "enrollment": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "version",
+                        "predecessorId",
+                        "decision",
+                        "paymentMethodId",
+                        "acceptedAt",
+                        "termsVersion",
+                        "scopes"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "predecessorId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "decision": {
+                          "type": "string",
+                          "enum": [
+                            "authorize",
+                            "reduce"
+                          ]
+                        },
+                        "paymentMethodId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "acceptedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "termsVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "scopes": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "subscriptionId",
+                              "commercialRevision",
+                              "fromPeriodIndex",
+                              "untilPeriodIndex",
+                              "periodStart",
+                              "dueDate",
+                              "calendar"
+                            ],
+                            "properties": {
+                              "subscriptionId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "commercialRevision": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "fromPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": "integer"
+                              },
+                              "untilPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "periodStart": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "dueDate": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "calendar": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "timeZone",
+                                  "issueHour",
+                                  "chargeHour"
+                                ],
+                                "properties": {
+                                  "timeZone": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "type": "string"
+                                  },
+                                  "issueHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  },
+                                  "chargeHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/automatic-payment-enrollment/reduce": {
+      "post": {
+        "operationId": "reduceCustomerAutomaticPaymentEnrollment",
+        "summary": "Immediately reduce or stop automatic payment consent",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "expectedVersion",
+                  "retainSubscriptionIds"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "type": "integer"
+                  },
+                  "retainSubscriptionIds": {
+                    "maxItems": 100,
+                    "uniqueItems": true,
+                    "type": "array",
+                    "items": {
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "outcome",
+                    "enrollment"
+                  ],
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "changed",
+                        "unchanged"
+                      ]
+                    },
+                    "enrollment": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "version",
+                        "predecessorId",
+                        "decision",
+                        "paymentMethodId",
+                        "acceptedAt",
+                        "termsVersion",
+                        "scopes"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        "predecessorId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "decision": {
+                          "type": "string",
+                          "enum": [
+                            "authorize",
+                            "reduce"
+                          ]
+                        },
+                        "paymentMethodId": {
+                          "format": "uuid",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "acceptedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "termsVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "scopes": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "subscriptionId",
+                              "commercialRevision",
+                              "fromPeriodIndex",
+                              "untilPeriodIndex",
+                              "periodStart",
+                              "dueDate",
+                              "calendar"
+                            ],
+                            "properties": {
+                              "subscriptionId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "commercialRevision": {
+                                "minimum": 1,
+                                "maximum": 2147483647,
+                                "type": "integer"
+                              },
+                              "fromPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": "integer"
+                              },
+                              "untilPeriodIndex": {
+                                "minimum": 0,
+                                "maximum": 120000,
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "periodStart": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "dueDate": {
+                                "format": "date",
+                                "type": "string"
+                              },
+                              "calendar": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "timeZone",
+                                  "issueHour",
+                                  "chargeHour"
+                                ],
+                                "properties": {
+                                  "timeZone": {
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "type": "string"
+                                  },
+                                  "issueHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  },
+                                  "chargeHour": {
+                                    "minimum": 0,
+                                    "maximum": 23,
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     }

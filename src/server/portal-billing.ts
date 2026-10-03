@@ -16,10 +16,20 @@ import {
   createStripeBillingProvider,
   createStripeEventVerifier,
 } from "../stripe";
-import type { VerifiedInvoiceEvent } from "../billing/provider";
+import { BillingProviderError } from "../billing/provider";
+import type {
+  VerifiedInvoiceEvent,
+  VerifiedPaymentSetupEvent,
+} from "../billing/provider";
 import type { createPortalSubscriptions } from "./portal-subscriptions";
 import type { InvoiceWorkflowHttp } from "./invoice-workflow-routes";
-import { allowPortalProfile, portalCustomers } from "./portal-demo";
+import {
+  allowPortalProfile,
+  portalCustomers,
+  portalDeploymentKey,
+} from "./portal-demo";
+
+import { createPortalPaymentSettings } from "./portal-payment-settings";
 
 const sampleLines = [
   { description: "Web hosting", amountMinor: 2300 },
@@ -131,16 +141,53 @@ export async function createPortalBilling(options: {
       )
     );
   };
-  const provider = configuration
-    ? await createStripeBillingProvider({
+  const storedAccountId = await reader.storedProviderAccountId();
+  let provider:
+    | Awaited<ReturnType<typeof createStripeBillingProvider>>
+    | undefined;
+  if (configuration) {
+    try {
+      provider = await createStripeBillingProvider({
         apiKey: configuration.apiKey,
         deploymentKey: configuration.deploymentKey,
-      })
-    : undefined;
+        ...(storedAccountId ? { accountId: storedAccountId } : {}),
+      });
+    } catch (error) {
+      if (
+        !(error instanceof BillingProviderError) ||
+        error.kind !== "retryable"
+      )
+        throw error;
+      // Local reads and consent reductions use the previously verified stored identity.
+    }
+  }
+  const deploymentKey = configuration?.deploymentKey ?? portalDeploymentKey;
+  const accountId = provider?.ownership.accountId ?? storedAccountId;
+  const allowMappingName = (customerId: string, name: string) => {
+    const sample = portalCustomers.find(
+      (entry) => customerIds[entry.key as "elm" | "birch"] === customerId,
+    );
+    return !!sample && [sample.name, sample.updatedName].includes(name);
+  };
+  const payments = await createPortalPaymentSettings({
+    pool,
+    deploymentKey,
+    provider: provider ?? null,
+    providerOwnership: accountId ? { deploymentKey, accountId } : null,
+    customers,
+    access,
+    allowSubscription: subscriptionPolicy.allowSubscription,
+    allowMappingName,
+    origin,
+  });
   await reader.assertSyntheticPolicy(
     allowRequest,
-    provider?.ownership.accountId,
+    accountId ?? undefined,
     allowScheduledRequest,
+    (mapping) =>
+      payments.validatedMappingIds.has(mapping.id) &&
+      mapping.key === `customer:${mapping.customerId}` &&
+      allowMappingName(mapping.customerId, mapping.name),
   );
   const billingOptions =
     provider && configuration
@@ -235,6 +282,8 @@ export async function createPortalBilling(options: {
     },
   };
   return {
+    paymentSettings: payments.paymentSettings,
+    paymentSettingsHttp: payments.http,
     resolutions,
     scheduled,
     commands,
@@ -246,6 +295,8 @@ export async function createPortalBilling(options: {
               signingSecret: configuration.signingSecret,
               ownership: provider.ownership,
             }),
+            acceptSetupEvent: (event: VerifiedPaymentSetupEvent) =>
+              payments.paymentSettings.receiveSetupEvent(event),
             acceptEvent: (event: VerifiedInvoiceEvent) =>
               commands.acceptEvent(event),
           }

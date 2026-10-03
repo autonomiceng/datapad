@@ -19,12 +19,13 @@ if (
     "portal-billing-test",
     "portal-scheduled-test",
     "portal-resolutions-test",
+    "portal-payment-settings-test",
     "portal-test",
     "portal-destroy",
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-scheduled-test, portal-resolutions-test, portal-payment-settings-test, portal-test or portal-destroy.",
   );
 }
 const portal =
@@ -33,6 +34,7 @@ const portal =
   mode === "portal-billing-test" ||
   mode === "portal-scheduled-test" ||
   mode === "portal-resolutions-test" ||
+  mode === "portal-payment-settings-test" ||
   mode === "portal-test" ||
   mode === "portal-destroy";
 const sandboxMode =
@@ -40,21 +42,25 @@ const sandboxMode =
   mode === "portal-billing" ||
   mode === "portal-billing-test" ||
   mode === "portal-scheduled-test" ||
-  mode === "portal-resolutions-test";
+  mode === "portal-resolutions-test" ||
+  mode === "portal-payment-settings-test";
 const isolated = mode === "test" || mode === "portal-test";
 const scheduledTesting = mode === "portal-scheduled-test";
 const resolutionsTesting = mode === "portal-resolutions-test";
+const paymentSettingsTesting = mode === "portal-payment-settings-test";
 const testing =
   isolated ||
   mode === "portal-billing-test" ||
   scheduledTesting ||
-  resolutionsTesting;
+  resolutionsTesting ||
+  paymentSettingsTesting;
 const { values } = parseArgs({
   args: process.argv.slice(3),
   options: {
     config: { type: "string" },
     "run-dir": { type: "string" },
     origin: { type: "string" },
+    port: { type: "string" },
     "inbox-origin": { type: "string" },
     "time-zone": { type: "string" },
   },
@@ -67,9 +73,25 @@ if (!sandboxMode && (values.config || values["run-dir"]))
 if (
   (values.origin || values["inbox-origin"]) &&
   mode !== "portal" &&
-  mode !== "portal-billing"
+  mode !== "portal-billing" &&
+  !paymentSettingsTesting
 )
-  throw new Error("An external origin requires portal demo mode.");
+  throw new Error(
+    "An external origin requires a portal demo or hosted setup acceptance.",
+  );
+const requestedPort =
+  values.port === undefined ? undefined : Number(values.port);
+if (
+  values.port !== undefined &&
+  (!/^[0-9]+$/.test(values.port) ||
+    !Number.isInteger(requestedPort) ||
+    requestedPort! < 1 ||
+    requestedPort! > 65535 ||
+    !(mode === "portal" || mode === "portal-billing" || paymentSettingsTesting))
+)
+  throw new Error(
+    "A portal listening port must be an integer from 1 to 65535.",
+  );
 let sandbox: Awaited<ReturnType<typeof openSandbox>> | undefined;
 let serverPort = 0;
 const root = resolve(import.meta.dir, "..");
@@ -83,7 +105,10 @@ const project = isolated
       : `datapad-${localId}`;
 const lock = resolve(
   root,
-  mode === "portal-billing-test" || scheduledTesting || resolutionsTesting
+  mode === "portal-billing-test" ||
+    scheduledTesting ||
+    resolutionsTesting ||
+    paymentSettingsTesting
     ? ".scratch/billing-test.lock"
     : sandboxMode
       ? ".scratch/billing-run.lock"
@@ -276,7 +301,7 @@ try {
       await command([process.execPath, "scripts/import-records.ts", fixture]);
     }
     if (portal) {
-      serverPort = await availableLoopbackPort();
+      serverPort = requestedPort ?? (await availableLoopbackPort());
       const origin = values.origin ?? `http://127.0.0.1:${serverPort}`;
       const parsedOrigin = new URL(origin);
       if (
@@ -303,6 +328,7 @@ try {
       delete env.PORTAL_SCHEDULE_TEST_CLOCK;
       delete env.PORTAL_SCHEDULE_TEST_PLAN;
       delete env.PORTAL_RESOLUTION_TEST_ARTIFACTS;
+      delete env.PORTAL_PAYMENT_SETTINGS_TEST_ARTIFACTS;
       env.PORTAL_DEMO_TIME_ZONE =
         values["time-zone"] ??
         (scheduledTesting ? "America/Los_Angeles" : "UTC");
@@ -339,6 +365,8 @@ try {
       env.BILLING_DEPLOYMENT_KEY = sandbox.deploymentKey;
       if (portal) {
         env.PORTAL_BILLING_SANDBOX = "true";
+        if (paymentSettingsTesting)
+          env.PORTAL_PAYMENT_SETTINGS_TEST_ARTIFACTS = sandbox.directory;
         if (resolutionsTesting)
           env.PORTAL_RESOLUTION_TEST_ARTIFACTS = sandbox.directory;
         if (scheduledTesting) {
@@ -362,7 +390,7 @@ try {
     env.ASSETS_DIR = mode === "dev" ? "" : "dist";
     const url = await startServer();
     if (testing) {
-      env.TEST_BASE_URL = url;
+      env.TEST_BASE_URL = values.origin ?? url;
       await command([
         "./node_modules/.bin/playwright",
         "test",
@@ -373,9 +401,11 @@ try {
                 ? "playwright.scheduled.config.ts"
                 : resolutionsTesting
                   ? "playwright.resolutions.config.ts"
-                  : mode === "portal-billing-test"
-                    ? "playwright.billing.config.ts"
-                    : "playwright.portal.config.ts",
+                  : paymentSettingsTesting
+                    ? "playwright.payment-settings.config.ts"
+                    : mode === "portal-billing-test"
+                      ? "playwright.billing.config.ts"
+                      : "playwright.portal.config.ts",
             ]
           : []),
       ]);

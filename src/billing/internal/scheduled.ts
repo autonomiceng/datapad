@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { lockSubscriptionCustomer } from "./subscription-lock";
+import { freezeEnrollment } from "./payment-enrollment";
 import canonicalize from "canonicalize";
 import { Temporal } from "@js-temporal/polyfill";
 import { and, asc, desc, eq, gte, lte, inArray, sql } from "drizzle-orm";
@@ -110,9 +112,7 @@ export function createScheduledBilling(
       eq(subscriptions.deploymentKey, deploymentKey),
     );
   async function lock(tx: NodePgDatabase, customerId: string) {
-    await tx.execute(
-      sql`select pg_advisory_xact_lock(hashtextextended(${`subscription-customer:${deploymentKey}:${customerId}`},0))`,
-    );
+    await lockSubscriptionCustomer(tx, deploymentKey, customerId);
   }
   async function authorize(
     tx: NodePgDatabase,
@@ -716,7 +716,15 @@ export function createScheduledBilling(
                   .where(eq(invoices.id, invoiceId));
                 invoiceIds.push(invoiceId);
               }
+              const permission = await freezeEnrollment(
+                seal,
+                deploymentKey,
+                customerId,
+                candidate,
+                invoiceId ? mapping!.id : null,
+              );
               await seal.insert(groups).values({
+                ...permission,
                 id,
                 customerId,
                 deploymentKey,

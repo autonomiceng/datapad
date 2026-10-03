@@ -34,7 +34,8 @@ export type CustomerCapability =
   | "read_members"
   | "manage_members"
   | "read_billing"
-  | "manage_billing";
+  | "manage_billing"
+  | "manage_payment_settings";
 export type CustomerReadScope =
   | { kind: "staff"; roles: StaffRole[]; organizationIds: string[] }
   | { kind: "memberships"; organizationIds: string[] };
@@ -42,6 +43,12 @@ export interface CustomerAccess {
   customerId: string;
   organizationId: string | null;
   customerRole: CustomerRole | null;
+  customerMembership: {
+    id: string;
+    invitationId: string | null;
+    invitedByUserId: string | null;
+    invitedByStaff: boolean | null;
+  } | null;
   staffRoles: StaffRole[];
 }
 
@@ -70,6 +77,26 @@ interface AuditEntryIdentity {
 }
 export type AuditEntry = AuditEntryIdentity &
   (
+    | {
+        action: "payment_setup.started";
+        changedFields: ["saveTerms"];
+        consentingMembershipId: string;
+        membershipProvenance: {
+          invitationId: string | null;
+          invitedByUserId: string | null;
+          invitedByStaff: boolean | null;
+        };
+      }
+    | {
+        action: "payment_enrollment.changed";
+        changedFields: ["method", "scopes"];
+        consentingMembershipId: string;
+        membershipProvenance: {
+          invitationId: string | null;
+          invitedByUserId: string | null;
+          invitedByStaff: boolean | null;
+        };
+      }
     | {
         action: "customer.profile.updated";
         changedFields: Array<"displayName" | "legalName" | "billingEmail">;

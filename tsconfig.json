@@ -22,6 +22,7 @@
     "playwright.portal.config.ts",
     "playwright.billing.config.ts",
     "playwright.scheduled.config.ts",
-    "playwright.resolutions.config.ts"
+    "playwright.resolutions.config.ts",
+    "playwright.payment-settings.config.ts"
   ]
 }

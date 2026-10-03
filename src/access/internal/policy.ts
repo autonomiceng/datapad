@@ -1,9 +1,16 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Pool } from "pg";
 import type { StaffRole, CustomerRole } from "../contract";
-import type { AccessPolicy, HumanActor } from "../types";
-import { session, user, member, staffGrants } from "./schema";
+import type { AccessPolicy, CustomerAccess, HumanActor } from "../types";
+import {
+  session,
+  user,
+  member,
+  staffGrants,
+  invitation,
+  auditEntries,
+} from "./schema";
 
 export function customerRole(role: string | undefined): CustomerRole | null {
   if (role === "admin" || role === "owner") return "administrator";
@@ -96,12 +103,15 @@ export function createPolicy(pool: Pool): AccessPolicy {
           ? await membershipQuery.for("share")
           : await membershipQuery
         : [];
-      const role = customerRole(memberships[0]?.role);
+      const membership = memberships[0];
+      const role = customerRole(membership?.role);
       const administrator = roles.includes("account_administrator");
       const visible = roles.length > 0 || role !== null;
       if (!visible) return { ok: false, code: "not_found" };
       const permitted =
         capability === "read" ||
+        (capability === "manage_payment_settings" &&
+          role === "administrator") ||
         (capability === "read_billing" &&
           (administrator || roles.includes("billing") || role !== null)) ||
         (capability === "manage_profile" && administrator) ||
@@ -111,12 +121,70 @@ export function createPolicy(pool: Pool): AccessPolicy {
         ((capability === "read_members" || capability === "manage_members") &&
           target.organizationId !== null &&
           (administrator || role === "administrator"));
-      return permitted
-        ? {
-            ok: true,
-            value: { ...target, customerRole: role, staffRoles: roles },
-          }
-        : { ok: false, code: "forbidden" };
+      if (!permitted) return { ok: false, code: "forbidden" };
+      let customerMembership: CustomerAccess["customerMembership"] = null;
+      if (membership && role) {
+        customerMembership = {
+          id: membership.id,
+          invitationId: null,
+          invitedByUserId: null,
+          invitedByStaff: null,
+        };
+        // Only a completion receipt naming this exact membership proves its invitation.
+        const acceptanceQuery = tx
+          .select({
+            invitationId: invitation.id,
+            inviterId: invitation.inviterId,
+          })
+          .from(auditEntries)
+          .innerJoin(invitation, eq(invitation.id, auditEntries.targetId))
+          .where(
+            and(
+              eq(auditEntries.action, "invitation.accept.completed"),
+              eq(auditEntries.actorId, actor.userId),
+              eq(auditEntries.customerId, target.customerId),
+              sql`${auditEntries.details}->>'memberId' = ${membership.id}`,
+              eq(invitation.organizationId, membership.organizationId),
+              eq(invitation.status, "accepted"),
+            ),
+          );
+        const [accepted] = mutation
+          ? await acceptanceQuery.for("share", {
+              of: [auditEntries, invitation],
+            })
+          : await acceptanceQuery;
+        if (accepted) {
+          const creationQuery = tx
+            .select({ details: auditEntries.details })
+            .from(auditEntries)
+            .where(
+              and(
+                eq(auditEntries.action, "invitation.create.requested"),
+                eq(auditEntries.targetId, accepted.invitationId),
+                eq(auditEntries.actorId, accepted.inviterId),
+                eq(auditEntries.customerId, target.customerId),
+              ),
+            );
+          const [created] = mutation
+            ? await creationQuery.for("share")
+            : await creationQuery;
+          customerMembership.invitationId = accepted.invitationId;
+          customerMembership.invitedByUserId = accepted.inviterId;
+          customerMembership.invitedByStaff =
+            typeof created?.details.invitedByStaff === "boolean"
+              ? created.details.invitedByStaff
+              : null;
+        }
+      }
+      return {
+        ok: true,
+        value: {
+          ...target,
+          customerRole: role,
+          staffRoles: roles,
+          customerMembership,
+        },
+      };
     },
   };
 }

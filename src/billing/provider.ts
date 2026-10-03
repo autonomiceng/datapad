@@ -113,7 +113,76 @@ export interface BillingEventVerifier {
   verifyEvent(
     rawBody: string,
     signature: string,
-  ): Promise<VerifiedInvoiceEvent | null>;
+  ): Promise<VerifiedInvoiceEvent | VerifiedPaymentSetupEvent | null>;
+}
+
+/** Persisted setup parameters. No browser-supplied provider identifiers. */
+export interface PaymentSetupIntent extends ProviderOwnership {
+  setupId: string;
+  customerId: string;
+  providerCustomerId: string;
+  currency: "USD";
+  successUrl: string;
+  cancelUrl: string;
+  integrationIdentifier: string;
+}
+/** Session and SetupIntent observations, independently retrieved by the adapter. */
+export interface ProviderPaymentSetup extends PaymentSetupIntent {
+  livemode: false;
+  providerSessionId: string;
+  status: "open" | "complete" | "expired";
+  checkoutUrl: string | null;
+  setupIntent: {
+    providerSetupIntentId: string;
+    deploymentKey: string;
+    setupId: string;
+    providerCustomerId: string;
+    livemode: false;
+    status:
+      | "succeeded"
+      | "processing"
+      | "requires_action"
+      | "requires_payment_method"
+      | "requires_confirmation"
+      | "canceled";
+    usage: "off_session" | "on_session";
+    providerPaymentMethodId: string | null;
+  } | null;
+}
+export interface ProviderSavedPaymentMethod extends ProviderOwnership {
+  providerPaymentMethodId: string;
+  providerCustomerId: string | null;
+  livemode: false;
+  type: "card" | "unsupported";
+  card: {
+    brand: string;
+    last4: string;
+    expiryMonth: number;
+    expiryYear: number;
+  } | null;
+}
+export interface VerifiedPaymentSetupEvent extends ProviderOwnership {
+  eventId: string;
+  providerSessionId: string;
+  setupId: string | null;
+}
+/** Capability composed with the existing verified client; never charges. */
+export interface PaymentSettingsProvider {
+  readonly ownership: ProviderOwnership;
+  createSetup(
+    intent: PaymentSetupIntent,
+    effect: ProviderEffect,
+  ): Promise<ProviderPaymentSetup>;
+  /** Fully paginate the owned customer's Sessions; incomplete inspection is ambiguous. */
+  findSetup(intent: PaymentSetupIntent): Promise<Lookup<ProviderPaymentSetup>>;
+  retrieveSetup(
+    intent: PaymentSetupIntent,
+    providerSessionId: string,
+  ): Promise<ProviderPaymentSetup>;
+  retrieveSavedMethod(
+    intent: PaymentSetupIntent,
+    providerPaymentMethodId: string,
+  ): Promise<ProviderSavedPaymentMethod>;
 }
 
 /** Complete, owned payment evidence. Unsupported or incomplete evidence must fail closed. */

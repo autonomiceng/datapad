@@ -167,6 +167,8 @@ export async function createPortalRuntime(
   };
 
   return {
+    paymentSettings: portalBilling.paymentSettingsHttp,
+    paymentSettingsWork: portalBilling.paymentSettings,
     resolutions: {
       access,
       resolutions: portalBilling.resolutions,
