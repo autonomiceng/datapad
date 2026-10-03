@@ -77,6 +77,8 @@ test("account migration preserves provider identities and invoice history while 
     historical.billing_customer_id = historical.customer_id;
     historical.provider_receipt_state = "unverified";
     historical.calendar = null;
+    historical.collection_checked_at = null;
+    historical.collection_remaining_minor = null;
     historical.issue_not_before = "2030-01-01T00:00:00+00:00";
     historical.first_attempt_before = "2030-01-22T00:00:00+00:00";
     historical.due_end_at = "2030-01-22T23:59:59+00:00";

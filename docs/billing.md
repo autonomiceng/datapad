@@ -1,6 +1,6 @@
 # Billing architecture and contract
 
-Billing stores explicit synthetic invoice requests, lets billing-authorized staff review and confirm them, issues positive USD invoices for manual payment and displays retrieved Stripe status. [Scheduled billing](scheduled-billing.md) also issues invoices from explicitly activated subscriptions. Automatic collection, invoice email sending, external payment recording and real customer data remain outside this composition. The separate [account composition](accounts.md) supplies authentication and current customer-scoped reads. [The glossary](../CONTEXT.md) defines the terms; [ADR 0007](adr/0007-invoice-ownership-and-recovery.md) records ownership and recovery decisions. [Runtime schemas](../src/billing/contract.ts), [the provider port](../src/billing/provider.ts) [public module types](../src/billing/types.ts) and [the schema](../src/billing/internal/schema.ts) are the concrete contracts.
+Billing stores explicit synthetic invoice requests, lets billing-authorized staff review and confirm them, issues positive USD invoices for manual payment and displays retrieved Stripe status. [Scheduled billing](scheduled-billing.md) also issues invoices from explicitly activated subscriptions. [Invoice resolutions](invoice-resolutions.md) records received external payments and voids unpaid invoices with provider confirmation. Automatic collection, invoice email sending and real customer data remain outside this composition. The separate [account composition](accounts.md) supplies authentication and current customer-scoped reads. [The glossary](../CONTEXT.md) defines the terms; [ADR 0007](adr/0007-invoice-ownership-and-recovery.md) records ownership and recovery decisions. [Runtime schemas](../src/billing/contract.ts), [the provider port](../src/billing/provider.ts) [public module types](../src/billing/types.ts) and [the schema](../src/billing/internal/schema.ts) are the concrete contracts.
 
 ## Module ownership
 
@@ -179,3 +179,7 @@ Each pass captures a high-water cursor and visits older and newer receipts, incl
 ## Scheduled invoices
 
 [Scheduled billing](scheduled-billing.md) seals explicitly activated subscription periods into immutable invoice groups. It reuses this lifecycle with persisted issueNotBefore, firstAttemptBefore and dueEndAt guards. Scheduled normalization permits zero-valued lines beside positive lines; manually prepared requests remain positive-only. Final No charge groups have no invoice. Schedule holds apply only through the explicit group-to-invoice relation and are checked before each first customer, invoice or finalization attempt. Existing manual request digests and stable provider effect identities are preserved.
+
+## Received payments and voids
+
+[Invoice resolutions](invoice-resolutions.md) preserve received external-payment assertions separately from confirmed settlement, support audited void requests and reconcile conflicts without replacing invoice identities.

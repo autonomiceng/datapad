@@ -14,5 +14,5 @@ export default defineConfig({
   testDir: "tests/portal-billing-browser",
   outputDir: "test-results/portal-billing",
   timeout: 120000,
-  testIgnore: "**/scheduled.spec.ts",
+  testMatch: "**/invoices.spec.ts",
 });

@@ -26,6 +26,7 @@ export async function startPortal(
       invoiceWorkflow: runtime.invoiceWorkflow,
       subscriptions: runtime.subscriptions,
       scheduled: runtime.scheduled,
+      resolutions: runtime.resolutions,
       services: runtime.services,
       accounts: runtime.accounts,
       assetsDir: process.env.ASSETS_DIR
@@ -50,6 +51,7 @@ export async function startPortal(
         databaseUrl: process.env.DATABASE_URL,
         billing: runtime.commands,
         scheduled: runtime.scheduledBilling,
+        resolutions: runtime.invoiceResolutions,
       });
     console.log(`Listening on http://127.0.0.1:${app.server!.port}`);
     const listeningApp = app;

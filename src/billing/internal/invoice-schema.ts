@@ -93,6 +93,8 @@ export const invoices = pgTable(
     createAttemptedAt: instant("create_attempted_at"),
     finalizeAttemptedAt: instant("finalize_attempted_at"),
     lastCheckedAt: instant("last_checked_at"),
+    collectionCheckedAt: instant("collection_checked_at"),
+    collectionRemainingMinor: integer("collection_remaining_minor"),
     reviewReason: text("review_reason").$type<ReviewReason>(),
     attempts: integer("attempts").notNull().default(0),
     nextAttemptAt: instant("next_attempt_at"),
@@ -146,6 +148,10 @@ export const invoices = pgTable(
       sql`${table.providerReceiptState} IN ('unverified', 'verified', 'mismatch')`,
     ),
     check("invoice_attempts", sql`${table.attempts} >= 0`),
+    check(
+      "invoice_collection_observation",
+      sql`(${table.collectionCheckedAt} IS NULL AND ${table.collectionRemainingMinor} IS NULL) OR (${table.collectionCheckedAt} IS NOT NULL AND ${table.collectionCheckedAt}>=${table.createdAt} AND ${table.collectionRemainingMinor} IS NOT NULL AND ${table.collectionRemainingMinor} BETWEEN 0 AND 99999999)`,
+    ),
   ],
 );
 

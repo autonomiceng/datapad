@@ -2701,6 +2701,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "resolution",
                         "calendar",
                         "providerReceipt",
                         "id",
@@ -2720,6 +2721,126 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "resolution": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "kind",
+                            "state",
+                            "amountMinor",
+                            "receivedDate",
+                            "method",
+                            "createdAt",
+                            "confirmedAt",
+                            "reviewReason"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "external_payment",
+                                "void"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "confirmed",
+                                "needs_review",
+                                "withdrawn"
+                              ]
+                            },
+                            "amountMinor": {
+                              "minimum": 0,
+                              "maximum": 99999999,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "receivedDate": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "method": {
+                              "anyOf": [
+                                {
+                                  "const": "zelle",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "check",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "reviewReason": {
+                              "anyOf": [
+                                {
+                                  "const": "provider_unavailable",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "collection_conflict",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "possible_overpayment",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "amount_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "uncertain_outcome",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "retry_exhausted",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "receipt_correction",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "provider_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
                         "calendar": {
                           "additionalProperties": false,
                           "type": [
@@ -5867,6 +5988,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "resolution",
                         "calendar",
                         "providerReceipt",
                         "id",
@@ -5886,6 +6008,126 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "resolution": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "kind",
+                            "state",
+                            "amountMinor",
+                            "receivedDate",
+                            "method",
+                            "createdAt",
+                            "confirmedAt",
+                            "reviewReason"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "external_payment",
+                                "void"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "confirmed",
+                                "needs_review",
+                                "withdrawn"
+                              ]
+                            },
+                            "amountMinor": {
+                              "minimum": 0,
+                              "maximum": 99999999,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "receivedDate": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "method": {
+                              "anyOf": [
+                                {
+                                  "const": "zelle",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "check",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "reviewReason": {
+                              "anyOf": [
+                                {
+                                  "const": "provider_unavailable",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "collection_conflict",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "possible_overpayment",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "amount_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "uncertain_outcome",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "retry_exhausted",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "receipt_correction",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "provider_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
                         "calendar": {
                           "additionalProperties": false,
                           "type": [
@@ -6250,6 +6492,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "resolution",
                         "calendar",
                         "providerReceipt",
                         "id",
@@ -6269,6 +6512,126 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "resolution": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "kind",
+                            "state",
+                            "amountMinor",
+                            "receivedDate",
+                            "method",
+                            "createdAt",
+                            "confirmedAt",
+                            "reviewReason"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "external_payment",
+                                "void"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "confirmed",
+                                "needs_review",
+                                "withdrawn"
+                              ]
+                            },
+                            "amountMinor": {
+                              "minimum": 0,
+                              "maximum": 99999999,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "receivedDate": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "method": {
+                              "anyOf": [
+                                {
+                                  "const": "zelle",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "check",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "reviewReason": {
+                              "anyOf": [
+                                {
+                                  "const": "provider_unavailable",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "collection_conflict",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "possible_overpayment",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "amount_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "uncertain_outcome",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "retry_exhausted",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "receipt_correction",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "provider_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
                         "calendar": {
                           "additionalProperties": false,
                           "type": [
@@ -6822,6 +7185,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "resolution",
                         "calendar",
                         "providerReceipt",
                         "id",
@@ -6841,6 +7205,126 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "resolution": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "kind",
+                            "state",
+                            "amountMinor",
+                            "receivedDate",
+                            "method",
+                            "createdAt",
+                            "confirmedAt",
+                            "reviewReason"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "external_payment",
+                                "void"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "confirmed",
+                                "needs_review",
+                                "withdrawn"
+                              ]
+                            },
+                            "amountMinor": {
+                              "minimum": 0,
+                              "maximum": 99999999,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "receivedDate": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "method": {
+                              "anyOf": [
+                                {
+                                  "const": "zelle",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "check",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "reviewReason": {
+                              "anyOf": [
+                                {
+                                  "const": "provider_unavailable",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "collection_conflict",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "possible_overpayment",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "amount_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "uncertain_outcome",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "retry_exhausted",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "receipt_correction",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "provider_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
                         "calendar": {
                           "additionalProperties": false,
                           "type": [
@@ -7656,6 +8140,7 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "resolution",
                         "calendar",
                         "providerReceipt",
                         "id",
@@ -7675,6 +8160,126 @@
                         "hostedInvoiceUrl"
                       ],
                       "properties": {
+                        "resolution": {
+                          "additionalProperties": false,
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "required": [
+                            "id",
+                            "kind",
+                            "state",
+                            "amountMinor",
+                            "receivedDate",
+                            "method",
+                            "createdAt",
+                            "confirmedAt",
+                            "reviewReason"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "external_payment",
+                                "void"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "confirmed",
+                                "needs_review",
+                                "withdrawn"
+                              ]
+                            },
+                            "amountMinor": {
+                              "minimum": 0,
+                              "maximum": 99999999,
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "receivedDate": {
+                              "format": "date",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "method": {
+                              "anyOf": [
+                                {
+                                  "const": "zelle",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "check",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "reviewReason": {
+                              "anyOf": [
+                                {
+                                  "const": "provider_unavailable",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "collection_conflict",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "possible_overpayment",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "amount_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "uncertain_outcome",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "retry_exhausted",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "receipt_correction",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "provider_mismatch",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
                         "calendar": {
                           "additionalProperties": false,
                           "type": [
@@ -13699,6 +14304,1975 @@
                       "minimum": 0,
                       "maximum": 1000000,
                       "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/invoices/{invoiceId}/resolution-review": {
+      "get": {
+        "operationId": "getInvoiceResolutionReview",
+        "summary": "Review remaining balance and permitted invoice resolutions",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "invoiceId",
+                    "remainingMinor",
+                    "collectionState",
+                    "lastCheckedAt",
+                    "actions",
+                    "blockers",
+                    "resolution",
+                    "history"
+                  ],
+                  "properties": {
+                    "invoiceId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "remainingMinor": {
+                      "minimum": 0,
+                      "maximum": 99999999,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "collectionState": {
+                      "type": "string",
+                      "enum": [
+                        "idle",
+                        "active",
+                        "unknown"
+                      ]
+                    },
+                    "lastCheckedAt": {
+                      "format": "date-time",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "record_external_payment",
+                          "void",
+                          "correct_receipt",
+                          "reconcile"
+                        ]
+                      }
+                    },
+                    "blockers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "provider_unavailable",
+                          "collection_conflict",
+                          "possible_overpayment",
+                          "amount_mismatch",
+                          "uncertain_outcome",
+                          "retry_exhausted",
+                          "receipt_correction",
+                          "provider_mismatch",
+                          "not_finalized",
+                          "terminal",
+                          "existing_resolution"
+                        ]
+                      }
+                    },
+                    "resolution": {
+                      "additionalProperties": false,
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "required": [
+                        "id",
+                        "kind",
+                        "state",
+                        "amountMinor",
+                        "receivedDate",
+                        "method",
+                        "createdAt",
+                        "confirmedAt",
+                        "reviewReason",
+                        "reference",
+                        "reason",
+                        "attemptedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "external_payment",
+                            "void"
+                          ]
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "needs_review",
+                            "withdrawn"
+                          ]
+                        },
+                        "amountMinor": {
+                          "minimum": 0,
+                          "maximum": 99999999,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "receivedDate": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "method": {
+                          "anyOf": [
+                            {
+                              "const": "zelle",
+                              "type": "string"
+                            },
+                            {
+                              "const": "check",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "confirmedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reviewReason": {
+                          "anyOf": [
+                            {
+                              "const": "provider_unavailable",
+                              "type": "string"
+                            },
+                            {
+                              "const": "collection_conflict",
+                              "type": "string"
+                            },
+                            {
+                              "const": "possible_overpayment",
+                              "type": "string"
+                            },
+                            {
+                              "const": "amount_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "const": "uncertain_outcome",
+                              "type": "string"
+                            },
+                            {
+                              "const": "retry_exhausted",
+                              "type": "string"
+                            },
+                            {
+                              "const": "receipt_correction",
+                              "type": "string"
+                            },
+                            {
+                              "const": "provider_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reference": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reason": {
+                          "minLength": 1,
+                          "maxLength": 500,
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "attemptedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    },
+                    "history": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "state",
+                          "amountMinor",
+                          "receivedDate",
+                          "method",
+                          "createdAt",
+                          "confirmedAt",
+                          "reviewReason",
+                          "reference",
+                          "reason",
+                          "attemptedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "external_payment",
+                              "void"
+                            ]
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "confirmed",
+                              "needs_review",
+                              "withdrawn"
+                            ]
+                          },
+                          "amountMinor": {
+                            "minimum": 0,
+                            "maximum": 99999999,
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "receivedDate": {
+                            "format": "date",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "method": {
+                            "anyOf": [
+                              {
+                                "const": "zelle",
+                                "type": "string"
+                              },
+                              {
+                                "const": "check",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "confirmedAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reviewReason": {
+                            "anyOf": [
+                              {
+                                "const": "provider_unavailable",
+                                "type": "string"
+                              },
+                              {
+                                "const": "collection_conflict",
+                                "type": "string"
+                              },
+                              {
+                                "const": "possible_overpayment",
+                                "type": "string"
+                              },
+                              {
+                                "const": "amount_mismatch",
+                                "type": "string"
+                              },
+                              {
+                                "const": "uncertain_outcome",
+                                "type": "string"
+                              },
+                              {
+                                "const": "retry_exhausted",
+                                "type": "string"
+                              },
+                              {
+                                "const": "receipt_correction",
+                                "type": "string"
+                              },
+                              {
+                                "const": "provider_mismatch",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reference": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reason": {
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "attemptedAt": {
+                            "format": "date-time",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/invoices/{invoiceId}/external-payment": {
+      "post": {
+        "operationId": "recordInvoiceExternalPayment",
+        "summary": "Record received funds and request provider reconciliation",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "amountMinor",
+                  "receivedDate",
+                  "method",
+                  "reference"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "amountMinor": {
+                    "minimum": 1,
+                    "maximum": 99999999,
+                    "type": "integer"
+                  },
+                  "receivedDate": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "zelle",
+                      "check"
+                    ]
+                  },
+                  "reference": {
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "resolution"
+                  ],
+                  "properties": {
+                    "resolution": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "state",
+                        "amountMinor",
+                        "receivedDate",
+                        "method",
+                        "createdAt",
+                        "confirmedAt",
+                        "reviewReason"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "external_payment",
+                            "void"
+                          ]
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "needs_review",
+                            "withdrawn"
+                          ]
+                        },
+                        "amountMinor": {
+                          "minimum": 0,
+                          "maximum": 99999999,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "receivedDate": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "method": {
+                          "anyOf": [
+                            {
+                              "const": "zelle",
+                              "type": "string"
+                            },
+                            {
+                              "const": "check",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "confirmedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reviewReason": {
+                          "anyOf": [
+                            {
+                              "const": "provider_unavailable",
+                              "type": "string"
+                            },
+                            {
+                              "const": "collection_conflict",
+                              "type": "string"
+                            },
+                            {
+                              "const": "possible_overpayment",
+                              "type": "string"
+                            },
+                            {
+                              "const": "amount_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "const": "uncertain_outcome",
+                              "type": "string"
+                            },
+                            {
+                              "const": "retry_exhausted",
+                              "type": "string"
+                            },
+                            {
+                              "const": "receipt_correction",
+                              "type": "string"
+                            },
+                            {
+                              "const": "provider_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/invoices/{invoiceId}/void": {
+      "post": {
+        "operationId": "requestInvoiceVoid",
+        "summary": "Authorize voiding this unpaid invoice with a reason",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "reason"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "resolution"
+                  ],
+                  "properties": {
+                    "resolution": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "state",
+                        "amountMinor",
+                        "receivedDate",
+                        "method",
+                        "createdAt",
+                        "confirmedAt",
+                        "reviewReason"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "external_payment",
+                            "void"
+                          ]
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "needs_review",
+                            "withdrawn"
+                          ]
+                        },
+                        "amountMinor": {
+                          "minimum": 0,
+                          "maximum": 99999999,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "receivedDate": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "method": {
+                          "anyOf": [
+                            {
+                              "const": "zelle",
+                              "type": "string"
+                            },
+                            {
+                              "const": "check",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "confirmedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reviewReason": {
+                          "anyOf": [
+                            {
+                              "const": "provider_unavailable",
+                              "type": "string"
+                            },
+                            {
+                              "const": "collection_conflict",
+                              "type": "string"
+                            },
+                            {
+                              "const": "possible_overpayment",
+                              "type": "string"
+                            },
+                            {
+                              "const": "amount_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "const": "uncertain_outcome",
+                              "type": "string"
+                            },
+                            {
+                              "const": "retry_exhausted",
+                              "type": "string"
+                            },
+                            {
+                              "const": "receipt_correction",
+                              "type": "string"
+                            },
+                            {
+                              "const": "provider_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/invoices/{invoiceId}/receipt-correction": {
+      "post": {
+        "operationId": "flagInvoiceReceiptCorrection",
+        "summary": "Preserve receipt facts and request their correction",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "reason"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "resolution"
+                  ],
+                  "properties": {
+                    "resolution": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "state",
+                        "amountMinor",
+                        "receivedDate",
+                        "method",
+                        "createdAt",
+                        "confirmedAt",
+                        "reviewReason"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "external_payment",
+                            "void"
+                          ]
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "needs_review",
+                            "withdrawn"
+                          ]
+                        },
+                        "amountMinor": {
+                          "minimum": 0,
+                          "maximum": 99999999,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "receivedDate": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "method": {
+                          "anyOf": [
+                            {
+                              "const": "zelle",
+                              "type": "string"
+                            },
+                            {
+                              "const": "check",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "confirmedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reviewReason": {
+                          "anyOf": [
+                            {
+                              "const": "provider_unavailable",
+                              "type": "string"
+                            },
+                            {
+                              "const": "collection_conflict",
+                              "type": "string"
+                            },
+                            {
+                              "const": "possible_overpayment",
+                              "type": "string"
+                            },
+                            {
+                              "const": "amount_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "const": "uncertain_outcome",
+                              "type": "string"
+                            },
+                            {
+                              "const": "retry_exhausted",
+                              "type": "string"
+                            },
+                            {
+                              "const": "receipt_correction",
+                              "type": "string"
+                            },
+                            {
+                              "const": "provider_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response for status 403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response for status 409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Response for status 422",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response for status 503",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "unauthenticated",
+                        "forbidden",
+                        "not_found",
+                        "conflict",
+                        "invalid_request",
+                        "unavailable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{customerId}/invoices/{invoiceId}/reconcile": {
+      "post": {
+        "operationId": "reconcileInvoiceResolution",
+        "summary": "Recheck an unattempted receipt before resuming reconciliation",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "resolution"
+                  ],
+                  "properties": {
+                    "resolution": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "kind",
+                        "state",
+                        "amountMinor",
+                        "receivedDate",
+                        "method",
+                        "createdAt",
+                        "confirmedAt",
+                        "reviewReason"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "external_payment",
+                            "void"
+                          ]
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "confirmed",
+                            "needs_review",
+                            "withdrawn"
+                          ]
+                        },
+                        "amountMinor": {
+                          "minimum": 0,
+                          "maximum": 99999999,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "receivedDate": {
+                          "format": "date",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "method": {
+                          "anyOf": [
+                            {
+                              "const": "zelle",
+                              "type": "string"
+                            },
+                            {
+                              "const": "check",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "confirmedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reviewReason": {
+                          "anyOf": [
+                            {
+                              "const": "provider_unavailable",
+                              "type": "string"
+                            },
+                            {
+                              "const": "collection_conflict",
+                              "type": "string"
+                            },
+                            {
+                              "const": "possible_overpayment",
+                              "type": "string"
+                            },
+                            {
+                              "const": "amount_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "const": "uncertain_outcome",
+                              "type": "string"
+                            },
+                            {
+                              "const": "retry_exhausted",
+                              "type": "string"
+                            },
+                            {
+                              "const": "receipt_correction",
+                              "type": "string"
+                            },
+                            {
+                              "const": "provider_mismatch",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 }

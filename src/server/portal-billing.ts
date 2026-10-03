@@ -7,6 +7,7 @@ import {
   createBilling,
   createBillingWorkflow,
   createScheduledBilling,
+  createInvoiceResolutions,
   type SyntheticScheduledInvoice,
   type BillingReader,
   type SyntheticInvoicePolicy,
@@ -146,6 +147,7 @@ export async function createPortalBilling(options: {
       ? {
           pool,
           provider,
+          resolutionProvider: provider,
           deploymentKey: configuration.deploymentKey,
           now,
           customers: createCustomerRegistry({
@@ -179,6 +181,30 @@ export async function createPortalBilling(options: {
         })
       : undefined;
   await scheduled?.assertSyntheticData();
+  const resolutions =
+    provider && configuration
+      ? createInvoiceResolutions({
+          pool,
+          deploymentKey: configuration.deploymentKey,
+          resolutionProvider: provider,
+          customerAccess: customers,
+          audit: access.audit,
+          workerId: "synthetic-invoice-resolutions",
+          allowResolution(resolution) {
+            if (!Object.values(customerIds).includes(resolution.customerId))
+              return false;
+            if (resolution.kind === "external_payment")
+              return resolution.input.reference === "Sample external payment";
+            return (
+              resolution.input.reason ===
+              (resolution.kind === "void"
+                ? "Sample invoice void"
+                : "Sample receipt correction")
+            );
+          },
+        })
+      : undefined;
+  await resolutions?.assertSyntheticData();
   const http: InvoiceWorkflowHttp = {
     access,
     workflow,
@@ -209,6 +235,7 @@ export async function createPortalBilling(options: {
     },
   };
   return {
+    resolutions,
     scheduled,
     commands,
     http,

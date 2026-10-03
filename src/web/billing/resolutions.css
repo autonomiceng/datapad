@@ -1,0 +1,60 @@
+.invoice-resolutions,
+.resolution-record {
+  overflow-wrap: anywhere;
+}
+.invoice-resolutions {
+  gap: 16px;
+  min-width: 0;
+}
+.resolution-record {
+  display: grid;
+  gap: 8px;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
+}
+.resolution-record + .resolution-record {
+  margin-top: 16px;
+}
+.resolution-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.resolution-support {
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+.resolution-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+  gap: 16px;
+  /* A definite width; max-width alone makes auto-fit count columns at 600px. */
+  width: min(100%, 600px);
+}
+.account-form.resolution-form label {
+  max-width: 600px;
+}
+.resolution-form .resolution-confirm {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  max-width: 600px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  font-weight: 400;
+  cursor: pointer;
+}
+.resolution-confirm input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+.invoice-resolutions details {
+  display: grid;
+  gap: 12px;
+}

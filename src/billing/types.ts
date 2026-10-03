@@ -14,7 +14,11 @@ import type {
   InvoiceResponse,
   InvoicesResponse,
 } from "./contract";
-import type { BillingProvider, VerifiedInvoiceEvent } from "./provider";
+import type {
+  BillingProvider,
+  InvoiceResolutionProvider,
+  VerifiedInvoiceEvent,
+} from "./provider";
 import type {
   CustomerRegistry,
   ProviderProfileReader,
@@ -26,6 +30,7 @@ export interface BillingReaderOptions {
 }
 export interface BillingOptions extends BillingReaderOptions {
   provider: BillingProvider;
+  resolutionProvider?: InvoiceResolutionProvider;
   customers: CustomerRegistry;
   now?: () => Date;
 }

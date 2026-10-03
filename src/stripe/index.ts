@@ -4,8 +4,10 @@ import {
   BillingProviderError,
   type BillingEventVerifier,
   type BillingProvider,
+  type CollectionInspection,
   type CustomerIntent,
   type InvoiceIntent,
+  type InvoiceResolutionProvider,
   type LineIntent,
   type Lookup,
   type ProviderCustomer,
@@ -93,7 +95,7 @@ async function safe<T>(operation: () => Promise<T>): Promise<T> {
 /** Uses only sandbox keys and verifies the account before exposing effects. */
 export async function createStripeBillingProvider(
   options: StripeBillingOptions,
-): Promise<BillingProvider> {
+): Promise<BillingProvider & InvoiceResolutionProvider> {
   if (
     !/^(sk|rk)_test_/.test(options.apiKey) ||
     !/^[A-Za-z0-9_-]{1,64}$/.test(options.deploymentKey)
@@ -161,8 +163,15 @@ export async function createStripeBillingProvider(
     const seen = new Set<string>();
     for (let pageIndex = 0; pageIndex < maxPages; pageIndex++) {
       const page = await list(cursor);
+      if (
+        page.object !== "list" ||
+        !Array.isArray(page.data) ||
+        typeof page.has_more !== "boolean"
+      )
+        return null;
       for (const item of page.data) {
-        if (seen.has(item.id)) return null;
+        if (typeof item.id !== "string" || !item.id || seen.has(item.id))
+          return null;
         seen.add(item.id);
         result.push(item);
       }
@@ -342,8 +351,277 @@ export async function createStripeBillingProvider(
     if (!candidates.length) return { kind: "absent" };
     return { kind: "found", value: await verify(candidates[0]) };
   }
+  async function resolutionSnapshot(
+    intent: InvoiceIntent,
+    id: string,
+    value: Stripe.Invoice,
+  ) {
+    if (
+      value.id !== id ||
+      value.object !== "invoice" ||
+      value.livemode !== false
+    )
+      throw review("ownership_mismatch", true);
+    const snapshot = await invoiceSnapshot(intent, value);
+    if (
+      snapshot.recipientName !== intent.recipientName ||
+      snapshot.recipientEmail !== `${intent.customerId}@billing.test` ||
+      snapshot.lines.length !== intent.lines.length ||
+      snapshot.totalMinor !== intent.totalMinor
+    )
+      throw review("invoice_mismatch", true);
+    return snapshot;
+  }
+  function minor(value: number | undefined): number {
+    if (value === undefined || !Number.isSafeInteger(value) || value < 0)
+      throw review("provider_conflict");
+    return value;
+  }
+  function amounts(value: Stripe.Invoice) {
+    minor(value.amount_due);
+    const result = {
+      remainingMinor: minor(value.amount_remaining),
+      paidMinor: minor(value.amount_paid),
+      paidOffStripeMinor: minor(value.amount_paid_off_stripe),
+      overpaidMinor: minor(value.amount_overpaid),
+    };
+    if (result.paidOffStripeMinor > result.paidMinor)
+      throw review("provider_conflict");
+    return result;
+  }
+  function paymentStatus(
+    value: string,
+  ): CollectionInspection["payments"][number]["status"] {
+    switch (value) {
+      case "open":
+      case "paid":
+      case "canceled":
+        return value;
+      default:
+        throw review("provider_conflict");
+    }
+  }
+  function intentState(
+    value: string,
+  ): CollectionInspection["payments"][number]["intentState"] {
+    switch (value) {
+      case "requires_payment_method":
+      case "requires_confirmation":
+      case "requires_action":
+      case "processing":
+      case "requires_capture":
+      case "canceled":
+      case "succeeded":
+        return value;
+      default:
+        throw review("provider_conflict");
+    }
+  }
   return {
     ownership,
+    inspectCollection: (intent, invoiceId) =>
+      safe(async () => {
+        checkIntent(intent);
+        const initial = await stripe.invoices.retrieve(invoiceId, {
+          expand: ["amount_paid_off_stripe"],
+        });
+        await resolutionSnapshot(intent, invoiceId, initial);
+        const initialAmounts = amounts(initial);
+        const values = await pages((cursor) =>
+          stripe.invoicePayments.list({
+            invoice: invoiceId,
+            limit: 100,
+            ...(cursor ? { starting_after: cursor } : {}),
+          }),
+        );
+        if (!values) throw review("provider_conflict");
+        const payments: CollectionInspection["payments"] = [];
+        const seenIntents = new Set<string>();
+        const seenRecords = new Set<string>();
+        let externalPaid = 0;
+        let active = false;
+        let unknown = false;
+        for (const value of values) {
+          if (
+            value.object !== "invoice_payment" ||
+            !value.id.startsWith("inpay_") ||
+            value.livemode !== false ||
+            objectId(value.invoice) !== invoiceId ||
+            value.currency !== "usd"
+          )
+            throw review("ownership_mismatch");
+          if (value.payment?.type === "payment_record") {
+            const id = objectId(value.payment.payment_record ?? null);
+            if (!id || !id.startsWith("pr_") || seenRecords.has(id))
+              throw review("provider_conflict");
+            seenRecords.add(id);
+            const record = await stripe.paymentRecords.retrieve(id);
+            if (
+              record.object !== "payment_record" ||
+              record.id !== id ||
+              record.livemode !== false ||
+              record.customer_details?.customer !== intent.providerCustomerId
+            )
+              throw review("ownership_mismatch");
+            const paid = minor(value.amount_paid ?? undefined);
+            if (
+              value.status !== "paid" ||
+              paid === 0 ||
+              minor(value.amount_requested) !== paid ||
+              record.reported_by !== "self" ||
+              record.payment_method_details?.type !== "custom" ||
+              !record.payment_method_details.custom ||
+              record.processor_details?.type !== "custom"
+            )
+              throw review("provider_conflict");
+            // Support fully guaranteed external records; partial/refunded/unknown evidence stays closed.
+            for (const amount of [
+              record.amount,
+              record.amount_requested,
+              record.amount_authorized,
+              record.amount_guaranteed,
+            ]) {
+              if (amount?.currency !== "usd" || minor(amount.value) !== paid)
+                throw review("provider_conflict");
+            }
+            for (const amount of [
+              record.amount_canceled,
+              record.amount_failed,
+              record.amount_refunded,
+            ]) {
+              if (amount?.currency !== "usd" || minor(amount.value) !== 0)
+                throw review("provider_conflict");
+            }
+            externalPaid += paid;
+            // External records have no PaymentIntent and must not enter the electronic baseline.
+            continue;
+          }
+          if (value.payment?.type !== "payment_intent")
+            throw review("provider_conflict");
+          const id = objectId(value.payment.payment_intent ?? null);
+          if (!id || !id.startsWith("pi_") || seenIntents.has(id))
+            throw review("provider_conflict");
+          seenIntents.add(id);
+          const current = await stripe.paymentIntents.retrieve(id);
+          if (
+            current.object !== "payment_intent" ||
+            current.id !== id ||
+            current.livemode !== false ||
+            objectId(current.customer) !== intent.providerCustomerId ||
+            current.currency !== "usd"
+          )
+            throw review("ownership_mismatch");
+          const status = paymentStatus(value.status);
+          const state = intentState(current.status);
+          const requested = minor(value.amount_requested);
+          const paid =
+            value.amount_paid === null ? null : minor(value.amount_paid);
+          const received = minor(current.amount_received);
+          const capturable = minor(current.amount_capturable);
+          const amount = minor(current.amount);
+          if (
+            received > amount ||
+            capturable > amount ||
+            (paid !== null && (paid > requested || paid > received))
+          )
+            throw review("provider_conflict");
+          if (
+            [
+              "requires_confirmation",
+              "requires_action",
+              "processing",
+              "requires_capture",
+            ].includes(state)
+          )
+            active = true;
+          // A success without its invoice allocation, or unexplained received funds, is not idle.
+          if (status === "paid") {
+            if (state !== "succeeded" || paid === null || capturable !== 0)
+              unknown = true;
+          } else if (
+            paid !== null ||
+            received !== 0 ||
+            capturable !== 0 ||
+            state === "succeeded"
+          )
+            unknown = true;
+          payments.push({
+            invoicePaymentId: value.id,
+            paymentIntentId: id,
+            status,
+            paidMinor: paid,
+            intentState: state,
+            receivedMinor: received,
+            capturableMinor: capturable,
+          });
+        }
+        const final = await stripe.invoices.retrieve(invoiceId, {
+          expand: ["amount_paid_off_stripe"],
+        });
+        const snapshot = await resolutionSnapshot(intent, invoiceId, final);
+        const finalAmounts = amounts(final);
+        if (
+          initial.status !== final.status ||
+          initial.amount_due !== final.amount_due ||
+          initialAmounts.remainingMinor !== finalAmounts.remainingMinor ||
+          initialAmounts.paidMinor !== finalAmounts.paidMinor ||
+          initialAmounts.paidOffStripeMinor !==
+            finalAmounts.paidOffStripeMinor ||
+          initialAmounts.overpaidMinor !== finalAmounts.overpaidMinor
+        )
+          throw review("provider_conflict");
+        const electronicPaid = payments.reduce(
+          (sum, payment) =>
+            sum + (payment.status === "paid" ? (payment.paidMinor ?? 0) : 0),
+          0,
+        );
+        if (
+          !Number.isSafeInteger(externalPaid) ||
+          externalPaid !== finalAmounts.paidOffStripeMinor ||
+          !Number.isSafeInteger(electronicPaid) ||
+          electronicPaid !==
+            finalAmounts.paidMinor - finalAmounts.paidOffStripeMinor
+        )
+          unknown = true;
+        return {
+          invoice: snapshot,
+          ...finalAmounts,
+          collectionState: unknown ? "unknown" : active ? "active" : "idle",
+          payments,
+        };
+      }),
+    settleExternally: (intent, invoiceId, effect) =>
+      safe(async () => {
+        checkIntent(intent);
+        const value = await stripe.invoices.pay(
+          invoiceId,
+          { paid_out_of_band: true, expand: ["amount_paid_off_stripe"] },
+          { idempotencyKey: effect.idempotencyKey },
+        );
+        const snapshot = await resolutionSnapshot(intent, invoiceId, value);
+        return {
+          invoice: snapshot,
+          paidOffStripeMinor: amounts(value).paidOffStripeMinor,
+        };
+      }),
+    voidInvoice: (intent, invoiceId, effect) =>
+      safe(async () => {
+        checkIntent(intent);
+        await resolutionSnapshot(
+          intent,
+          invoiceId,
+          await stripe.invoices.retrieve(invoiceId),
+        );
+        return resolutionSnapshot(
+          intent,
+          invoiceId,
+          await stripe.invoices.voidInvoice(
+            invoiceId,
+            {},
+            { idempotencyKey: effect.idempotencyKey },
+          ),
+        );
+      }),
     findCustomer: (intent) =>
       safe(async () => {
         checkIntent(intent);

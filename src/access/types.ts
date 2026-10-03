@@ -87,6 +87,23 @@ export type AuditEntry = AuditEntryIdentity &
         changedFields: Array<"issueRequestedAt">;
       }
     | {
+        action: "invoice.external_payment_recorded";
+        changedFields: Array<"receipt">;
+      }
+    | {
+        action: "invoice.void_requested";
+        changedFields: Array<"reason">;
+      }
+    | {
+        action: "invoice.receipt_correction_requested";
+        changedFields: Array<"correction">;
+        reason: string;
+      }
+    | {
+        action: "invoice.resolution_reconciled";
+        changedFields: Array<"state">;
+      }
+    | {
         action: "subscription.created";
         changedFields: Array<
           | "serviceId"
@@ -145,7 +162,10 @@ export interface AuditWriter {
           action:
             | "customer.created"
             | "customer.organization.bound"
-            | "service.created";
+            | "service.created"
+            | "invoice.resolution_attempted"
+            | "invoice.resolution_confirmed"
+            | "invoice.resolution_needs_review";
         }
       | { action: "invoice_group.sealed"; requestId: string }
     ),

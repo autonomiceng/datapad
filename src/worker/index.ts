@@ -4,10 +4,12 @@ import type {
   ScheduleSweepInput,
 } from "../billing/scheduled-types";
 import type { BillingCommands, PendingWork } from "../billing/types";
+import type { InvoiceResolutions } from "../billing/resolutions-types";
+type BillingWork = PendingWork | { kind: "resolution"; resolutionId: string };
 
 const queue = "datapad-billing";
 interface BillingWorker {
-  enqueue(work: PendingWork): Promise<void>;
+  enqueue(work: BillingWork): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -19,6 +21,10 @@ export async function createBillingWorker(options: {
     "pendingWork" | "issueInvoice" | "processEvent"
   >;
   scheduled?: Pick<ScheduledBilling, "sweepScheduled">;
+  resolutions?: Pick<
+    InvoiceResolutions,
+    "pendingResolutions" | "processResolution"
+  >;
   onError?: () => void;
 }): Promise<BillingWorker> {
   const boss = new PgBoss({
@@ -30,12 +36,14 @@ export async function createBillingWorker(options: {
   let stopped = false;
   let sweeping: Promise<void> | undefined;
   let scheduleCursor: Pick<ScheduleSweepInput, "after" | "through"> = {};
-  async function enqueue(work: PendingWork) {
+  async function enqueue(work: BillingWork) {
     if (stopped) throw new Error("Billing worker stopped.");
     const singletonKey =
       work.kind === "issue"
         ? `issue:${work.invoiceId}`
-        : `event:${work.eventId}`;
+        : work.kind === "event"
+          ? `event:${work.eventId}`
+          : `resolution:${work.resolutionId}`;
     await boss.send(queue, work, { singletonKey });
   }
   async function sweep() {
@@ -51,6 +59,11 @@ export async function createBillingWorker(options: {
         } catch {
           report();
         }
+      }
+      for (const work of (await options.resolutions?.pendingResolutions(100)) ??
+        []) {
+        if (stopped) return;
+        await enqueue(work);
       }
       for (const work of await options.billing.pendingWork(100)) {
         if (stopped) return;
@@ -73,11 +86,15 @@ export async function createBillingWorker(options: {
       retryDelayMax: 60,
       expireInSeconds: 300,
     });
-    await boss.work<PendingWork>(queue, { batchSize: 1 }, async ([job]) => {
+    await boss.work<BillingWork>(queue, { batchSize: 1 }, async ([job]) => {
       const work = job.data;
       if (work.kind === "issue")
         await options.billing.issueInvoice(work.invoiceId);
-      else await options.billing.processEvent(work.eventId);
+      else if (work.kind === "event")
+        await options.billing.processEvent(work.eventId);
+      else if (work.kind === "resolution" && options.resolutions)
+        await options.resolutions.processResolution(work.resolutionId);
+      else throw new Error("Billing work capability unavailable.");
       // The domain persists nextAttemptAt. The sweep sends only eligible work.
       // A retry result completes this delivery; throwing retries operational failures.
     });

@@ -115,3 +115,48 @@ export interface BillingEventVerifier {
     signature: string,
   ): Promise<VerifiedInvoiceEvent | null>;
 }
+
+/** Complete, owned payment evidence. Unsupported or incomplete evidence must fail closed. */
+export interface CollectionInspection {
+  invoice: ProviderInvoice;
+  remainingMinor: number;
+  paidMinor: number;
+  paidOffStripeMinor: number;
+  overpaidMinor: number;
+  collectionState: "idle" | "active" | "unknown";
+  payments: Array<{
+    invoicePaymentId: string;
+    paymentIntentId: string;
+    status: "open" | "paid" | "canceled";
+    paidMinor: number | null;
+    intentState:
+      | "requires_payment_method"
+      | "requires_confirmation"
+      | "requires_action"
+      | "processing"
+      | "requires_capture"
+      | "canceled"
+      | "succeeded";
+    receivedMinor: number;
+    capturableMinor: number;
+  }>;
+}
+/** Added to the existing provider factory; ownership must equal BillingProvider ownership. */
+export interface InvoiceResolutionProvider {
+  readonly ownership: ProviderOwnership;
+  inspectCollection(
+    intent: InvoiceIntent,
+    id: string,
+  ): Promise<CollectionInspection>;
+  /** Replays use exactly the same expanded pay parameters and key. */
+  settleExternally(
+    intent: InvoiceIntent,
+    id: string,
+    effect: ProviderEffect,
+  ): Promise<{ invoice: ProviderInvoice; paidOffStripeMinor: number }>;
+  voidInvoice(
+    intent: InvoiceIntent,
+    id: string,
+    effect: ProviderEffect,
+  ): Promise<ProviderInvoice>;
+}
