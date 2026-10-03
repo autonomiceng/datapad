@@ -105,6 +105,7 @@ strong {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
 }
 .brand {
@@ -632,8 +633,22 @@ th .text-button {
 
 .site-header nav {
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 20px;
 }
 .site-header nav a[aria-current] {
   color: var(--text);
+}
+.site-header nav:has(+ .site-account) {
+  margin-left: auto;
+}
+@media (max-width: 550px) {
+  .site-header {
+    row-gap: 0;
+  }
+  .site-header nav:has(+ .site-account) {
+    order: 1;
+    width: 100%;
+  }
 }

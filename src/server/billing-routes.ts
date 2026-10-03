@@ -7,9 +7,16 @@ import {
 } from "../billing/contract";
 import type { BillingCommands, BillingReader } from "../billing/types";
 import type { BillingEventVerifier } from "../billing/provider";
+import { AccessErrorSchema } from "../access/contract";
+import type { AccessResult } from "../access/types";
 
 export interface BillingHttp {
-  reader: BillingReader;
+  reader: Pick<BillingReader, "listInvoices" | "getInvoice">;
+  authorizeRead?: (
+    headers: Headers,
+  ) => Promise<
+    AccessResult<Pick<BillingReader, "listInvoices" | "getInvoice">>
+  >;
   webhook?: {
     verifier: BillingEventVerifier;
     acceptEvent: BillingCommands["acceptEvent"];
@@ -44,9 +51,20 @@ export function billingRoutes(billing?: BillingHttp) {
   return new Elysia({ normalize: false })
     .get(
       "/api/billing/invoices",
-      ({ query, status }) =>
-        billing?.reader.listInvoices(query) ??
-        status(503, { code: "unavailable" }),
+      async ({ query, request, status }) => {
+        if (!billing) return status(503, { code: "unavailable" });
+        const authorized = billing.authorizeRead
+          ? await billing.authorizeRead(request.headers)
+          : { ok: true as const, value: billing.reader };
+        if (!authorized.ok) {
+          if (authorized.code === "unauthenticated")
+            return status(401, { code: "unauthenticated" });
+          if (authorized.code === "forbidden")
+            return status(403, { code: "forbidden" });
+          return status(503, { code: "unavailable" });
+        }
+        return authorized.value.listInvoices(query);
+      },
       {
         query: t.Object(
           {
@@ -61,6 +79,8 @@ export function billingRoutes(billing?: BillingHttp) {
         ),
         response: {
           200: InvoicesResponseSchema,
+          401: AccessErrorSchema,
+          403: AccessErrorSchema,
           422: BillingErrorSchema,
           503: BillingErrorSchema,
         },
@@ -69,15 +89,27 @@ export function billingRoutes(billing?: BillingHttp) {
     )
     .get(
       "/api/billing/invoices/:invoiceId",
-      async ({ params, status }) => {
+      async ({ params, request, status }) => {
         if (!billing) return status(503, { code: "unavailable" });
-        const result = await billing.reader.getInvoice(params.invoiceId);
+        const authorized = billing.authorizeRead
+          ? await billing.authorizeRead(request.headers)
+          : { ok: true as const, value: billing.reader };
+        if (!authorized.ok) {
+          if (authorized.code === "unauthenticated")
+            return status(401, { code: "unauthenticated" });
+          if (authorized.code === "forbidden")
+            return status(403, { code: "forbidden" });
+          return status(503, { code: "unavailable" });
+        }
+        const result = await authorized.value.getInvoice(params.invoiceId);
         return result ?? status(404, { code: "not_found" });
       },
       {
         params: t.Object({ invoiceId: t.String({ format: "uuid" }) }),
         response: {
           200: InvoiceResponseSchema,
+          401: AccessErrorSchema,
+          403: AccessErrorSchema,
           404: BillingErrorSchema,
           422: BillingErrorSchema,
           503: BillingErrorSchema,

@@ -211,11 +211,31 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
     expect(operation.operationId).toBe(operationId);
     expect(Object.keys(operation.responses).sort()).toEqual(
       path.endsWith("/sources")
-        ? ["200", "422", "503"]
-        : ["200", "404", "422", "503"],
+        ? ["200", "401", "403", "422", "503"]
+        : ["200", "401", "403", "404", "422", "503"],
     );
   }
   const sources = contract.paths["/api/import-review/sources"].get;
+  const portal = await exportOpenApi(true);
+  expect(portal).toBe(
+    await Bun.file(
+      new URL("../../contracts/portal-openapi.json", import.meta.url),
+    ).text(),
+  );
+  expect(
+    JSON.parse(portal).paths["/api/customers/{customerId}"].patch.operationId,
+  ).toBe("updateCustomer");
+  const customerRole =
+    JSON.parse(portal).paths["/api/customers"].get.responses["200"].content[
+      "application/json"
+    ].schema.properties.customers.items.properties.role;
+  expect(customerRole).toEqual({
+    anyOf: [
+      { const: "administrator", type: "string" },
+      { const: "member", type: "string" },
+      { type: "null" },
+    ],
+  });
   const limit = sources.parameters.find(
     (parameter: { name: string }) => parameter.name === "limit",
   );

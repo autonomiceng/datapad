@@ -8,6 +8,8 @@ import {
 import type { InvoiceRequest } from "../../src/billing/contract";
 import type { VerifiedInvoiceEvent } from "../../src/billing/provider";
 import { SyntheticBillingProvider } from "./billing-provider";
+import { createCustomerRegistry } from "../../src/customers";
+import { createAuditWriter } from "../../src/access";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url) throw new Error("TEST_DATABASE_URL is required");
@@ -43,6 +45,11 @@ function setup() {
     pool,
     provider,
     deploymentKey: provider.ownership.deploymentKey,
+    customers: createCustomerRegistry({
+      operatorId: "synthetic-test",
+      audit: createAuditWriter(),
+      allowProfile: () => true,
+    }),
     now: () => clock,
   };
   return {

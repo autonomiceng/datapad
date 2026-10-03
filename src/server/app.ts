@@ -16,6 +16,9 @@ import {
   SourcesResponseSchema,
 } from "../import-review/contract";
 import type { ImportReviewReader } from "../import-review";
+import { accountRoutes } from "./account-routes";
+import type { AccessResult } from "../access/types";
+import { AccessErrorSchema } from "../access/contract";
 
 const sourceParams = Type.Object(
   { sourceId: ImportFileSchema.properties.sourceId },
@@ -33,6 +36,8 @@ const customerParams = Type.Object(
   { additionalProperties: false },
 );
 const errors = {
+  401: AccessErrorSchema,
+  403: AccessErrorSchema,
   404: ErrorResponseSchema,
   422: ErrorResponseSchema,
   503: ErrorResponseSchema,
@@ -57,23 +62,48 @@ export function createApp({
   importReview,
   assetsDir,
   billing,
+  accounts,
 }: {
   importReview: ImportReviewReader;
   assetsDir?: string;
   billing?: BillingHttp;
+  accounts?: {
+    routes: Parameters<typeof accountRoutes>[0];
+    authHandler: (request: Request) => Promise<Response>;
+    authorizeImport: (headers: Headers) => Promise<AccessResult<undefined>>;
+  };
 }) {
+  if (accounts && billing && !billing.authorizeRead)
+    throw new Error(
+      "Authenticated billing requires current account authorization.",
+    );
   const app = new Elysia({ normalize: false })
     .onRequest(({ request, set }) => {
       const path = new URL(request.url).pathname;
       if (path === "/api" || path.startsWith("/api/"))
         set.headers["cache-control"] = "no-store";
     })
+    .onBeforeHandle(async ({ request, status }) => {
+      if (
+        !accounts ||
+        !new URL(request.url).pathname.startsWith("/api/import-review/")
+      )
+        return;
+      const result = await accounts.authorizeImport(request.headers);
+      if (!result.ok) {
+        if (result.code === "unauthenticated")
+          return status(401, { code: "unauthenticated" });
+        if (result.code === "forbidden")
+          return status(403, { code: "forbidden" });
+        return status(503, { code: "unavailable" });
+      }
+    })
     .onError(({ code, status, request }) => {
       if (code === "VALIDATION" || code === "PARSE")
         return status(422, {
-          code: new URL(request.url).pathname.startsWith("/api/billing/")
-            ? "invalid_request"
-            : "invalid_query",
+          code: new URL(request.url).pathname.startsWith("/api/import-review/")
+            ? "invalid_query"
+            : "invalid_request",
         });
       if (code === "NOT_FOUND") return status(404, { code: "not_found" });
       return status(503, { code: "unavailable" });
@@ -84,6 +114,30 @@ export function createApp({
         provider: null,
         documentation: {
           info: { title: "Datapad API", version: "1.0.0" },
+          security: accounts ? [{ portalSession: [] }] : [],
+          components: {
+            securitySchemes: {
+              ...(accounts
+                ? {
+                    portalSession: {
+                      type: "apiKey" as const,
+                      in: "cookie" as const,
+                      // Authentication uses Better Auth's default cookie names.
+                      name: `${new URL(accounts.routes.origin).protocol === "https:" ? "__Secure-" : ""}better-auth.session_token`,
+                      description:
+                        "Verified portal session. Each operation also checks current staff or customer permissions.",
+                    },
+                  }
+                : {}),
+              stripeSignature: {
+                type: "apiKey",
+                in: "header",
+                name: "Stripe-Signature",
+                description:
+                  "Stripe signature over the raw request body, verified with the configured webhook signing secret. No portal session is required.",
+              },
+            },
+          },
         },
       }),
     )
@@ -94,6 +148,8 @@ export function createApp({
         query: paginationQuery,
         response: {
           200: SourcesResponseSchema,
+          401: AccessErrorSchema,
+          403: AccessErrorSchema,
           422: ErrorResponseSchema,
           503: ErrorResponseSchema,
         },
@@ -176,6 +232,16 @@ export function createApp({
     );
 
   app.use(billingRoutes(billing));
+  if (accounts) {
+    app.use(accountRoutes(accounts.routes));
+    app.get("/api/auth/*", ({ request }) => accounts.authHandler(request), {
+      detail: { hide: true },
+    });
+    app.post("/api/auth/*", ({ request }) => accounts.authHandler(request), {
+      parse: "none",
+      detail: { hide: true },
+    });
+  }
 
   if (assetsDir) {
     app.use(
@@ -196,6 +262,25 @@ export function createApp({
       },
       { detail: { hide: true } },
     );
+  }
+  // OpenAPI reads the composed route metadata lazily. Override only exceptions
+  // to the composition's default; preserve generated request/response schemas.
+  for (const route of app.routes) {
+    if (
+      route.method === "POST" &&
+      route.path === "/api/billing/webhooks/stripe"
+    ) {
+      route.hooks.detail = {
+        ...route.hooks.detail,
+        security: [{ stripeSignature: [] }],
+      };
+    } else if (
+      (route.method === "GET" && route.path === "/api/access/session") ||
+      route.path.startsWith("/api/auth/") ||
+      route.path === "/api/openapi/json"
+    ) {
+      route.hooks.detail = { ...route.hooks.detail, security: [] };
+    }
   }
   return app;
 }

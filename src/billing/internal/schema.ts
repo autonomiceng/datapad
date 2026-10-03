@@ -17,6 +17,7 @@ import type {
   ProviderInvoiceStatus,
   ReviewReason,
 } from "../contract";
+import { customers } from "../../customers/schema";
 
 const instant = (name: string) =>
   timestamp(name, { withTimezone: true, mode: "string" });
@@ -25,6 +26,9 @@ export const billingCustomers = pgTable(
   "billing_customers",
   {
     id: uuid("id").primaryKey(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id),
     deploymentKey: text("deployment_key").notNull(),
     providerAccountId: text("provider_account_id").notNull(),
     key: text("key").notNull(),
@@ -35,6 +39,10 @@ export const billingCustomers = pgTable(
   },
   (table) => [
     uniqueIndex("billing_customer_key").on(table.deploymentKey, table.key),
+    uniqueIndex("billing_customer_operational_scope").on(
+      table.deploymentKey,
+      table.customerId,
+    ),
     unique("billing_customer_scope").on(table.id, table.deploymentKey),
     uniqueIndex("billing_customer_provider_id").on(
       table.providerAccountId,
@@ -50,7 +58,11 @@ export const invoices = pgTable(
     deploymentKey: text("deployment_key").notNull(),
     originKey: text("origin_key").notNull(),
     requestDigest: text("request_digest").notNull(),
-    customerId: uuid("customer_id").notNull(),
+    requestCustomerName: text("request_customer_name").notNull(),
+    billingCustomerId: uuid("billing_customer_id").notNull(),
+    billToName: text("bill_to_name").notNull(),
+    billToEmail: text("bill_to_email"),
+    billToProfileVersion: integer("bill_to_profile_version").notNull(),
     issueDate: date("issue_date", { mode: "string" }).notNull(),
     dueDate: date("due_date", { mode: "string" }).notNull(),
     readinessDate: date("readiness_date", { mode: "string" }).notNull(),
@@ -77,11 +89,12 @@ export const invoices = pgTable(
       table.providerInvoiceId,
     ),
     foreignKey({
-      columns: [table.customerId, table.deploymentKey],
+      columns: [table.billingCustomerId, table.deploymentKey],
       foreignColumns: [billingCustomers.id, billingCustomers.deploymentKey],
     }),
     index("invoice_pending").on(table.state, table.nextAttemptAt),
     check("invoice_currency", sql`${table.currency} = 'USD'`),
+    check("invoice_bill_to_version", sql`${table.billToProfileVersion} > 0`),
     check("invoice_total", sql`${table.totalMinor} BETWEEN 50 AND 99999999`),
     check(
       "invoice_readiness",

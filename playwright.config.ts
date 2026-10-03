@@ -7,6 +7,7 @@ if (!process.env.TEST_BASE_URL) {
 }
 
 export default defineConfig({
+  outputDir: "test-results/viewer",
   testDir: "tests/browser",
   workers: 1,
   retries: 0,

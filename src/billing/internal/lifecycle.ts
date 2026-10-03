@@ -60,7 +60,10 @@ export function createLifecycle(
     const [row] = await connection
       .select({ invoice: invoices, customer: billingCustomers })
       .from(invoices)
-      .innerJoin(billingCustomers, eq(invoices.customerId, billingCustomers.id))
+      .innerJoin(
+        billingCustomers,
+        eq(invoices.billingCustomerId, billingCustomers.id),
+      )
       .where(scope(id));
     if (!row) return null;
     if (row.customer.providerAccountId !== provider.ownership.accountId)
@@ -79,13 +82,13 @@ export function createLifecycle(
   ): Promise<T> {
     if (!isUuid(id)) return missing;
     const [row] = await db
-      .select({ customerId: invoices.customerId })
+      .select({ billingCustomerId: invoices.billingCustomerId })
       .from(invoices)
       .where(scope(id));
     if (!row) return missing;
     return withLocks(
       pool,
-      [`customer:${row.customerId}`, `invoice:${id}`],
+      [`customer:${row.billingCustomerId}`, `invoice:${id}`],
       async (connection) => {
         const record = await load(connection, id);
         return record ? work(connection, record) : missing;

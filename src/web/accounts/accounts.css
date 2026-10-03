@@ -1,0 +1,220 @@
+.account-page {
+  display: grid;
+  gap: 20px;
+  max-width: 800px;
+}
+.account-sign-in {
+  max-width: 480px;
+}
+.account-page-header {
+  display: grid;
+  gap: 4px;
+}
+.account-back {
+  width: fit-content;
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+.account-section {
+  display: grid;
+  gap: 16px;
+  padding: 20px 24px 24px;
+  min-width: 0;
+}
+.account-section [role="alert"],
+.site-header [role="alert"] {
+  color: var(--danger);
+}
+.account-note {
+  color: var(--muted);
+  font-size: var(--text-support);
+  font-weight: 400;
+}
+.account-section-notes {
+  display: grid;
+  gap: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+.account-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.account-primary-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.account-form,
+.account-form fieldset {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.account-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.account-form label {
+  display: grid;
+  gap: 6px;
+  max-width: 440px;
+  font-weight: 600;
+}
+.account-form input,
+.account-form select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+.account-form input:disabled {
+  background: var(--surface-muted);
+}
+.account-form input::placeholder {
+  color: var(--muted);
+}
+.account-invite-form {
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  align-items: end;
+}
+.account-invite-form label {
+  max-width: none;
+}
+
+.account-providers {
+  display: grid;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.panel.account-sample {
+  background: var(--surface-muted);
+  border-color: transparent;
+}
+.account-identities {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.account-identities dt {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.account-identities dd {
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+
+.account-rows {
+  display: grid;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.account-rows > li + li {
+  border-top: 1px solid var(--border);
+}
+.account-customer-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 12px 0;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.account-customer-link > span:first-child {
+  text-decoration: underline;
+}
+.account-customer-link:hover > span:first-child {
+  color: var(--accent);
+}
+.account-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 200px;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 0;
+  overflow-wrap: anywhere;
+}
+.account-member-row > div {
+  min-width: 0;
+}
+.account-row-action {
+  grid-column: 3;
+  justify-self: end;
+}
+.account-row-result {
+  grid-column: 1 / -1;
+}
+.account-facts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.account-facts > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 16px;
+}
+.account-facts dt {
+  color: var(--muted);
+}
+.account-facts dd {
+  overflow-wrap: anywhere;
+}
+
+.site-account {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: var(--text-support);
+}
+
+@media (max-width: 600px) {
+  .account-section {
+    padding: 16px;
+  }
+  .account-invite-form,
+  .account-member-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .account-invite-form label:first-child {
+    grid-column: 1 / -1;
+  }
+  .account-invite-form button {
+    grid-column: 2;
+  }
+  .account-row-action {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .account-facts > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

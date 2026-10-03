@@ -5,6 +5,8 @@ import {
   createStripeEventVerifier,
 } from "../stripe";
 import { demoInvoice } from "./billing-demo";
+import { createCustomerRegistry } from "../customers";
+import { createAuditWriter } from "../access";
 
 export async function createBillingRuntime(pool: Pool) {
   const values = [
@@ -38,7 +40,15 @@ export async function createBillingRuntime(pool: Pool) {
     throw new Error("Incomplete or invalid sandbox billing configuration.");
   const request = demoInvoice(issueDate);
   const provider = await createStripeBillingProvider({ apiKey, deploymentKey });
-  const billing = createBilling({ pool, provider, deploymentKey });
+  const customers = createCustomerRegistry({
+    operatorId: "synthetic-invoice-demo",
+    audit: createAuditWriter(),
+    allowProfile: (profile) =>
+      profile.displayName === request.customer.name &&
+      profile.legalName === request.customer.name &&
+      profile.billingEmail === null,
+  });
+  const billing = createBilling({ pool, provider, deploymentKey, customers });
   await billing.assertSyntheticData([request], provider.ownership.accountId);
   return {
     reader: billing,

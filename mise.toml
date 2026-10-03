@@ -20,7 +20,7 @@ depends = ["check", "test"]
 [tasks."format:check"]
 description = "Check repository documentation and tooling configuration without rewriting them"
 depends = ["deps:install"]
-run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
+run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts playwright.portal.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
 
 [tasks."deps:install"]
 description = "Install pinned project tools from the frozen Bun lockfile"
@@ -40,7 +40,7 @@ run = "shellcheck .mise/tasks/format .mise/tasks/test/format .mise/tasks/changel
 
 [tasks.test]
 description = "Run tooling safeguards and isolated application tests"
-depends = ["test:format", "test:changelog", "test:app", "test:billing-proof", "test:stripe"]
+depends = ["test:format", "test:changelog", "test:app", "test:portal", "test:billing-proof", "test:stripe"]
 
 [tasks."test:changelog"]
 description = "Test fragment policy, comparison context and read-only previews"
@@ -90,6 +90,21 @@ run = "bun scripts/local.ts test"
 description = "Run backend cases against an explicitly supplied TEST_DATABASE_URL"
 depends = ["deps:install"]
 run = "TZ=Asia/Tokyo bun test tests/server"
+
+[tasks."test:portal"]
+description = "Exercise authenticated customer accounts with an isolated database and local test inbox"
+depends = ["build", "browser:install"]
+run = "bun scripts/local.ts portal-test"
+
+[tasks."portal:demo"]
+description = "Run the authenticated synthetic portal and its local test inbox"
+depends = ["build"]
+run = "bun scripts/local.ts portal"
+
+[tasks."portal:destroy"]
+description = "Remove this inactive checkout's synthetic portal database"
+depends = ["deps:install"]
+run = "bun scripts/local.ts portal-destroy"
 
 [tasks.demo]
 description = "Run the built example locally with this checkout's persistent database"

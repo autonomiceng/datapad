@@ -34,7 +34,6 @@ test("billing HTTP bounds reads and commits signed raw events before acknowledge
           offset: 0,
         }),
         getInvoice: async () => null,
-        assertSyntheticData: async () => {},
       },
       webhook: {
         verifier: createStripeEventVerifier({ signingSecret, ownership }),
