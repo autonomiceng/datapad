@@ -4,6 +4,7 @@ import {
   BillingProviderError,
   type BillingEventVerifier,
   type BillingProvider,
+  type PaymentSettingsProvider,
   type CollectionInspection,
   type CustomerIntent,
   type InvoiceIntent,
@@ -15,6 +16,11 @@ import {
   type ProviderLine,
   type ProviderOwnership,
 } from "../billing/provider";
+
+import {
+  createStripePaymentSettingsProvider,
+  normalizeStripePaymentSetupEvent,
+} from "./payment-settings";
 
 interface StripeBillingOptions {
   apiKey: string;
@@ -95,7 +101,9 @@ async function safe<T>(operation: () => Promise<T>): Promise<T> {
 /** Uses only sandbox keys and verifies the account before exposing effects. */
 export async function createStripeBillingProvider(
   options: StripeBillingOptions,
-): Promise<BillingProvider & InvoiceResolutionProvider> {
+): Promise<
+  BillingProvider & InvoiceResolutionProvider & PaymentSettingsProvider
+> {
   if (
     !/^(sk|rk)_test_/.test(options.apiKey) ||
     !/^[A-Za-z0-9_-]{1,64}$/.test(options.deploymentKey)
@@ -418,6 +426,7 @@ export async function createStripeBillingProvider(
     }
   }
   return {
+    ...createStripePaymentSettingsProvider({ stripe, ownership, maxPages }),
     ownership,
     inspectCollection: (intent, invoiceId) =>
       safe(async () => {
@@ -811,6 +820,8 @@ export function createStripeEventVerifier(options: {
         event.context
       )
         throw review("ownership_mismatch");
+      if (event.type === "checkout.session.completed")
+        return normalizeStripePaymentSetupEvent(event, options.ownership);
       if (!invoiceEvents.has(event.type)) return null;
       const value = event.data.object;
       if (

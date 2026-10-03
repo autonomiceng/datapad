@@ -1,0 +1,4998 @@
+{
+  "id": "77d6ee67-e374-434f-8370-0aa3882fee5f",
+  "prevId": "80cf8e72-4a43-43bf-9749-aa47504ed0af",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.import_customers": {
+      "name": "import_customers",
+      "schema": "",
+      "columns": {
+        "import_id": {
+          "name": "import_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_record_id": {
+          "name": "source_record_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observation": {
+          "name": "observation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "known_status": {
+          "name": "known_status",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "import_customers_import_id_imports_id_fk": {
+          "name": "import_customers_import_id_imports_id_fk",
+          "tableFrom": "import_customers",
+          "tableTo": "imports",
+          "columnsFrom": [
+            "import_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "import_customers_import_id_source_record_id_pk": {
+          "name": "import_customers_import_id_source_record_id_pk",
+          "columns": [
+            "import_id",
+            "source_record_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.import_domains": {
+      "name": "import_domains",
+      "schema": "",
+      "columns": {
+        "import_id": {
+          "name": "import_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_record_id": {
+          "name": "source_record_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observation": {
+          "name": "observation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "known_status": {
+          "name": "known_status",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_invoice_date": {
+          "name": "next_invoice_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expiry_date": {
+          "name": "expiry_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "import_domains_customer": {
+          "name": "import_domains_customer",
+          "columns": [
+            {
+              "expression": "import_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "import_domains_import_id_imports_id_fk": {
+          "name": "import_domains_import_id_imports_id_fk",
+          "tableFrom": "import_domains",
+          "tableTo": "imports",
+          "columnsFrom": [
+            "import_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "import_domains_import_id_source_record_id_pk": {
+          "name": "import_domains_import_id_source_record_id_pk",
+          "columns": [
+            "import_id",
+            "source_record_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.imports": {
+      "name": "imports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_reference": {
+          "name": "source_reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_as_of": {
+          "name": "data_as_of",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "digest": {
+          "name": "digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "record_counts": {
+          "name": "record_counts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "import_identity": {
+          "name": "import_identity",
+          "columns": [
+            {
+              "expression": "source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source_reference",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.import_services": {
+      "name": "import_services",
+      "schema": "",
+      "columns": {
+        "import_id": {
+          "name": "import_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "record_type": {
+          "name": "record_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_record_id": {
+          "name": "source_record_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attached_service_id": {
+          "name": "attached_service_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation": {
+          "name": "observation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "known_status": {
+          "name": "known_status",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_invoice_date": {
+          "name": "next_invoice_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "import_services_customer": {
+          "name": "import_services_customer",
+          "columns": [
+            {
+              "expression": "import_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "import_services_import_id_imports_id_fk": {
+          "name": "import_services_import_id_imports_id_fk",
+          "tableFrom": "import_services",
+          "tableTo": "imports",
+          "columnsFrom": [
+            "import_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "import_services_import_id_record_type_source_record_id_pk": {
+          "name": "import_services_import_id_record_type_source_record_id_pk",
+          "columns": [
+            "import_id",
+            "record_type",
+            "source_record_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.billing_customers": {
+      "name": "billing_customers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_account_id": {
+          "name": "provider_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_customer_id": {
+          "name": "provider_customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "create_attempted_at": {
+          "name": "create_attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "billing_customer_key": {
+          "name": "billing_customer_key",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "billing_customer_operational_scope": {
+          "name": "billing_customer_operational_scope",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "billing_customer_provider_id": {
+          "name": "billing_customer_provider_id",
+          "columns": [
+            {
+              "expression": "provider_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "billing_customers_customer_id_customers_id_fk": {
+          "name": "billing_customers_customer_id_customers_id_fk",
+          "tableFrom": "billing_customers",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "billing_customer_scope": {
+          "name": "billing_customer_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "deployment_key"
+          ]
+        },
+        "billing_customer_account_scope": {
+          "name": "billing_customer_account_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.billing_enrollment_noops": {
+      "name": "billing_enrollment_noops",
+      "schema": "",
+      "columns": {
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_digest": {
+          "name": "request_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request": {
+          "name": "request",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "enrollment_noop_owner": {
+          "name": "enrollment_noop_owner",
+          "tableFrom": "billing_enrollment_noops",
+          "tableTo": "billing_enrollments",
+          "columnsFrom": [
+            "enrollment_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "billing_enrollment_noops_deployment_key_request_id_pk": {
+          "name": "billing_enrollment_noops_deployment_key_request_id_pk",
+          "columns": [
+            "deployment_key",
+            "request_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.billing_enrollment_scopes": {
+      "name": "billing_enrollment_scopes",
+      "schema": "",
+      "columns": {
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subscription_id": {
+          "name": "subscription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commercial_revision": {
+          "name": "commercial_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_period_index": {
+          "name": "from_period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "until_period_index": {
+          "name": "until_period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calendar": {
+          "name": "calendar",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "enrollment_scope_owner": {
+          "name": "enrollment_scope_owner",
+          "tableFrom": "billing_enrollment_scopes",
+          "tableTo": "billing_enrollments",
+          "columnsFrom": [
+            "enrollment_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "enrollment_scope_subscription": {
+          "name": "enrollment_scope_subscription",
+          "tableFrom": "billing_enrollment_scopes",
+          "tableTo": "billing_subscriptions",
+          "columnsFrom": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "enrollment_scope_revision": {
+          "name": "enrollment_scope_revision",
+          "tableFrom": "billing_enrollment_scopes",
+          "tableTo": "billing_subscription_terms",
+          "columnsFrom": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "commercial_revision"
+          ],
+          "columnsTo": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "revision"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "billing_enrollment_scopes_enrollment_id_subscription_id_pk": {
+          "name": "billing_enrollment_scopes_enrollment_id_subscription_id_pk",
+          "columns": [
+            "enrollment_id",
+            "subscription_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "enrollment_scope_range": {
+          "name": "enrollment_scope_range",
+          "value": "\"billing_enrollment_scopes\".\"from_period_index\" between 0 and 120000 and (\"billing_enrollment_scopes\".\"until_period_index\" is null or \"billing_enrollment_scopes\".\"until_period_index\">\"billing_enrollment_scopes\".\"from_period_index\" and \"billing_enrollment_scopes\".\"until_period_index\"<=120000)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_enrollments": {
+      "name": "billing_enrollments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_digest": {
+          "name": "request_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request": {
+          "name": "request",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "predecessor_id": {
+          "name": "predecessor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decision": {
+          "name": "decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_session_id": {
+          "name": "actor_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consenting_membership_id": {
+          "name": "consenting_membership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_provenance": {
+          "name": "membership_provenance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "terms_version": {
+          "name": "terms_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "terms_digest": {
+          "name": "terms_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_method_id": {
+          "name": "payment_method_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "billing_enrollments_customer_id_customers_id_fk": {
+          "name": "billing_enrollments_customer_id_customers_id_fk",
+          "tableFrom": "billing_enrollments",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "enrollment_method": {
+          "name": "enrollment_method",
+          "tableFrom": "billing_enrollments",
+          "tableTo": "billing_payment_methods",
+          "columnsFrom": [
+            "payment_method_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "enrollment_predecessor": {
+          "name": "enrollment_predecessor",
+          "tableFrom": "billing_enrollments",
+          "tableTo": "billing_enrollments",
+          "columnsFrom": [
+            "predecessor_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "enrollment_version": {
+          "name": "enrollment_version",
+          "nullsNotDistinct": false,
+          "columns": [
+            "customer_id",
+            "deployment_key",
+            "version"
+          ]
+        },
+        "enrollment_request": {
+          "name": "enrollment_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "deployment_key",
+            "request_id"
+          ]
+        },
+        "enrollment_owner": {
+          "name": "enrollment_owner",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ]
+        },
+        "enrollment_method_owner": {
+          "name": "enrollment_method_owner",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key",
+            "payment_method_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "enrollment_sequence": {
+          "name": "enrollment_sequence",
+          "value": "\"billing_enrollments\".\"version\">0 and ((\"billing_enrollments\".\"version\"=1 and \"billing_enrollments\".\"predecessor_id\" is null) or (\"billing_enrollments\".\"version\">1 and \"billing_enrollments\".\"predecessor_id\" is not null))"
+        },
+        "enrollment_decision": {
+          "name": "enrollment_decision",
+          "value": "\"billing_enrollments\".\"decision\" in ('authorize','reduce')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_invoice_groups": {
+      "name": "billing_invoice_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_arrangement": {
+          "name": "payment_arrangement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calendar": {
+          "name": "calendar",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sealed_at": {
+          "name": "sealed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_minor": {
+          "name": "total_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_to_name": {
+          "name": "bill_to_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_to_email": {
+          "name": "bill_to_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bill_to_profile_version": {
+          "name": "bill_to_profile_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_customer_id": {
+          "name": "billing_customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_method_id": {
+          "name": "payment_method_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "invoice_group_enrollment": {
+          "name": "invoice_group_enrollment",
+          "tableFrom": "billing_invoice_groups",
+          "tableTo": "billing_enrollments",
+          "columnsFrom": [
+            "enrollment_id",
+            "customer_id",
+            "deployment_key",
+            "payment_method_id"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key",
+            "payment_method_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_group_method": {
+          "name": "invoice_group_method",
+          "tableFrom": "billing_invoice_groups",
+          "tableTo": "billing_payment_methods",
+          "columnsFrom": [
+            "payment_method_id",
+            "customer_id",
+            "deployment_key",
+            "billing_customer_id"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key",
+            "billing_customer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_group_schedule": {
+          "name": "invoice_group_schedule",
+          "tableFrom": "billing_invoice_groups",
+          "tableTo": "billing_schedules",
+          "columnsFrom": [
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_group_mapping": {
+          "name": "invoice_group_mapping",
+          "tableFrom": "billing_invoice_groups",
+          "tableTo": "billing_customers",
+          "columnsFrom": [
+            "billing_customer_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_group_invoice_owner": {
+          "name": "invoice_group_invoice_owner",
+          "tableFrom": "billing_invoice_groups",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "invoice_id",
+            "billing_customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "billing_customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invoice_group_scope": {
+          "name": "invoice_group_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ]
+        },
+        "invoice_group_date": {
+          "name": "invoice_group_date",
+          "nullsNotDistinct": false,
+          "columns": [
+            "customer_id",
+            "deployment_key",
+            "due_date",
+            "currency",
+            "payment_arrangement"
+          ]
+        },
+        "invoice_group_invoice": {
+          "name": "invoice_group_invoice",
+          "nullsNotDistinct": false,
+          "columns": [
+            "invoice_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "invoice_group_permission_pair": {
+          "name": "invoice_group_permission_pair",
+          "value": "(\"billing_invoice_groups\".\"enrollment_id\" is null and \"billing_invoice_groups\".\"payment_method_id\" is null) or (\"billing_invoice_groups\".\"enrollment_id\" is not null and \"billing_invoice_groups\".\"payment_method_id\" is not null and \"billing_invoice_groups\".\"payment_arrangement\"='automatic' and \"billing_invoice_groups\".\"total_minor\">0)"
+        },
+        "invoice_group_currency": {
+          "name": "invoice_group_currency",
+          "value": "\"billing_invoice_groups\".\"currency\"='USD'"
+        },
+        "invoice_group_arrangement": {
+          "name": "invoice_group_arrangement",
+          "value": "\"billing_invoice_groups\".\"payment_arrangement\" in ('manual','automatic')"
+        },
+        "invoice_group_bill_to": {
+          "name": "invoice_group_bill_to",
+          "value": "\"billing_invoice_groups\".\"bill_to_profile_version\">0 and length(trim(\"billing_invoice_groups\".\"bill_to_name\")) between 1 and 256"
+        },
+        "invoice_group_outcome": {
+          "name": "invoice_group_outcome",
+          "value": "(\"billing_invoice_groups\".\"outcome\"='invoice_requested' and \"billing_invoice_groups\".\"total_minor\" between 50 and 99999999 and \"billing_invoice_groups\".\"billing_customer_id\" is not null and \"billing_invoice_groups\".\"invoice_id\" is not null) or (\"billing_invoice_groups\".\"outcome\"='no_charge' and \"billing_invoice_groups\".\"total_minor\"=0 and \"billing_invoice_groups\".\"billing_customer_id\" is null and \"billing_invoice_groups\".\"invoice_id\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_invoice_resolutions": {
+      "name": "billing_invoice_resolutions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_customer_id": {
+          "name": "billing_customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_minor": {
+          "name": "amount_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "received_date": {
+          "name": "received_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "method": {
+          "name": "method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempted_at": {
+          "name": "attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_reason": {
+          "name": "review_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseline_at": {
+          "name": "baseline_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseline_remaining_minor": {
+          "name": "baseline_remaining_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseline_paid_off_stripe_minor": {
+          "name": "baseline_paid_off_stripe_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseline_payments": {
+          "name": "baseline_payments",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "response_at": {
+          "name": "response_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "response_paid_off_stripe_minor": {
+          "name": "response_paid_off_stripe_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_remaining_minor": {
+          "name": "last_remaining_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_collection_state": {
+          "name": "last_collection_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "invoice_resolution_request": {
+          "name": "invoice_resolution_request",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_resolution_active": {
+          "name": "invoice_resolution_active",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"billing_invoice_resolutions\".\"state\" <> 'withdrawn'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_resolution_pending": {
+          "name": "invoice_resolution_pending",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "billing_invoice_resolutions_invoice_id_billing_customer_id_deployment_key_invoices_id_billing_customer_id_deployment_key_fk": {
+          "name": "billing_invoice_resolutions_invoice_id_billing_customer_id_deployment_key_invoices_id_billing_customer_id_deployment_key_fk",
+          "tableFrom": "billing_invoice_resolutions",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "invoice_id",
+            "billing_customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "billing_customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "billing_invoice_resolutions_billing_customer_id_customer_id_deployment_key_billing_customers_id_customer_id_deployment_key_fk": {
+          "name": "billing_invoice_resolutions_billing_customer_id_customer_id_deployment_key_billing_customers_id_customer_id_deployment_key_fk",
+          "tableFrom": "billing_invoice_resolutions",
+          "tableTo": "billing_customers",
+          "columnsFrom": [
+            "billing_customer_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "invoice_resolution_kind": {
+          "name": "invoice_resolution_kind",
+          "value": "\"billing_invoice_resolutions\".\"kind\" IN ('external_payment','void')"
+        },
+        "invoice_resolution_state": {
+          "name": "invoice_resolution_state",
+          "value": "\"billing_invoice_resolutions\".\"state\" IN ('pending','confirmed','needs_review','withdrawn')"
+        },
+        "invoice_resolution_actor": {
+          "name": "invoice_resolution_actor",
+          "value": "length(btrim(\"billing_invoice_resolutions\".\"actor_id\"))>0 AND length(btrim(\"billing_invoice_resolutions\".\"session_id\"))>0"
+        },
+        "invoice_resolution_facts": {
+          "name": "invoice_resolution_facts",
+          "value": "(\n    \"billing_invoice_resolutions\".\"kind\"='external_payment' AND \"billing_invoice_resolutions\".\"amount_minor\" IS NOT NULL AND \"billing_invoice_resolutions\".\"amount_minor\" BETWEEN 1 AND 99999999\n    AND \"billing_invoice_resolutions\".\"received_date\" IS NOT NULL AND \"billing_invoice_resolutions\".\"received_date\" <= (\"billing_invoice_resolutions\".\"created_at\" AT TIME ZONE 'UTC')::date\n    AND \"billing_invoice_resolutions\".\"method\" IS NOT NULL AND \"billing_invoice_resolutions\".\"method\" IN ('zelle','check')\n    AND \"billing_invoice_resolutions\".\"reference\" IS NOT NULL AND length(btrim(\"billing_invoice_resolutions\".\"reference\")) BETWEEN 1 AND 256 AND \"billing_invoice_resolutions\".\"reason\" IS NULL\n  ) OR (\n    \"billing_invoice_resolutions\".\"kind\"='void' AND \"billing_invoice_resolutions\".\"amount_minor\" IS NULL AND \"billing_invoice_resolutions\".\"received_date\" IS NULL AND \"billing_invoice_resolutions\".\"method\" IS NULL AND \"billing_invoice_resolutions\".\"reference\" IS NULL\n    AND \"billing_invoice_resolutions\".\"reason\" IS NOT NULL AND length(btrim(\"billing_invoice_resolutions\".\"reason\")) BETWEEN 1 AND 500\n  )"
+        },
+        "invoice_resolution_review": {
+          "name": "invoice_resolution_review",
+          "value": "(\"billing_invoice_resolutions\".\"state\"='needs_review') = (\"billing_invoice_resolutions\".\"review_reason\" IS NOT NULL) AND (\"billing_invoice_resolutions\".\"review_reason\" IS NULL OR \"billing_invoice_resolutions\".\"review_reason\" IN ('provider_unavailable','collection_conflict','possible_overpayment','amount_mismatch','uncertain_outcome','retry_exhausted','receipt_correction','provider_mismatch'))"
+        },
+        "invoice_resolution_confirmation": {
+          "name": "invoice_resolution_confirmation",
+          "value": "(\"billing_invoice_resolutions\".\"state\"<>'confirmed' OR (\"billing_invoice_resolutions\".\"confirmed_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"response_at\" IS NOT NULL)) AND (\"billing_invoice_resolutions\".\"confirmed_at\" IS NULL OR (\"billing_invoice_resolutions\".\"attempted_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"confirmed_at\">=\"billing_invoice_resolutions\".\"attempted_at\" AND \"billing_invoice_resolutions\".\"state\" IN ('confirmed','needs_review')))"
+        },
+        "invoice_resolution_withdrawal": {
+          "name": "invoice_resolution_withdrawal",
+          "value": "\"billing_invoice_resolutions\".\"state\"<>'withdrawn' OR (\"billing_invoice_resolutions\".\"kind\"='external_payment' AND \"billing_invoice_resolutions\".\"attempted_at\" IS NULL AND \"billing_invoice_resolutions\".\"confirmed_at\" IS NULL)"
+        },
+        "invoice_resolution_retry": {
+          "name": "invoice_resolution_retry",
+          "value": "\"billing_invoice_resolutions\".\"attempts\" BETWEEN 0 AND 5 AND (\"billing_invoice_resolutions\".\"next_attempt_at\" IS NULL OR (\"billing_invoice_resolutions\".\"state\"='pending' AND \"billing_invoice_resolutions\".\"attempts\"<5 AND \"billing_invoice_resolutions\".\"next_attempt_at\">=\"billing_invoice_resolutions\".\"created_at\")) AND (\"billing_invoice_resolutions\".\"state\"<>'pending' OR \"billing_invoice_resolutions\".\"attempts\"<5)"
+        },
+        "invoice_resolution_baseline": {
+          "name": "invoice_resolution_baseline",
+          "value": "(\n    \"billing_invoice_resolutions\".\"baseline_at\" IS NULL AND \"billing_invoice_resolutions\".\"baseline_remaining_minor\" IS NULL AND \"billing_invoice_resolutions\".\"baseline_paid_off_stripe_minor\" IS NULL AND \"billing_invoice_resolutions\".\"baseline_payments\" IS NULL\n  ) OR (\n    \"billing_invoice_resolutions\".\"baseline_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"baseline_at\">=\"billing_invoice_resolutions\".\"created_at\"\n    AND \"billing_invoice_resolutions\".\"baseline_remaining_minor\" IS NOT NULL AND \"billing_invoice_resolutions\".\"baseline_remaining_minor\" BETWEEN 0 AND 99999999\n    AND \"billing_invoice_resolutions\".\"baseline_paid_off_stripe_minor\" IS NOT NULL AND \"billing_invoice_resolutions\".\"baseline_paid_off_stripe_minor\" BETWEEN 0 AND 99999999\n    AND \"billing_invoice_resolutions\".\"baseline_payments\" IS NOT NULL AND jsonb_typeof(\"billing_invoice_resolutions\".\"baseline_payments\")='array'\n  )"
+        },
+        "invoice_resolution_baseline_payments": {
+          "name": "invoice_resolution_baseline_payments",
+          "value": "\"billing_invoice_resolutions\".\"baseline_payments\" IS NULL OR NOT jsonb_path_exists(\"billing_invoice_resolutions\".\"baseline_payments\", '$[*] ? (@.type() != \"object\" || !(exists(@.invoicePaymentId)) || @.invoicePaymentId.type() != \"string\" || @.invoicePaymentId == \"\" || !(exists(@.paymentIntentId)) || @.paymentIntentId.type() != \"string\" || @.paymentIntentId == \"\" || !(exists(@.paidMinor)) || @.paidMinor.type() != \"number\" || @.paidMinor < 0 || @.paidMinor > 99999999 || @.paidMinor.floor() != @.paidMinor || !(exists(@.receivedMinor)) || @.receivedMinor.type() != \"number\" || @.receivedMinor < 0 || @.receivedMinor > 99999999 || @.receivedMinor.floor() != @.receivedMinor)')"
+        },
+        "invoice_resolution_attempt": {
+          "name": "invoice_resolution_attempt",
+          "value": "\"billing_invoice_resolutions\".\"attempted_at\" IS NULL OR (\"billing_invoice_resolutions\".\"baseline_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"attempted_at\">=\"billing_invoice_resolutions\".\"baseline_at\")"
+        },
+        "invoice_resolution_response": {
+          "name": "invoice_resolution_response",
+          "value": "(\"billing_invoice_resolutions\".\"response_at\" IS NULL AND \"billing_invoice_resolutions\".\"response_paid_off_stripe_minor\" IS NULL) OR (\"billing_invoice_resolutions\".\"response_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"attempted_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"response_at\">=\"billing_invoice_resolutions\".\"attempted_at\" AND ((\"billing_invoice_resolutions\".\"kind\"='void' AND \"billing_invoice_resolutions\".\"response_paid_off_stripe_minor\" IS NULL) OR (\"billing_invoice_resolutions\".\"kind\"='external_payment' AND \"billing_invoice_resolutions\".\"response_paid_off_stripe_minor\" IS NOT NULL AND \"billing_invoice_resolutions\".\"response_paid_off_stripe_minor\" BETWEEN 0 AND 99999999)))"
+        },
+        "invoice_resolution_inspection": {
+          "name": "invoice_resolution_inspection",
+          "value": "(\"billing_invoice_resolutions\".\"last_checked_at\" IS NULL AND \"billing_invoice_resolutions\".\"last_remaining_minor\" IS NULL AND \"billing_invoice_resolutions\".\"last_collection_state\" IS NULL) OR (\"billing_invoice_resolutions\".\"last_checked_at\" IS NOT NULL AND \"billing_invoice_resolutions\".\"last_checked_at\">=\"billing_invoice_resolutions\".\"created_at\" AND \"billing_invoice_resolutions\".\"last_remaining_minor\" IS NOT NULL AND \"billing_invoice_resolutions\".\"last_remaining_minor\" BETWEEN 0 AND 99999999 AND \"billing_invoice_resolutions\".\"last_collection_state\" IS NOT NULL AND \"billing_invoice_resolutions\".\"last_collection_state\" IN ('idle','active','unknown'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_payment_methods": {
+      "name": "billing_payment_methods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_customer_id": {
+          "name": "billing_customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_account_id": {
+          "name": "provider_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "setup_id": {
+          "name": "setup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_payment_method_id": {
+          "name": "provider_payment_method_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brand": {
+          "name": "brand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last4": {
+          "name": "last4",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expiry_month": {
+          "name": "expiry_month",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expiry_year": {
+          "name": "expiry_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verified_at": {
+          "name": "verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "payment_method_setup": {
+          "name": "payment_method_setup",
+          "tableFrom": "billing_payment_methods",
+          "tableTo": "billing_payment_setups",
+          "columnsFrom": [
+            "setup_id",
+            "customer_id",
+            "deployment_key",
+            "billing_customer_id",
+            "provider_account_id"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key",
+            "billing_customer_id",
+            "provider_account_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "payment_method_receipt": {
+          "name": "payment_method_receipt",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provider_account_id",
+            "provider_payment_method_id"
+          ]
+        },
+        "payment_method_owner": {
+          "name": "payment_method_owner",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ]
+        },
+        "payment_method_mapping_owner": {
+          "name": "payment_method_mapping_owner",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key",
+            "billing_customer_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "payment_method_card": {
+          "name": "payment_method_card",
+          "value": "length(\"billing_payment_methods\".\"brand\") between 1 and 32 and \"billing_payment_methods\".\"last4\" ~ '^[0-9]{4}$' and \"billing_payment_methods\".\"expiry_month\" between 1 and 12 and \"billing_payment_methods\".\"expiry_year\" between 2000 and 9999"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_payment_setups": {
+      "name": "billing_payment_setups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_customer_id": {
+          "name": "billing_customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_account_id": {
+          "name": "provider_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_digest": {
+          "name": "request_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_session_id": {
+          "name": "actor_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consenting_membership_id": {
+          "name": "consenting_membership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_provenance": {
+          "name": "membership_provenance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "save_terms_version": {
+          "name": "save_terms_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "save_terms_digest": {
+          "name": "save_terms_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "success_url": {
+          "name": "success_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cancel_url": {
+          "name": "cancel_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "integration_identifier": {
+          "name": "integration_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "create_attempted_at": {
+          "name": "create_attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_session_id": {
+          "name": "provider_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_setup_intent_id": {
+          "name": "provider_setup_intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_payment_method_id": {
+          "name": "provider_payment_method_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_session_id": {
+          "name": "pending_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checkout_url": {
+          "name": "checkout_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "retrieval_requested_at": {
+          "name": "retrieval_requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "payment_setup_pending": {
+          "name": "payment_setup_pending",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payment_setup_mapping": {
+          "name": "payment_setup_mapping",
+          "tableFrom": "billing_payment_setups",
+          "tableTo": "billing_customers",
+          "columnsFrom": [
+            "billing_customer_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "payment_setup_request": {
+          "name": "payment_setup_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "deployment_key",
+            "request_id"
+          ]
+        },
+        "payment_setup_receipt": {
+          "name": "payment_setup_receipt",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provider_account_id",
+            "provider_session_id"
+          ]
+        },
+        "payment_setup_intent_receipt": {
+          "name": "payment_setup_intent_receipt",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provider_account_id",
+            "provider_setup_intent_id"
+          ]
+        },
+        "payment_setup_owner": {
+          "name": "payment_setup_owner",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key",
+            "billing_customer_id",
+            "provider_account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "payment_setup_status": {
+          "name": "payment_setup_status",
+          "value": "\"billing_payment_setups\".\"status\" in ('pending','verified','expired','needs_review')"
+        },
+        "payment_setup_attempts": {
+          "name": "payment_setup_attempts",
+          "value": "\"billing_payment_setups\".\"attempts\" between 0 and 5"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_periods": {
+      "name": "billing_periods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "subscription_id": {
+          "name": "subscription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_index": {
+          "name": "period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commercial_revision": {
+          "name": "commercial_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state_revision": {
+          "name": "state_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_minor": {
+          "name": "amount_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_arrangement": {
+          "name": "payment_arrangement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_state": {
+          "name": "billing_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calendar": {
+          "name": "calendar",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "readiness_date": {
+          "name": "readiness_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issue_at": {
+          "name": "issue_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "due_end_at": {
+          "name": "due_end_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charge_at": {
+          "name": "charge_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sealed_at": {
+          "name": "sealed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invoice_group_id": {
+          "name": "invoice_group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "billing_period_due": {
+          "name": "billing_period_due",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "due_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "billing_period_invoice_group": {
+          "name": "billing_period_invoice_group",
+          "tableFrom": "billing_periods",
+          "tableTo": "billing_invoice_groups",
+          "columnsFrom": [
+            "invoice_group_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "billing_period_owner": {
+          "name": "billing_period_owner",
+          "tableFrom": "billing_periods",
+          "tableTo": "billing_subscriptions",
+          "columnsFrom": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "billing_period_commercial_terms": {
+          "name": "billing_period_commercial_terms",
+          "tableFrom": "billing_periods",
+          "tableTo": "billing_subscription_terms",
+          "columnsFrom": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "commercial_revision"
+          ],
+          "columnsTo": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "revision"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "billing_period_state_terms": {
+          "name": "billing_period_state_terms",
+          "tableFrom": "billing_periods",
+          "tableTo": "billing_subscription_terms",
+          "columnsFrom": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "state_revision"
+          ],
+          "columnsTo": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "revision"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "billing_period_identity": {
+          "name": "billing_period_identity",
+          "nullsNotDistinct": false,
+          "columns": [
+            "subscription_id",
+            "period_index"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "billing_period_sealed_claim": {
+          "name": "billing_period_sealed_claim",
+          "value": "\"billing_periods\".\"invoice_group_id\" IS NULL OR \"billing_periods\".\"sealed_at\" IS NOT NULL"
+        },
+        "billing_period_index": {
+          "name": "billing_period_index",
+          "value": "\"billing_periods\".\"period_index\" between 0 and 120000"
+        },
+        "billing_period_dates": {
+          "name": "billing_period_dates",
+          "value": "\"billing_periods\".\"period_start\"<\"billing_periods\".\"period_end\" and \"billing_periods\".\"readiness_date\"=\"billing_periods\".\"due_date\"-21"
+        },
+        "billing_period_money": {
+          "name": "billing_period_money",
+          "value": "\"billing_periods\".\"currency\"='USD' and \"billing_periods\".\"amount_minor\" between -99999999 and 99999999"
+        },
+        "billing_period_arrangement": {
+          "name": "billing_period_arrangement",
+          "value": "\"billing_periods\".\"payment_arrangement\" in ('manual','automatic')"
+        },
+        "billing_period_state": {
+          "name": "billing_period_state",
+          "value": "\"billing_periods\".\"billing_state\" in ('billable','paused','cancelled')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_schedules": {
+      "name": "billing_schedules",
+      "schema": "",
+      "columns": {
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "issuance_paused": {
+          "name": "issuance_paused",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "billing_schedule_scan": {
+          "name": "billing_schedule_scan",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "billing_schedules_customer_id_customers_id_fk": {
+          "name": "billing_schedules_customer_id_customers_id_fk",
+          "tableFrom": "billing_schedules",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "billing_schedules_customer_id_deployment_key_pk": {
+          "name": "billing_schedules_customer_id_deployment_key_pk",
+          "columns": [
+            "customer_id",
+            "deployment_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "billing_schedule_version": {
+          "name": "billing_schedule_version",
+          "value": "\"billing_schedules\".\"version\">0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_subscription_terms": {
+      "name": "billing_subscription_terms",
+      "schema": "",
+      "columns": {
+        "subscription_id": {
+          "name": "subscription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_period_index": {
+          "name": "effective_period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount_minor": {
+          "name": "amount_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_arrangement": {
+          "name": "payment_arrangement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "billing_state": {
+          "name": "billing_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "subscription_one_cancellation": {
+          "name": "subscription_one_cancellation",
+          "columns": [
+            {
+              "expression": "subscription_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"billing_subscription_terms\".\"billing_state\"='cancelled'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "subscription_terms_effective": {
+          "name": "subscription_terms_effective",
+          "columns": [
+            {
+              "expression": "subscription_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "effective_period_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "revision",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "subscription_terms_owner": {
+          "name": "subscription_terms_owner",
+          "tableFrom": "billing_subscription_terms",
+          "tableTo": "billing_subscriptions",
+          "columnsFrom": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "subscription_terms_revision": {
+          "name": "subscription_terms_revision",
+          "nullsNotDistinct": false,
+          "columns": [
+            "subscription_id",
+            "revision"
+          ]
+        },
+        "subscription_terms_scope": {
+          "name": "subscription_terms_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "subscription_id",
+            "customer_id",
+            "deployment_key",
+            "revision"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "subscription_terms_bounds": {
+          "name": "subscription_terms_bounds",
+          "value": "\"billing_subscription_terms\".\"revision\">0 and \"billing_subscription_terms\".\"effective_period_index\" between 0 and 120000"
+        },
+        "subscription_terms_union": {
+          "name": "subscription_terms_union",
+          "value": "(\"billing_subscription_terms\".\"kind\"='commercial' and \"billing_subscription_terms\".\"label\" is not null and length(trim(\"billing_subscription_terms\".\"label\")) between 1 and 256 and \"billing_subscription_terms\".\"amount_minor\" is not null and \"billing_subscription_terms\".\"amount_minor\" between -99999999 and 99999999 and \"billing_subscription_terms\".\"currency\" is not null and \"billing_subscription_terms\".\"currency\"='USD' and \"billing_subscription_terms\".\"payment_arrangement\" is not null and \"billing_subscription_terms\".\"payment_arrangement\" in ('manual','automatic') and \"billing_subscription_terms\".\"billing_state\" is null) or (\"billing_subscription_terms\".\"kind\"='state' and \"billing_subscription_terms\".\"label\" is null and \"billing_subscription_terms\".\"amount_minor\" is null and \"billing_subscription_terms\".\"currency\" is null and \"billing_subscription_terms\".\"payment_arrangement\" is null and \"billing_subscription_terms\".\"billing_state\" is not null and \"billing_subscription_terms\".\"billing_state\" in ('billable','paused','cancelled'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.billing_subscriptions": {
+      "name": "billing_subscriptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "create_request_id": {
+          "name": "create_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "create_digest": {
+          "name": "create_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "period_anchor_date": {
+          "name": "period_anchor_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_anchor_date": {
+          "name": "due_anchor_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "interval_months": {
+          "name": "interval_months",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_unbilled_period_index": {
+          "name": "first_unbilled_period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "activation_from_period_index": {
+          "name": "activation_from_period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activated_at": {
+          "name": "activated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activated_by": {
+          "name": "activated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calendar": {
+          "name": "calendar",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cancellation_status": {
+          "name": "cancellation_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'none'"
+        },
+        "cancellation_reason": {
+          "name": "cancellation_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancellation_effective_period_index": {
+          "name": "cancellation_effective_period_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "billing_subscriptions_customer_id_customers_id_fk": {
+          "name": "billing_subscriptions_customer_id_customers_id_fk",
+          "tableFrom": "billing_subscriptions",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "subscription_service_customer": {
+          "name": "subscription_service_customer",
+          "tableFrom": "billing_subscriptions",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id",
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "subscription_scope": {
+          "name": "subscription_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "deployment_key"
+          ]
+        },
+        "subscription_create_request": {
+          "name": "subscription_create_request",
+          "nullsNotDistinct": false,
+          "columns": [
+            "deployment_key",
+            "create_request_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "subscription_interval": {
+          "name": "subscription_interval",
+          "value": "\"billing_subscriptions\".\"interval_months\" in (1,3,6,12,24,36)"
+        },
+        "subscription_first_index": {
+          "name": "subscription_first_index",
+          "value": "\"billing_subscriptions\".\"first_unbilled_period_index\" between 0 and 120000"
+        },
+        "subscription_version": {
+          "name": "subscription_version",
+          "value": "\"billing_subscriptions\".\"version\">0"
+        },
+        "subscription_activation": {
+          "name": "subscription_activation",
+          "value": "(\"billing_subscriptions\".\"activation_from_period_index\" IS NULL AND \"billing_subscriptions\".\"activated_at\" IS NULL AND \"billing_subscriptions\".\"activated_by\" IS NULL) OR (\"billing_subscriptions\".\"activation_from_period_index\" IS NOT NULL AND \"billing_subscriptions\".\"activated_at\" IS NOT NULL AND \"billing_subscriptions\".\"activated_by\" IS NOT NULL AND \"billing_subscriptions\".\"activation_from_period_index\" BETWEEN \"billing_subscriptions\".\"first_unbilled_period_index\" AND 120000)"
+        },
+        "subscription_cancel": {
+          "name": "subscription_cancel",
+          "value": "\"billing_subscriptions\".\"cancellation_status\" in ('none','requested','declined','approved') and ((\"billing_subscriptions\".\"cancellation_status\"='none' and \"billing_subscriptions\".\"cancellation_reason\" is null) or (\"billing_subscriptions\".\"cancellation_status\"<>'none' and \"billing_subscriptions\".\"cancellation_reason\" is not null)) and ((\"billing_subscriptions\".\"cancellation_status\"='approved' and \"billing_subscriptions\".\"cancellation_effective_period_index\" is not null and \"billing_subscriptions\".\"cancellation_effective_period_index\" >= \"billing_subscriptions\".\"first_unbilled_period_index\" and \"billing_subscriptions\".\"cancellation_effective_period_index\" <= 120000) or (\"billing_subscriptions\".\"cancellation_status\"<>'approved' and \"billing_subscriptions\".\"cancellation_effective_period_index\" is null))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.invoice_lines": {
+      "name": "invoice_lines",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_minor": {
+          "name": "amount_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origin_ref": {
+          "name": "origin_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_line_id": {
+          "name": "provider_line_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "create_attempted_at": {
+          "name": "create_attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "invoice_line_position": {
+          "name": "invoice_line_position",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_line_provider_id": {
+          "name": "invoice_line_provider_id",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_line_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoice_lines_invoice_id_invoices_id_fk": {
+          "name": "invoice_lines_invoice_id_invoices_id_fk",
+          "tableFrom": "invoice_lines",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "invoice_line_amount": {
+          "name": "invoice_line_amount",
+          "value": "\"invoice_lines\".\"amount_minor\" BETWEEN 0 AND 99999999"
+        },
+        "invoice_line_position_range": {
+          "name": "invoice_line_position_range",
+          "value": "\"invoice_lines\".\"position\" BETWEEN 0 AND 99"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.invoices": {
+      "name": "invoices",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origin_key": {
+          "name": "origin_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_digest": {
+          "name": "request_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_customer_name": {
+          "name": "request_customer_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_customer_id": {
+          "name": "billing_customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_to_name": {
+          "name": "bill_to_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_to_email": {
+          "name": "bill_to_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bill_to_profile_version": {
+          "name": "bill_to_profile_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issue_date": {
+          "name": "issue_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "readiness_date": {
+          "name": "readiness_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issue_not_before": {
+          "name": "issue_not_before",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_attempt_before": {
+          "name": "first_attempt_before",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_end_at": {
+          "name": "due_end_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calendar": {
+          "name": "calendar",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_minor": {
+          "name": "total_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_invoice_id": {
+          "name": "provider_invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_status": {
+          "name": "provider_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hosted_invoice_url": {
+          "name": "hosted_invoice_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_receipt_state": {
+          "name": "provider_receipt_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unverified'"
+        },
+        "issued_at": {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issue_requested_at": {
+          "name": "issue_requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "create_attempted_at": {
+          "name": "create_attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finalize_attempted_at": {
+          "name": "finalize_attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "collection_checked_at": {
+          "name": "collection_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "collection_remaining_minor": {
+          "name": "collection_remaining_minor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_reason": {
+          "name": "review_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "invoice_origin": {
+          "name": "invoice_origin",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "origin_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_provider_id": {
+          "name": "invoice_provider_id",
+          "columns": [
+            {
+              "expression": "deployment_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_pending": {
+          "name": "invoice_pending",
+          "columns": [
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoices_billing_customer_id_deployment_key_billing_customers_id_deployment_key_fk": {
+          "name": "invoices_billing_customer_id_deployment_key_billing_customers_id_deployment_key_fk",
+          "tableFrom": "invoices",
+          "tableTo": "billing_customers",
+          "columnsFrom": [
+            "billing_customer_id",
+            "deployment_key"
+          ],
+          "columnsTo": [
+            "id",
+            "deployment_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invoice_customer_scope": {
+          "name": "invoice_customer_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "billing_customer_id",
+            "deployment_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "invoice_effect_window": {
+          "name": "invoice_effect_window",
+          "value": "\"invoices\".\"issue_not_before\"<\"invoices\".\"first_attempt_before\" AND \"invoices\".\"first_attempt_before\"<=\"invoices\".\"due_end_at\""
+        },
+        "invoice_currency": {
+          "name": "invoice_currency",
+          "value": "\"invoices\".\"currency\" = 'USD'"
+        },
+        "invoice_bill_to_version": {
+          "name": "invoice_bill_to_version",
+          "value": "\"invoices\".\"bill_to_profile_version\" > 0"
+        },
+        "invoice_total": {
+          "name": "invoice_total",
+          "value": "\"invoices\".\"total_minor\" BETWEEN 50 AND 99999999"
+        },
+        "invoice_readiness": {
+          "name": "invoice_readiness",
+          "value": "\"invoices\".\"readiness_date\" = \"invoices\".\"due_date\" - 21"
+        },
+        "invoice_dates": {
+          "name": "invoice_dates",
+          "value": "\"invoices\".\"issue_date\" >= \"invoices\".\"readiness_date\" AND \"invoices\".\"issue_date\" < \"invoices\".\"due_date\""
+        },
+        "invoice_state": {
+          "name": "invoice_state",
+          "value": "\"invoices\".\"state\" IN ('requested', 'preparing', 'needs_review', 'draft', 'open', 'paid', 'void', 'uncollectible')"
+        },
+        "invoice_provider_status": {
+          "name": "invoice_provider_status",
+          "value": "\"invoices\".\"provider_status\" IS NULL OR \"invoices\".\"provider_status\" IN ('draft', 'open', 'paid', 'void', 'uncollectible')"
+        },
+        "invoice_review_reason": {
+          "name": "invoice_review_reason",
+          "value": "(\"invoices\".\"state\" = 'needs_review' OR \"invoices\".\"provider_receipt_state\" = 'mismatch') = (\"invoices\".\"review_reason\" IS NOT NULL)"
+        },
+        "invoice_provider_receipt_state": {
+          "name": "invoice_provider_receipt_state",
+          "value": "\"invoices\".\"provider_receipt_state\" IN ('unverified', 'verified', 'mismatch')"
+        },
+        "invoice_attempts": {
+          "name": "invoice_attempts",
+          "value": "\"invoices\".\"attempts\" >= 0"
+        },
+        "invoice_collection_observation": {
+          "name": "invoice_collection_observation",
+          "value": "(\"invoices\".\"collection_checked_at\" IS NULL AND \"invoices\".\"collection_remaining_minor\" IS NULL) OR (\"invoices\".\"collection_checked_at\" IS NOT NULL AND \"invoices\".\"collection_checked_at\">=\"invoices\".\"created_at\" AND \"invoices\".\"collection_remaining_minor\" IS NOT NULL AND \"invoices\".\"collection_remaining_minor\" BETWEEN 0 AND 99999999)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.stripe_events": {
+      "name": "stripe_events",
+      "schema": "",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "deployment_key": {
+          "name": "deployment_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_account_id": {
+          "name": "provider_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_invoice_id": {
+          "name": "provider_invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "stripe_event_pending": {
+          "name": "stripe_event_pending",
+          "columns": [
+            {
+              "expression": "processed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "stripe_events_invoice_id_invoices_id_fk": {
+          "name": "stripe_events_invoice_id_invoices_id_fk",
+          "tableFrom": "stripe_events",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "stripe_event_attempts": {
+          "name": "stripe_event_attempts",
+          "value": "\"stripe_events\".\"attempts\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.access_commands": {
+      "name": "access_commands",
+      "schema": "",
+      "columns": {
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "input_hash": {
+          "name": "input_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invitation_id": {
+          "name": "invitation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "access_command_action": {
+          "name": "access_command_action",
+          "value": "\"access_commands\".\"action\" in ('invitation.create','invitation.accept','invitation.revoke','member.revoke')"
+        },
+        "access_command_state": {
+          "name": "access_command_state",
+          "value": "\"access_commands\".\"state\" in ('pending','completed','needs_review')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.access_audit": {
+      "name": "access_audit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "details": {
+          "name": "details",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.access_staff_grants": {
+      "name": "access_staff_grants",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "access_staff_grants_user_id_user_id_fk": {
+          "name": "access_staff_grants_user_id_user_id_fk",
+          "tableFrom": "access_staff_grants",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "access_staff_grants_user_id_role_pk": {
+          "name": "access_staff_grants_user_id_role_pk",
+          "columns": [
+            "user_id",
+            "role"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "access_staff_role": {
+          "name": "access_staff_role",
+          "value": "\"access_staff_grants\".\"role\" in ('account_administrator','billing','support')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.account": {
+      "name": "account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "account_userId_idx": {
+          "name": "account_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invitation": {
+      "name": "invitation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inviter_id": {
+          "name": "inviter_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "invitation_organizationId_idx": {
+          "name": "invitation_organizationId_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invitation_email_idx": {
+          "name": "invitation_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invitation_organization_id_organization_id_fk": {
+          "name": "invitation_organization_id_organization_id_fk",
+          "tableFrom": "invitation",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invitation_inviter_id_user_id_fk": {
+          "name": "invitation_inviter_id_user_id_fk",
+          "tableFrom": "invitation",
+          "tableTo": "user",
+          "columnsFrom": [
+            "inviter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.member": {
+      "name": "member",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "member_organizationId_idx": {
+          "name": "member_organizationId_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "member_userId_idx": {
+          "name": "member_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "member_organization_id_organization_id_fk": {
+          "name": "member_organization_id_organization_id_fk",
+          "tableFrom": "member",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "member_user_id_user_id_fk": {
+          "name": "member_user_id_user_id_fk",
+          "tableFrom": "member",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "member_organization_user_unique": {
+          "name": "member_organization_user_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.organization": {
+      "name": "organization",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "logo": {
+          "name": "logo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "organization_slug_unique": {
+          "name": "organization_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.session": {
+      "name": "session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active_organization_id": {
+          "name": "active_organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "session_userId_idx": {
+          "name": "session_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user": {
+      "name": "user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verification": {
+      "name": "verification",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "verification_identifier_idx": {
+          "name": "verification_identifier_idx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.customers": {
+      "name": "customers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "registry_key": {
+          "name": "registry_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "legal_name": {
+          "name": "legal_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_email": {
+          "name": "billing_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "customers_organization_id_organization_id_fk": {
+          "name": "customers_organization_id_organization_id_fk",
+          "tableFrom": "customers",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "customers_registry_key_unique": {
+          "name": "customers_registry_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "registry_key"
+          ]
+        },
+        "customers_organization_id_unique": {
+          "name": "customers_organization_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "customer_version": {
+          "name": "customer_version",
+          "value": "\"customers\".\"version\" > 0"
+        },
+        "customer_names": {
+          "name": "customer_names",
+          "value": "length(trim(\"customers\".\"display_name\")) between 1 and 256 and length(trim(\"customers\".\"legal_name\")) between 1 and 256"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.component_names": {
+      "name": "component_names",
+      "schema": "",
+      "columns": {
+        "component_id": {
+          "name": "component_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "component_kind": {
+          "name": "component_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "website_id": {
+          "name": "website_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hostname": {
+          "name": "hostname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "website_one_primary": {
+          "name": "website_one_primary",
+          "columns": [
+            {
+              "expression": "website_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"component_names\".\"is_primary\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "name_component_customer_kind": {
+          "name": "name_component_customer_kind",
+          "tableFrom": "component_names",
+          "tableTo": "service_components",
+          "columnsFrom": [
+            "component_id",
+            "customer_id",
+            "component_kind"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "kind"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "name_website_customer_component": {
+          "name": "name_website_customer_component",
+          "tableFrom": "component_names",
+          "tableTo": "websites",
+          "columnsFrom": [
+            "website_id",
+            "component_id",
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id",
+            "component_id",
+            "customer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "component_names_component_id_hostname_pk": {
+          "name": "component_names_component_id_hostname_pk",
+          "columns": [
+            "component_id",
+            "hostname"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "component_name_website": {
+          "name": "component_name_website",
+          "value": "(\"component_names\".\"component_kind\" = 'web') = (\"component_names\".\"website_id\" is not null)"
+        },
+        "component_name_primary": {
+          "name": "component_name_primary",
+          "value": "not \"component_names\".\"is_primary\" or \"component_names\".\"website_id\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.domain_registrations": {
+      "name": "domain_registrations",
+      "schema": "",
+      "columns": {
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_kind": {
+          "name": "service_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'domain_registration'"
+        },
+        "registered_name": {
+          "name": "registered_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "registrar_label": {
+          "name": "registrar_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "manager": {
+          "name": "manager",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_on": {
+          "name": "expires_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "renewal_responsibility": {
+          "name": "renewal_responsibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "registration_service_customer": {
+          "name": "registration_service_customer",
+          "tableFrom": "domain_registrations",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id",
+            "customer_id",
+            "service_kind"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "kind"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "registration_service_kind": {
+          "name": "registration_service_kind",
+          "value": "\"domain_registrations\".\"service_kind\" = 'domain_registration'"
+        },
+        "registration_manager": {
+          "name": "registration_manager",
+          "value": "\"domain_registrations\".\"manager\" in ('staff','customer')"
+        },
+        "registration_renewal_responsibility": {
+          "name": "registration_renewal_responsibility",
+          "value": "\"domain_registrations\".\"renewal_responsibility\" in ('staff','customer','unknown')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.hosting_accounts": {
+      "name": "hosting_accounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_key": {
+          "name": "provider_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_label": {
+          "name": "provider_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hosting_accounts_customer_id_customers_id_fk": {
+          "name": "hosting_accounts_customer_id_customers_id_fk",
+          "tableFrom": "hosting_accounts",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "hosting_account_customer": {
+          "name": "hosting_account_customer",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.service_components": {
+      "name": "service_components",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_kind": {
+          "name": "service_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'hosting'"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery": {
+          "name": "delivery",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_label": {
+          "name": "provider_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hosting_account_id": {
+          "name": "hosting_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "manager": {
+          "name": "manager",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requested_setting": {
+          "name": "requested_setting",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_state": {
+          "name": "provider_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "component_service_customer": {
+          "name": "component_service_customer",
+          "tableFrom": "service_components",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id",
+            "customer_id",
+            "service_kind"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "kind"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "component_hosting_customer": {
+          "name": "component_hosting_customer",
+          "tableFrom": "service_components",
+          "tableTo": "hosting_accounts",
+          "columnsFrom": [
+            "hosting_account_id",
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "service_component_customer_kind": {
+          "name": "service_component_customer_kind",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "kind"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "component_hosting_service": {
+          "name": "component_hosting_service",
+          "value": "\"service_components\".\"service_kind\" = 'hosting'"
+        },
+        "component_kind": {
+          "name": "component_kind",
+          "value": "\"service_components\".\"kind\" in ('web','email','dns')"
+        },
+        "component_delivery": {
+          "name": "component_delivery",
+          "value": "\"service_components\".\"delivery\" in ('hosted','external') and (\"service_components\".\"delivery\" = 'external' or \"service_components\".\"hosting_account_id\" is not null)"
+        },
+        "component_manager": {
+          "name": "component_manager",
+          "value": "\"service_components\".\"manager\" in ('staff','customer')"
+        },
+        "component_requested_setting": {
+          "name": "component_requested_setting",
+          "value": "(\"service_components\".\"delivery\" = 'external' and \"service_components\".\"manager\" = 'customer' and \"service_components\".\"requested_setting\" is null) or (not (\"service_components\".\"delivery\" = 'external' and \"service_components\".\"manager\" = 'customer') and \"service_components\".\"requested_setting\" is not null and \"service_components\".\"requested_setting\" in ('enabled','disabled'))"
+        },
+        "component_provider_state": {
+          "name": "component_provider_state",
+          "value": "(\"service_components\".\"provider_state\" = 'unknown' and \"service_components\".\"checked_at\" is null) or (\"service_components\".\"provider_state\" in ('enabled','disabled') and \"service_components\".\"checked_at\" is not null)"
+        },
+        "component_version": {
+          "name": "component_version",
+          "value": "\"service_components\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.services": {
+      "name": "services",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_key": {
+          "name": "source_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "package_name": {
+          "name": "package_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "included_components": {
+          "name": "included_components",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attached_service_id": {
+          "name": "attached_service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attached_service_kind": {
+          "name": "attached_service_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "services_customer_id_customers_id_fk": {
+          "name": "services_customer_id_customers_id_fk",
+          "tableFrom": "services",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "service_attachment_customer_kind": {
+          "name": "service_attachment_customer_kind",
+          "tableFrom": "services",
+          "tableTo": "services",
+          "columnsFrom": [
+            "attached_service_id",
+            "customer_id",
+            "attached_service_kind"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "kind"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "service_customer_kind": {
+          "name": "service_customer_kind",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id",
+            "kind"
+          ]
+        },
+        "service_customer": {
+          "name": "service_customer",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "customer_id"
+          ]
+        },
+        "service_source_key": {
+          "name": "service_source_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "customer_id",
+            "source_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "service_kind": {
+          "name": "service_kind",
+          "value": "\"services\".\"kind\" in ('hosting','addon','domain_registration')"
+        },
+        "service_attachment_pair": {
+          "name": "service_attachment_pair",
+          "value": "(\"services\".\"attached_service_id\" is null and \"services\".\"attached_service_kind\" is null) or (\"services\".\"attached_service_id\" is not null and \"services\".\"attached_service_kind\" in ('hosting','domain_registration') and \"services\".\"attached_service_kind\" is not null)"
+        },
+        "service_attachment_addon": {
+          "name": "service_attachment_addon",
+          "value": "\"services\".\"kind\" = 'addon' or (\"services\".\"attached_service_id\" is null and \"services\".\"attached_service_kind\" is null)"
+        },
+        "service_version": {
+          "name": "service_version",
+          "value": "\"services\".\"version\" > 0"
+        },
+        "service_name": {
+          "name": "service_name",
+          "value": "length(trim(\"services\".\"name\")) between 1 and 256"
+        },
+        "service_components": {
+          "name": "service_components",
+          "value": "\"services\".\"included_components\" <@ array['web','email','dns']::text[] and cardinality(\"services\".\"included_components\") <= 3 and (\"services\".\"kind\" = 'hosting' or cardinality(\"services\".\"included_components\") = 0)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.websites": {
+      "name": "websites",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "component_id": {
+          "name": "component_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "component_kind": {
+          "name": "component_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'web'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "website_web_component": {
+          "name": "website_web_component",
+          "tableFrom": "websites",
+          "tableTo": "service_components",
+          "columnsFrom": [
+            "component_id",
+            "customer_id",
+            "component_kind"
+          ],
+          "columnsTo": [
+            "id",
+            "customer_id",
+            "kind"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "website_component_customer": {
+          "name": "website_component_customer",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "component_id",
+            "customer_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "website_web_kind": {
+          "name": "website_web_kind",
+          "value": "\"websites\".\"component_kind\" = 'web'"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

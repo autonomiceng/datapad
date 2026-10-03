@@ -48,6 +48,7 @@ import {
   type SubscriptionTerm,
 } from "./forecast";
 import { isUuid } from "./validate";
+import { lockSubscriptionCustomer } from "./subscription-lock";
 class SubscriptionFailure extends Error {
   constructor(readonly code: AccessErrorCode) {
     super(code);
@@ -122,10 +123,7 @@ export function createSubscriptions(
       mutation,
     );
     if (!access.ok) fail(access.code);
-    if (mutation)
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(hashtextextended(${`subscription-customer:${deploymentKey}:${customerId}`},0))`,
-      );
+    if (mutation) await lockSubscriptionCustomer(tx, deploymentKey, customerId);
     return access.value;
   }
   async function loadTerms(

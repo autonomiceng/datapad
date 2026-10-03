@@ -57,6 +57,13 @@ export function createAuditWriter(): AuditWriter {
           ...(entry.action === "invoice.receipt_correction_requested"
             ? { reason: entry.reason }
             : {}),
+          ...(entry.action === "payment_setup.started" ||
+          entry.action === "payment_enrollment.changed"
+            ? {
+                consentingMembershipId: entry.consentingMembershipId,
+                membershipProvenance: entry.membershipProvenance,
+              }
+            : {}),
           ...(entry.action === "billing_schedule.changed"
             ? { selections: entry.selections }
             : {}),

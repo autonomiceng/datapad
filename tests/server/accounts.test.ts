@@ -26,6 +26,7 @@ import {
   invitation,
   auditEntries,
   session,
+  staffGrants,
 } from "../../src/access/internal/schema";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -229,6 +230,107 @@ test("current identity scopes lists, cross-customer reads, profile authority and
     kind: "customers",
     customerIds: [state.ids.elm],
   });
+  await db.insert(staffGrants).values([
+    { userId: "staff", role: "billing" },
+    { userId: "staff", role: "support" },
+  ]);
+  const target = { customerId: state.ids.elm, organizationId: "elm-org" };
+  expect(
+    await db.transaction((tx) =>
+      state.access.policy.authorizeCustomer(
+        tx,
+        staff.actor,
+        target,
+        "manage_payment_settings",
+        true,
+      ),
+    ),
+  ).toEqual({ ok: false, code: "forbidden" });
+  expect(
+    await state.access.policy.authorizeCustomer(
+      db,
+      support.actor,
+      target,
+      "manage_payment_settings",
+      false,
+    ),
+  ).toEqual({ ok: false, code: "forbidden" });
+  await db
+    .update(member)
+    .set({ role: "admin" })
+    .where(
+      and(eq(member.userId, "support"), eq(member.organizationId, "elm-org")),
+    );
+  const [supportMember] = await db
+    .select()
+    .from(member)
+    .where(
+      and(eq(member.userId, "support"), eq(member.organizationId, "elm-org")),
+    );
+  expect(
+    value(
+      await db.transaction((tx) =>
+        state.access.policy.authorizeCustomer(
+          tx,
+          support.actor,
+          target,
+          "manage_payment_settings",
+          true,
+        ),
+      ),
+    ),
+  ).toMatchObject({
+    customerRole: "administrator",
+    staffRoles: ["support"],
+    customerMembership: {
+      id: supportMember!.id,
+      invitationId: null,
+      invitedByUserId: null,
+      invitedByStaff: null,
+    },
+  });
+  const membershipProvenance = {
+    invitationId: "synthetic-invitation",
+    invitedByUserId: "synthetic-inviter",
+    invitedByStaff: true,
+  };
+  const setupRequestId = randomUUID(),
+    enrollmentRequestId = randomUUID();
+  const paymentAudit = createAuditWriter();
+  await db.transaction(async (tx) => {
+    await paymentAudit.append(tx, {
+      requestId: setupRequestId,
+      actor: staff.actor,
+      customerId: state.ids.elm,
+      targetId: randomUUID(),
+      action: "payment_setup.started",
+      changedFields: ["saveTerms"],
+      consentingMembershipId: "synthetic-consenting-member",
+      membershipProvenance,
+    });
+    await paymentAudit.append(tx, {
+      requestId: enrollmentRequestId,
+      actor: staff.actor,
+      customerId: state.ids.elm,
+      targetId: randomUUID(),
+      action: "payment_enrollment.changed",
+      changedFields: ["method", "scopes"],
+      consentingMembershipId: "synthetic-consenting-member",
+      membershipProvenance,
+    });
+  });
+  for (const requestId of [setupRequestId, enrollmentRequestId]) {
+    const [entry] = await db
+      .select()
+      .from(auditEntries)
+      .where(eq(auditEntries.requestId, requestId));
+    expect(entry!.details).toEqual({
+      changedFields:
+        requestId === setupRequestId ? ["saveTerms"] : ["method", "scopes"],
+      consentingMembershipId: "synthetic-consenting-member",
+      membershipProvenance,
+    });
+  }
   const response = await state.auth.handler(
     new Request(`${origin}/api/auth/sign-out`, {
       method: "POST",
@@ -284,6 +386,106 @@ test("verified invitation acceptance, cancellation, expiry and idempotent staff 
       email: "outsider@accounts.test",
     }),
   ).toEqual({ ok: false, code: "forbidden" });
+  const [acceptedMember] = await db
+    .select()
+    .from(member)
+    .where(eq(member.userId, invitee.actor.userId));
+  const target = { customerId: state.ids.elm, organizationId: "elm-org" };
+  const firstMembership = {
+    id: acceptedMember!.id,
+    invitationId,
+    invitedByUserId: "staff",
+    invitedByStaff: true,
+  };
+  expect(
+    value(
+      await state.access.policy.authorizeCustomer(
+        db,
+        invitee.actor,
+        target,
+        "read",
+        false,
+      ),
+    ).customerMembership,
+  ).toEqual(firstMembership);
+  // Historical staff status survives removal of the inviter's current grant.
+  await db.delete(staffGrants).where(eq(staffGrants.userId, "staff"));
+  expect(
+    value(
+      await state.access.policy.authorizeCustomer(
+        db,
+        invitee.actor,
+        target,
+        "read",
+        false,
+      ),
+    ).customerMembership,
+  ).toEqual(firstMembership);
+  await db
+    .insert(staffGrants)
+    .values({ userId: "staff", role: "account_administrator" });
+  const [completion] = await db
+    .select()
+    .from(auditEntries)
+    .where(
+      and(
+        eq(auditEntries.action, "invitation.accept.completed"),
+        eq(auditEntries.targetId, invitationId),
+      ),
+    );
+  expect(completion!.details.memberId).toBe(acceptedMember!.id);
+  await state.access.revokeMember(
+    elm.headers,
+    state.ids.elm,
+    acceptedMember!.id,
+    { requestId: randomUUID() },
+  );
+  const reinvited = value(
+    await state.access.inviteMember(elm.headers, state.ids.elm, {
+      ...request,
+      requestId: randomUUID(),
+    }),
+  );
+  expect(
+    value(
+      await state.access.acceptInvitation(
+        invitee.headers,
+        reinvited.invitationId!,
+        { requestId: randomUUID() },
+      ),
+    ).state,
+  ).toBe("completed");
+  const renewed = value(
+    await state.access.policy.authorizeCustomer(
+      db,
+      invitee.actor,
+      target,
+      "read",
+      false,
+    ),
+  ).customerMembership;
+  expect(renewed).toEqual({
+    id: expect.any(String),
+    invitationId: reinvited.invitationId,
+    invitedByUserId: "elm",
+    invitedByStaff: false,
+  });
+  expect(renewed!.id).not.toBe(firstMembership.id);
+  // New staff grants also cannot rewrite an invitation's historical status.
+  await db.insert(staffGrants).values({ userId: "elm", role: "support" });
+  expect(
+    value(
+      await db.transaction((tx) =>
+        state.access.policy.authorizeCustomer(
+          tx,
+          invitee.actor,
+          target,
+          "read",
+          true,
+        ),
+      ),
+    ).customerMembership,
+  ).toEqual(renewed);
   const other = value(
     await state.access.inviteMember(elm.headers, state.ids.elm, {
       ...request,
@@ -606,6 +808,22 @@ test("lost acceptance receipts reconcile membership while accepted-without-membe
       ),
     ).state,
   ).toBe("completed");
+  expect(
+    value(
+      await state.access.policy.authorizeCustomer(
+        db,
+        outsider.actor,
+        { customerId: state.ids.elm, organizationId: "elm-org" },
+        "read",
+        false,
+      ),
+    ).customerMembership,
+  ).toEqual({
+    id: expect.any(String),
+    invitationId: created.invitationId,
+    invitedByUserId: "staff",
+    invitedByStaff: true,
+  });
   broken = true;
   const second = value(
     await state.access.inviteMember(staff.headers, state.ids.birch, {

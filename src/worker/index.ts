@@ -5,7 +5,11 @@ import type {
 } from "../billing/scheduled-types";
 import type { BillingCommands, PendingWork } from "../billing/types";
 import type { InvoiceResolutions } from "../billing/resolutions-types";
-type BillingWork = PendingWork | { kind: "resolution"; resolutionId: string };
+import type { PaymentSettings } from "../billing/payment-settings-types";
+type BillingWork =
+  | PendingWork
+  | { kind: "resolution"; resolutionId: string }
+  | { kind: "payment_setup"; setupId: string };
 
 const queue = "datapad-billing";
 interface BillingWorker {
@@ -25,6 +29,7 @@ export async function createBillingWorker(options: {
     InvoiceResolutions,
     "pendingResolutions" | "processResolution"
   >;
+  paymentSettings?: Pick<PaymentSettings, "pendingSetups" | "processSetup">;
   onError?: () => void;
 }): Promise<BillingWorker> {
   const boss = new PgBoss({
@@ -43,7 +48,9 @@ export async function createBillingWorker(options: {
         ? `issue:${work.invoiceId}`
         : work.kind === "event"
           ? `event:${work.eventId}`
-          : `resolution:${work.resolutionId}`;
+          : work.kind === "resolution"
+            ? `resolution:${work.resolutionId}`
+            : `payment_setup:${work.setupId}`;
     await boss.send(queue, work, { singletonKey });
   }
   async function sweep() {
@@ -64,6 +71,12 @@ export async function createBillingWorker(options: {
         []) {
         if (stopped) return;
         await enqueue(work);
+      }
+      for (const setupId of (await options.paymentSettings?.pendingSetups(
+        100,
+      )) ?? []) {
+        if (stopped) return;
+        await enqueue({ kind: "payment_setup", setupId });
       }
       for (const work of await options.billing.pendingWork(100)) {
         if (stopped) return;
@@ -94,6 +107,8 @@ export async function createBillingWorker(options: {
         await options.billing.processEvent(work.eventId);
       else if (work.kind === "resolution" && options.resolutions)
         await options.resolutions.processResolution(work.resolutionId);
+      else if (work.kind === "payment_setup" && options.paymentSettings)
+        await options.paymentSettings.processSetup(work.setupId);
       else throw new Error("Billing work capability unavailable.");
       // The domain persists nextAttemptAt. The sweep sends only eligible work.
       // A retry result completes this delivery; throwing retries operational failures.

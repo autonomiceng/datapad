@@ -1,0 +1,123 @@
+.payment-settings-page {
+  overflow-wrap: anywhere;
+}
+.payment-setup,
+.payment-save,
+.payment-editor,
+.payment-current,
+.payment-confirmation,
+.payment-consequence,
+.payment-choice {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.payment-save,
+.payment-replace,
+.payment-reduce {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.payment-setup {
+  padding-left: 12px;
+  border-left: 2px solid var(--accent);
+}
+.payment-records {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.payment-records > li {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.payment-records > li + li {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.payment-support,
+.payment-warning {
+  display: block;
+  font-size: var(--text-support);
+  color: var(--muted);
+}
+.payment-warning {
+  color: var(--danger);
+}
+.payment-records > .payment-line,
+.payment-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.payment-amount {
+  margin-left: auto;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.payment-consequence {
+  padding-left: 12px;
+  border-left: 2px solid var(--danger);
+}
+.payment-confirmation {
+  padding-left: 12px;
+  border-left: 2px solid var(--accent);
+}
+.payment-settings-page .payment-agreement {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  align-items: start;
+  gap: 8px 24px;
+}
+.payment-settings-page .payment-check {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  max-width: none;
+  min-height: 44px;
+  padding: 8px 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.payment-check input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.payment-settings-page .payment-terms-version {
+  margin-top: -12px;
+  padding-left: 32px;
+}
+.payment-settings-page select {
+  max-width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+.payment-settings-page .account-form label {
+  max-width: none;
+}
+.payment-settings-page button {
+  width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+}
+.payment-settings-page legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+}
+.payment-reduce fieldset {
+  gap: 0;
+}
+@media (max-width: 600px) {
+  .payment-settings-page .payment-agreement {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -11,11 +11,7 @@ import {
 } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { createAuditWriter } from "../../access";
-import {
-  BillingProviderError,
-  type CustomerIntent,
-  type ProviderInvoice,
-} from "../provider";
+import { BillingProviderError, type ProviderInvoice } from "../provider";
 import type { ReviewReason } from "../contract";
 import type {
   BillingCommands,
@@ -38,6 +34,7 @@ import {
 } from "./resolutions";
 import { billingSchedules, billingInvoiceGroups } from "./scheduled-schema";
 import { isUuid } from "./validate";
+import { createCustomerReceipt } from "./customer-receipt";
 
 class IssuanceDeferred extends Error {}
 
@@ -255,46 +252,20 @@ export function createLifecycle(
     else if (effect === "invoice") record.invoice.createAttemptedAt = stamp;
     else record.invoice.finalizeAttemptedAt = stamp;
   }
+  const recoverCustomer = createCustomerReceipt({
+    provider,
+    deploymentKey,
+    now,
+  });
   async function customerReceipt(
     connection: NodePgDatabase,
     record: StoredInvoice,
   ) {
-    const customer = record.customer;
-    const expected: CustomerIntent = {
-      ...provider.ownership,
-      customerId: customer.id,
-      name: customer.name,
-    };
-    const found = await provider.findCustomer(expected);
-    if (found.kind === "ambiguous") review("uncertain_customer");
-    if (customer.providerCustomerId && found.kind !== "found")
-      review("uncertain_customer");
-    let receipt;
-    if (found.kind === "found") receipt = found.value;
-    else {
-      canRetry(customer.createAttemptedAt, "uncertain_customer");
-      await stampEffect(connection, record, "customer");
-      receipt = await provider.createCustomer(
-        expected,
-        effectKey("customer", customer.id),
-      );
-    }
-    if (
-      receipt.livemode !== false ||
-      receipt.accountId !== expected.accountId ||
-      receipt.deploymentKey !== deploymentKey ||
-      receipt.customerId !== expected.customerId ||
-      receipt.name !== expected.name ||
-      !receipt.providerCustomerId ||
-      (customer.providerCustomerId &&
-        customer.providerCustomerId !== receipt.providerCustomerId)
-    )
-      review("ownership_mismatch");
-    await connection
-      .update(billingCustomers)
-      .set({ providerCustomerId: receipt.providerCustomerId })
-      .where(eq(billingCustomers.id, customer.id));
-    customer.providerCustomerId = receipt.providerCustomerId;
+    record.customer.providerCustomerId = await recoverCustomer(
+      connection,
+      record.customer.id,
+      () => stampEffect(connection, record, "customer"),
+    );
   }
   async function issue(
     connection: NodePgDatabase,

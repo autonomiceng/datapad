@@ -8,9 +8,11 @@ import {
   Link,
   Navigate,
   Outlet,
+  redirect,
 } from "@tanstack/react-router";
 import { StaffInvoicePage } from "./billing/workflow";
 import { BillingSchedulePage } from "./billing/schedule";
+import { PaymentSettingsPage } from "./billing/payment-settings";
 import { SubscriptionsPage, SubscriptionPage } from "./billing/subscriptions";
 import { Invoices } from "./billing/invoices";
 import { ImportReview } from "./import-review/viewer";
@@ -238,6 +240,43 @@ const subscriptionRoute = createRoute({
     );
   },
 });
+const localUuid = (value: unknown) =>
+  typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    ? value
+    : undefined;
+const paymentSettingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/payment-settings",
+  validateSearch: (search: Record<string, unknown>): { setupId?: string } => ({
+    setupId: localUuid(search.setupId),
+  }),
+  component: () => {
+    const { customerId } = paymentSettingsRoute.useParams();
+    const { setupId } = paymentSettingsRoute.useSearch();
+    return <PaymentSettingsPage customerId={customerId} setupId={setupId} />;
+  },
+});
+const paymentSetupReturnRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/payment-settings/return",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { customerId?: string; setupId?: string } => ({
+    customerId: localUuid(search.customerId),
+    setupId: localUuid(search.setupId),
+  }),
+  beforeLoad: ({ search }) => {
+    if (!search.customerId || !search.setupId)
+      throw redirect({ to: "/customers" });
+    throw redirect({
+      to: "/customers/$customerId/payment-settings",
+      params: { customerId: search.customerId },
+      search: { setupId: search.setupId },
+      replace: true,
+    });
+  },
+});
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     entryRoute,
@@ -254,6 +293,8 @@ export const router = createRouter({
     subscriptionsRoute,
     billingScheduleRoute,
     subscriptionRoute,
+    paymentSettingsRoute,
+    paymentSetupReturnRoute,
   ]),
 });
 declare module "@tanstack/react-router" {

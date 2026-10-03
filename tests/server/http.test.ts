@@ -242,11 +242,16 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
     "/api/customers/{customerId}/invoices/{invoiceId}/void",
     "/api/customers/{customerId}/invoices/{invoiceId}/receipt-correction",
     "/api/customers/{customerId}/invoices/{invoiceId}/reconcile",
+    "/api/customers/{customerId}/payment-settings",
+    "/api/customers/{customerId}/payment-setups",
+    "/api/customers/{customerId}/payment-setups/{setupId}/refresh",
+    "/api/customers/{customerId}/automatic-payment-enrollment",
+    "/api/customers/{customerId}/automatic-payment-enrollment/reduce",
   ]);
   expect(contract.paths[billingPaths[0]].get.operationId).toBe("listInvoices");
   expect(contract.paths[billingPaths[1]].get.operationId).toBe("getInvoice");
   expect(contract.paths[billingPaths[2]].post.operationId).toBe(
-    "receiveStripeInvoiceEvent",
+    "receiveStripeBillingEvent",
   );
   for (const [path, operationId] of Object.entries(operations)) {
     expect(Object.keys(contract.paths[path])).toEqual(["get"]);

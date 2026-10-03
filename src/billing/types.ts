@@ -44,7 +44,15 @@ export interface SyntheticInvoice {
   billTo: InvoiceResponse["invoice"]["billTo"];
 }
 export type SyntheticInvoicePolicy = (invoice: SyntheticInvoice) => boolean;
+export type SyntheticCustomerMappingPolicy = (mapping: {
+  id: string;
+  customerId: string;
+  key: string;
+  name: string;
+}) => boolean;
 export interface BillingReader {
+  /** Previously persisted account identity, never inferred from a name or email. */
+  storedProviderAccountId(): Promise<string | null>;
   reconciliationPage(input?: {
     limit?: number;
     after?: ReconciliationCursor | null;
@@ -58,6 +66,7 @@ export interface BillingReader {
     allowRequest: SyntheticInvoicePolicy,
     accountId?: string,
     allowScheduledRequest?: (invoice: SyntheticScheduledInvoice) => boolean,
+    allowCustomerMapping?: SyntheticCustomerMappingPolicy,
   ): Promise<void>;
 
   listInvoices(page?: Partial<BillingPagination>): Promise<InvoicesResponse>;

@@ -6,7 +6,10 @@ import {
   WebhookResponseSchema,
 } from "../billing/contract";
 import type { BillingCommands, BillingReader } from "../billing/types";
-import type { BillingEventVerifier } from "../billing/provider";
+import type {
+  BillingEventVerifier,
+  VerifiedPaymentSetupEvent,
+} from "../billing/provider";
 import { AccessErrorSchema } from "../access/contract";
 import type { AccessResult } from "../access/types";
 
@@ -20,6 +23,7 @@ export interface BillingHttp {
   webhook?: {
     verifier: BillingEventVerifier;
     acceptEvent: BillingCommands["acceptEvent"];
+    acceptSetupEvent?: (event: VerifiedPaymentSetupEvent) => Promise<void>;
   };
 }
 
@@ -137,7 +141,11 @@ export function billingRoutes(billing?: BillingHttp) {
           return status(400, { code: "invalid_request" });
         }
         // Commit the inbox before acknowledging. The worker sweeps durable pending work.
-        if (event) await billing.webhook.acceptEvent(event);
+        if (event) {
+          if ("providerSessionId" in event)
+            await billing.webhook.acceptSetupEvent?.(event);
+          else await billing.webhook.acceptEvent(event);
+        }
         return { received: true as const };
       },
       {
@@ -149,8 +157,8 @@ export function billingRoutes(billing?: BillingHttp) {
           503: BillingErrorSchema,
         },
         detail: {
-          operationId: "receiveStripeInvoiceEvent",
-          summary: "Receive a signed Stripe sandbox invoice event",
+          operationId: "receiveStripeBillingEvent",
+          summary: "Receive a signed Stripe sandbox billing event",
           parameters: [
             {
               in: "header",

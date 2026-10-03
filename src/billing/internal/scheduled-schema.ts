@@ -17,6 +17,10 @@ import {
 import { customers } from "../../customers/schema";
 import type { CalendarPolicy } from "../subscriptions-contract";
 import { billingCustomers, invoices } from "./invoice-schema";
+import {
+  billingEnrollments,
+  billingPaymentMethods,
+} from "./payment-settings-schema";
 
 const instant = (name: string) =>
   timestamp(name, { withTimezone: true, mode: "string" });
@@ -66,8 +70,44 @@ export const billingInvoiceGroups = pgTable(
     billToProfileVersion: integer("bill_to_profile_version").notNull(),
     billingCustomerId: uuid("billing_customer_id"),
     invoiceId: uuid("invoice_id"),
+    enrollmentId: uuid("enrollment_id"),
+    paymentMethodId: uuid("payment_method_id"),
   },
   (t) => [
+    check(
+      "invoice_group_permission_pair",
+      sql`(${t.enrollmentId} is null and ${t.paymentMethodId} is null) or (${t.enrollmentId} is not null and ${t.paymentMethodId} is not null and ${t.paymentArrangement}='automatic' and ${t.totalMinor}>0)`,
+    ),
+    foreignKey({
+      name: "invoice_group_enrollment",
+      columns: [
+        t.enrollmentId,
+        t.customerId,
+        t.deploymentKey,
+        t.paymentMethodId,
+      ],
+      foreignColumns: [
+        billingEnrollments.id,
+        billingEnrollments.customerId,
+        billingEnrollments.deploymentKey,
+        billingEnrollments.paymentMethodId,
+      ],
+    }),
+    foreignKey({
+      name: "invoice_group_method",
+      columns: [
+        t.paymentMethodId,
+        t.customerId,
+        t.deploymentKey,
+        t.billingCustomerId,
+      ],
+      foreignColumns: [
+        billingPaymentMethods.id,
+        billingPaymentMethods.customerId,
+        billingPaymentMethods.deploymentKey,
+        billingPaymentMethods.billingCustomerId,
+      ],
+    }),
     unique("invoice_group_scope").on(t.id, t.customerId, t.deploymentKey),
     unique("invoice_group_date").on(
       t.customerId,

@@ -17,6 +17,7 @@ import type {
   BillingReader,
   BillingReaderOptions,
   SyntheticInvoicePolicy,
+  SyntheticCustomerMappingPolicy,
 } from "../types";
 import {
   billingCustomers,
@@ -188,6 +189,7 @@ export function createReader({
     allowRequest: SyntheticInvoicePolicy,
     accountId?: string,
     allowScheduledRequest?: (invoice: SyntheticScheduledInvoice) => boolean,
+    allowCustomerMapping?: SyntheticCustomerMappingPolicy,
   ) {
     const fail = () => {
       throw new Error("Billing data is outside the reviewed synthetic dataset");
@@ -205,11 +207,17 @@ export function createReader({
         (customer) =>
           customer.deploymentKey !== deploymentKey ||
           customer.providerAccountId !== accountId ||
-          !rows.some(
+          (!rows.some(
             (row) =>
               row.billingCustomerId === customer.id &&
               row.requestCustomerName === customer.name,
-          ),
+          ) &&
+            !allowCustomerMapping?.({
+              id: customer.id,
+              customerId: customer.customerId,
+              key: customer.key,
+              name: customer.name,
+            })),
       )
     )
       fail();
@@ -320,6 +328,25 @@ export function createReader({
       )
         ? "unchanged"
         : "pending";
+    },
+    async storedProviderAccountId() {
+      const mappings = await db
+        .select({
+          deploymentKey: billingCustomers.deploymentKey,
+          accountId: billingCustomers.providerAccountId,
+        })
+        .from(billingCustomers);
+      const accountIds = new Set(mappings.map((row) => row.accountId));
+      if (
+        mappings.some(
+          (row) =>
+            row.deploymentKey !== deploymentKey ||
+            !row.accountId.startsWith("acct_"),
+        ) ||
+        accountIds.size > 1
+      )
+        throw new Error("Stored billing account ownership is inconsistent.");
+      return mappings[0]?.accountId ?? null;
     },
     assertSyntheticPolicy,
     async assertSyntheticData(

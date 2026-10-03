@@ -12,6 +12,10 @@ import {
   subscriptionRoutes,
   type SubscriptionHttp,
 } from "./subscription-routes";
+import {
+  paymentSettingsRoutes,
+  type PaymentSettingsHttp,
+} from "./payment-settings-routes";
 import { scheduledRoutes, type ScheduledHttp } from "./scheduled-routes";
 import { resolutionRoutes, type ResolutionHttp } from "./resolution-routes";
 import { billingRoutes, type BillingHttp } from "./billing-routes";
@@ -77,6 +81,7 @@ export function createApp({
   invoiceWorkflow,
   subscriptions,
   scheduled,
+  paymentSettings,
   resolutions,
   accounts,
 }: {
@@ -87,6 +92,7 @@ export function createApp({
   invoiceWorkflow?: InvoiceWorkflowHttp;
   subscriptions?: SubscriptionHttp;
   scheduled?: ScheduledHttp;
+  paymentSettings?: PaymentSettingsHttp;
   resolutions?: ResolutionHttp;
   accounts?: {
     routes: Parameters<typeof accountRoutes>[0];
@@ -258,7 +264,8 @@ export function createApp({
     .use(invoiceWorkflowRoutes(invoiceWorkflow))
     .use(subscriptionRoutes(subscriptions))
     .use(scheduledRoutes(scheduled))
-    .use(resolutionRoutes(resolutions));
+    .use(resolutionRoutes(resolutions))
+    .use(paymentSettingsRoutes(paymentSettings));
   if (accounts) {
     app.use(accountRoutes(accounts.routes));
     app.get("/api/auth/*", ({ request }) => accounts.authHandler(request), {

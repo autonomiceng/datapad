@@ -159,3 +159,11 @@ _Avoid_: Exception, readiness score
 - **Invoice resolution**: a durable request to settle an invoice from a received payment or void it, with its confirmation and review history.
 - **Withdrawn receipt**: a mistaken receipt corrected before any provider attempt. Its original facts remain in the audit history.
 - **Void invoice**: a finalized unpaid invoice canceled with the payment provider. Its service and subscription stay unchanged.
+
+**Payment setup**: A request to save a card with the payment provider. Completion must be verified by the server and grants no recurring-payment permission.
+
+**Saved payment method**: A provider-verified card associated with a customer, shown using its brand, last four digits and expiry.
+
+**Automatic-payment enrollment**: An immutable version of a customer's permission to charge one saved method for selected subscriptions and effective periods.
+
+**Enrollment scope**: The subscription, commercial revision and service periods covered by an automatic-payment enrollment.

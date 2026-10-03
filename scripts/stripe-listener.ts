@@ -1,4 +1,5 @@
-const invoiceEvents = [
+const billingEvents = [
+  "checkout.session.completed",
   "invoice.created",
   "invoice.updated",
   "invoice.finalized",
@@ -26,7 +27,7 @@ export function startStripeListener({
       "--events-from",
       "@self",
       "--events",
-      invoiceEvents.join(","),
+      billingEvents.join(","),
       "--forward-to",
       forwardTo,
       "--skip-update",

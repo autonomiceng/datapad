@@ -1,7 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, count, eq, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { Access, AccessOptions, AccessResult, HumanActor } from "./types";
+import type {
+  Access,
+  AccessOptions,
+  AccessResult,
+  CustomerAccess,
+  HumanActor,
+} from "./types";
 import type { AccessActionResponse, AccountPagination } from "./contract";
 import {
   accessCommands,
@@ -145,6 +151,7 @@ export function createAccess(options: AccessOptions): Access {
     action: string,
     targetId: string,
     state: string,
+    details: Record<string, unknown> = {},
   ) {
     await tx.insert(auditEntries).values({
       id: randomUUID(),
@@ -154,7 +161,7 @@ export function createAccess(options: AccessOptions): Access {
       customerId,
       action: `${action}.${state}`,
       targetId,
-      details: { state },
+      details: { ...details, state },
     });
   }
   async function managed<T>(
@@ -163,6 +170,7 @@ export function createAccess(options: AccessOptions): Access {
     work: (
       tx: NodePgDatabase,
       organizationId: string,
+      permission: CustomerAccess,
     ) => Promise<AccessResult<T>>,
   ): Promise<AccessResult<T>> {
     const target = await options.getCustomerTarget(customerId);
@@ -180,7 +188,9 @@ export function createAccess(options: AccessOptions): Access {
           "manage_members",
           true,
         );
-        return permission.ok ? work(tx, target.organizationId!) : permission;
+        return permission.ok
+          ? work(tx, target.organizationId!, permission.value)
+          : permission;
       }),
     );
   }
@@ -308,7 +318,7 @@ export function createAccess(options: AccessOptions): Access {
       const result = await managed(
         actor.value,
         customerId,
-        async (tx, organizationId) => {
+        async (tx, organizationId, permission) => {
           const previous = await existing(
             tx,
             input.requestId,
@@ -386,6 +396,7 @@ export function createAccess(options: AccessOptions): Access {
             "invitation.create",
             id,
             "requested",
+            { invitedByStaff: permission.staffRoles.length > 0 },
           );
           return outcome(receipt!);
         },
@@ -611,13 +622,29 @@ export function createAccess(options: AccessOptions): Access {
           .select()
           .from(invitation)
           .where(eq(invitation.id, invitationId));
-        if (before?.status === "pending" && before.expiresAt > new Date()) {
+        const [priorMembership] = await connection
+          .select({ id: member.id })
+          .from(member)
+          .where(
+            and(
+              eq(member.organizationId, initial.organizationId),
+              eq(member.userId, actor.value.userId),
+            ),
+          );
+        let acceptedMemberId: string | null = null;
+        let lostReceipt = false;
+        const attempted =
+          before?.status === "pending" && before.expiresAt > new Date();
+        if (attempted) {
           try {
-            await options.authentication.acceptInvitation(
+            const receipt = await options.authentication.acceptInvitation(
               headers,
               invitationId,
             );
+            if (receipt.organizationId === initial.organizationId)
+              acceptedMemberId = receipt.memberId;
           } catch {
+            lostReceipt = true;
             /* Reconcile durable library state below. */
           }
         }
@@ -644,9 +671,23 @@ export function createAccess(options: AccessOptions): Access {
                   accepted.expiresAt > new Date()
                 ? "pending"
                 : "needs_review";
+          // A lost library response can be linked only when this locked invocation
+          // observed no member before acceptance. Older uncertain commands stay unknown.
+          const memberId =
+            state === "completed" &&
+            membership &&
+            attempted &&
+            !priorMembership &&
+            (lostReceipt || acceptedMemberId === membership.id)
+              ? membership.id
+              : null;
           const [receipt] = await tx
             .update(accessCommands)
-            .set({ state, updatedAt: new Date() })
+            .set({
+              state,
+              ...(memberId ? { targetId: memberId } : {}),
+              updatedAt: new Date(),
+            })
             .where(eq(accessCommands.requestId, input.requestId))
             .returning();
           await record(
@@ -657,6 +698,7 @@ export function createAccess(options: AccessOptions): Access {
             "invitation.accept",
             invitationId,
             state === "pending" ? "uncertain" : state,
+            memberId ? { memberId } : {},
           );
           return outcome(receipt!);
         });

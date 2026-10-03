@@ -181,6 +181,16 @@ test("real mailbox sign-in scopes customer access, saves a profile, accepts an i
   await expect(
     page.getByRole("heading", { name: "Members", exact: true }),
   ).toHaveCount(0);
+  const settings = await page.request.get(
+    `/api${customerPath}/payment-settings`,
+  );
+  expect(settings.status()).toBe(200);
+  expect(await settings.json()).toMatchObject({
+    canManage: false,
+    setupAvailable: false,
+    methods: [],
+    enrollment: null,
+  });
   expect((await page.request.get("/api/import-review/sources")).status()).toBe(
     403,
   );
@@ -202,6 +212,9 @@ test("real mailbox sign-in scopes customer access, saves a profile, accepts an i
   ).toBeVisible();
   await signIn(page, "outsider@example.test");
   expect((await page.request.get(`/api${customerPath}`)).status()).toBe(404);
+  expect(
+    (await page.request.get(`/api${customerPath}/payment-settings`)).status(),
+  ).toBe(404);
   const invoices = await (
     await page.request.get("/api/billing/invoices")
   ).json();
