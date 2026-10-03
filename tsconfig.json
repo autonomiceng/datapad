@@ -19,6 +19,7 @@
     "vite.config.ts",
     "drizzle.config.ts",
     "playwright.config.ts",
-    "playwright.portal.config.ts"
+    "playwright.portal.config.ts",
+    "playwright.billing.config.ts"
   ]
 }

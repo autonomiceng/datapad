@@ -60,6 +60,7 @@ export class SyntheticBillingProvider implements BillingProvider {
     const invoice: ProviderInvoice = {
       ...intent,
       providerInvoiceId: `in_${intent.invoiceId}`,
+      recipientEmail: `${intent.customerId}@billing.test`,
       livemode: false,
       status: "draft",
       lines: [],

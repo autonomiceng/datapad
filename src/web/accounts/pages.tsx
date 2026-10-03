@@ -404,6 +404,14 @@ export function CustomerPage({ customerId }: { customerId: string }) {
             Services
           </Link>
         )}
+        {customer && session.data?.staffRoles.includes("billing") && (
+          <Link
+            to="/customers/$customerId/invoices/new"
+            params={{ customerId }}
+          >
+            Prepare invoice
+          </Link>
+        )}
       </header>
       {detail.isPending && (
         <p className="panel state-panel" role="status">

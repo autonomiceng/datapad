@@ -28,3 +28,5 @@ export function createBilling(options: BillingOptions): Billing {
     ...createLifecycle(options),
   };
 }
+
+export { createBillingWorkflow } from "./internal/workflow";

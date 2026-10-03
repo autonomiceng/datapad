@@ -6,7 +6,10 @@ import {
   type Billing,
 } from "../../src/billing";
 import type { InvoiceRequest } from "../../src/billing/contract";
-import type { VerifiedInvoiceEvent } from "../../src/billing/provider";
+import {
+  BillingProviderError,
+  type VerifiedInvoiceEvent,
+} from "../../src/billing/provider";
 import { SyntheticBillingProvider } from "./billing-provider";
 import { createCustomerRegistry } from "../../src/customers";
 import { createAuditWriter } from "../../src/access";
@@ -214,9 +217,65 @@ test("lost customer, invoice, partial line and finalization receipts recover ind
   expect((await state.billing.getInvoice(uncertain))!.invoice).toMatchObject({
     state: "needs_review",
     reviewReason: "uncertain_invoice",
+    providerReceipt: { state: "unverified", reason: null },
     hostedInvoiceUrl: null,
   });
   expect(state.provider.calls.invoice).toBe(2);
+
+  const missingLine = await request(
+    state.billing,
+    fixture("manual:uncertain-line"),
+  );
+  await state.billing.requestIssue(missingLine);
+  state.provider.interrupt.add("line");
+  expect(await state.billing.issueInvoice(missingLine)).toBe("retry");
+  const draft = state.provider.invoices.get(`in_${missingLine}`)!;
+  draft.lines = [];
+  draft.totalMinor = 0;
+  expect(await state.billing.refreshInvoice(missingLine)).toBe("complete");
+  state.advance(24 * 60 * 60 * 1000);
+  expect(await state.billing.issueInvoice(missingLine)).toBe("needs_review");
+  expect((await state.billing.getInvoice(missingLine))!.invoice).toMatchObject({
+    state: "needs_review",
+    reviewReason: "uncertain_line",
+    providerReceipt: { state: "verified", reason: null },
+  });
+});
+
+test("receipt uncertainty preserves trust while an initial observed contradiction marks mismatch", async () => {
+  const state = setup();
+  const uncertain = await request(state.billing);
+  await state.billing.requestIssue(uncertain);
+  const findCustomer = state.provider.findCustomer.bind(state.provider);
+  state.provider.findCustomer = async () => ({ kind: "ambiguous" });
+  expect(await state.billing.issueInvoice(uncertain)).toBe("needs_review");
+  expect((await state.billing.getInvoice(uncertain))!.invoice).toMatchObject({
+    state: "needs_review",
+    reviewReason: "uncertain_customer",
+    providerReceipt: { state: "unverified", reason: null },
+  });
+  state.provider.findCustomer = findCustomer;
+  const contradicted = await request(
+    state.billing,
+    fixture("manual:contradicted"),
+  );
+  await state.billing.requestIssue(contradicted);
+  state.provider.onCreate = async (invoice) => {
+    invoice.recipientName = "Different synthetic customer";
+  };
+  expect(await state.billing.issueInvoice(contradicted)).toBe("needs_review");
+  expect((await state.billing.getInvoice(contradicted))!.invoice).toMatchObject(
+    {
+      providerReceipt: { state: "mismatch", reason: "invoice_mismatch" },
+    },
+  );
+  expect(
+    (
+      await pool.query("SELECT provider_invoice_id FROM invoices WHERE id=$1", [
+        contradicted,
+      ])
+    ).rows,
+  ).toEqual([{ provider_invoice_id: null }]);
 });
 
 test("durable events arriving before create receipts recover Paid, reject unrelated identities and cannot regress terminal status", async () => {
@@ -272,10 +331,40 @@ test("durable events arriving before create receipts recover Paid, reject unrela
     "complete",
   );
   expect((await state.billing.getInvoice(id))!.invoice.state).toBe("paid");
+  const retrieveInvoice = state.provider.retrieveInvoice.bind(state.provider);
+  state.provider.retrieveInvoice = async () => {
+    throw new BillingProviderError("review", "provider_conflict");
+  };
+  expect(await state.billing.refreshInvoice(id)).toBe("needs_review");
+  expect(
+    await state.billing.acceptEvent(event(id, "evt_unobserved_review")),
+  ).toBe("accepted");
+  expect(await state.billing.processEvent("evt_unobserved_review")).toBe(
+    "needs_review",
+  );
+  expect(
+    (
+      await pool.query(
+        "SELECT last_error FROM stripe_events WHERE event_id=$1",
+        ["evt_unobserved_review"],
+      )
+    ).rows,
+  ).toEqual([{ last_error: "provider_conflict" }]);
+  expect((await state.billing.getInvoice(id))!.invoice).toMatchObject({
+    state: "paid",
+    reviewReason: null,
+    providerReceipt: { state: "verified", reason: null },
+    hostedInvoiceUrl: `https://invoice.stripe.com/i/in_${id}`,
+  });
+  state.provider.retrieveInvoice = retrieveInvoice;
   const current = state.provider.invoices.get(`in_${id}`)!;
   state.provider.stale = { ...structuredClone(current), status: "open" };
-  expect(await state.billing.refreshInvoice(id)).toBe("complete");
-  expect((await state.billing.getInvoice(id))!.invoice.state).toBe("paid");
+  expect(await state.billing.refreshInvoice(id)).toBe("needs_review");
+  expect((await state.billing.getInvoice(id))!.invoice).toMatchObject({
+    state: "paid",
+    providerReceipt: { state: "mismatch", reason: "provider_conflict" },
+    hostedInvoiceUrl: null,
+  });
   expect(await state.billing.issueInvoice(id)).toBe("complete");
   expect(state.provider.calls.invoice).toBe(1);
 });
@@ -313,9 +402,11 @@ test("pending work survives a lost enqueue and transient event retrieval; exhaus
     "needs_review",
   );
   expect((await state.billing.getInvoice(exhausted))!.invoice).toMatchObject({
-    state: "needs_review",
+    state: "open",
     providerStatus: "open",
-    reviewReason: "retry_exhausted",
+    reviewReason: null,
+    providerReceipt: { state: "verified", reason: null },
+    hostedInvoiceUrl: `https://invoice.stripe.com/i/in_${exhausted}`,
   });
   expect(await state.billing.pendingWork()).toEqual([]);
 });

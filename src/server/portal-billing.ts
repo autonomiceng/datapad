@@ -1,0 +1,155 @@
+import { Temporal } from "@js-temporal/polyfill";
+import { drizzle } from "drizzle-orm/node-postgres";
+import type { Pool } from "pg";
+import type { Access } from "../access";
+import { createCustomerRegistry, type Customers } from "../customers";
+import {
+  createBilling,
+  createBillingWorkflow,
+  type BillingReader,
+  type SyntheticInvoicePolicy,
+} from "../billing";
+import {
+  createStripeBillingProvider,
+  createStripeEventVerifier,
+} from "../stripe";
+import type { VerifiedInvoiceEvent } from "../billing/provider";
+import type { InvoiceWorkflowHttp } from "./invoice-workflow-routes";
+import { allowPortalProfile, portalCustomers } from "./portal-demo";
+
+const sampleLines = [
+  { description: "Web hosting", amountMinor: 2300 },
+  { description: "Storage add-on", amountMinor: 500 },
+  { description: "Consulting", amountMinor: 10000 },
+];
+
+export async function createPortalBilling(options: {
+  pool: Pool;
+  reader: BillingReader;
+  customers: Customers;
+  access: Access;
+  customerIds: Record<"elm" | "birch", string>;
+  origin: string;
+  configuration?: {
+    deploymentKey: string;
+    apiKey: string;
+    signingSecret: string;
+  };
+}) {
+  const {
+    pool,
+    reader,
+    customers,
+    access,
+    customerIds,
+    configuration,
+    origin,
+  } = options;
+  const allowRequest: SyntheticInvoicePolicy = ({
+    request,
+    customerId,
+    billTo,
+  }) => {
+    const sample = portalCustomers.find(
+      (entry) => customerIds[entry.key as "elm" | "birch"] === customerId,
+    );
+    if (!sample) return false;
+    const names = [sample.name, sample.updatedName];
+    return (
+      /^staff:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        request.originKey,
+      ) &&
+      request.customer.key === `customer:${customerId}` &&
+      names.includes(request.customer.name) &&
+      names.includes(billTo.legalName) &&
+      (billTo.billingEmail === null ||
+        billTo.billingEmail === sample.billingEmail) &&
+      request.currency === "USD" &&
+      request.lines.length > 0 &&
+      request.lines.length <= sampleLines.length &&
+      new Set(request.lines.map((line) => line.description)).size ===
+        request.lines.length &&
+      request.lines.every(
+        (line) =>
+          line.originRef === null &&
+          sampleLines.some(
+            (sampleLine) =>
+              sampleLine.description === line.description &&
+              sampleLine.amountMinor === line.amountMinor,
+          ),
+      )
+    );
+  };
+  const provider = configuration
+    ? await createStripeBillingProvider({
+        apiKey: configuration.apiKey,
+        deploymentKey: configuration.deploymentKey,
+      })
+    : undefined;
+  await reader.assertSyntheticPolicy(
+    allowRequest,
+    provider?.ownership.accountId,
+  );
+  const billingOptions =
+    provider && configuration
+      ? {
+          pool,
+          provider,
+          deploymentKey: configuration.deploymentKey,
+          customers: createCustomerRegistry({
+            operatorId: "synthetic-portal-invoices",
+            audit: access.audit,
+            allowProfile: allowPortalProfile,
+          }),
+        }
+      : undefined;
+  const commands = billingOptions ? createBilling(billingOptions) : undefined;
+  const workflow = billingOptions
+    ? createBillingWorkflow({
+        ...billingOptions,
+        customerAccess: customers,
+        audit: access.audit,
+        allowRequest,
+      })
+    : undefined;
+  const http: InvoiceWorkflowHttp = {
+    access,
+    workflow,
+    origin,
+    async readOptions(actor, customerId) {
+      const authorization = await customers.authorizeCustomer(
+        drizzle(pool),
+        actor,
+        customerId,
+        "manage_billing",
+        false,
+      );
+      if (!authorization.ok) return authorization;
+      const issueDate = Temporal.Now.plainDateISO("UTC");
+      return {
+        ok: true,
+        value: {
+          available: Boolean(workflow),
+          lines: sampleLines,
+          issueDate: issueDate.toString(),
+          dueDate: issueDate.add({ days: 21 }).toString(),
+        },
+      };
+    },
+  };
+  return {
+    commands,
+    http,
+    webhook:
+      provider && configuration && commands
+        ? {
+            verifier: createStripeEventVerifier({
+              signingSecret: configuration.signingSecret,
+              ownership: provider.ownership,
+            }),
+            acceptEvent: (event: VerifiedInvoiceEvent) =>
+              commands.acceptEvent(event),
+          }
+        : undefined,
+  };
+}

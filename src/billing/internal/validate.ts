@@ -15,6 +15,7 @@ function calendarDate(value: string): boolean {
   }
 }
 FormatRegistry.Set("date", calendarDate);
+FormatRegistry.Set("uuid", isUuid);
 
 export function requestDigest(request: InvoiceRequest): string {
   return createHash("sha256").update(canonicalize(request)!).digest("hex");

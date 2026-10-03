@@ -14,17 +14,28 @@ if (
     "destroy",
     "billing",
     "portal",
+    "portal-billing",
+    "portal-billing-test",
     "portal-test",
     "portal-destroy",
   ].includes(mode ?? "")
 ) {
   throw new Error(
-    "Expected demo, dev, test, destroy, billing, portal, portal-test or portal-destroy.",
+    "Expected demo, dev, test, destroy, billing, portal, portal-billing, portal-billing-test, portal-test or portal-destroy.",
   );
 }
 const portal =
-  mode === "portal" || mode === "portal-test" || mode === "portal-destroy";
-const testing = mode === "test" || mode === "portal-test";
+  mode === "portal" ||
+  mode === "portal-billing" ||
+  mode === "portal-billing-test" ||
+  mode === "portal-test" ||
+  mode === "portal-destroy";
+const sandboxMode =
+  mode === "billing" ||
+  mode === "portal-billing" ||
+  mode === "portal-billing-test";
+const isolated = mode === "test" || mode === "portal-test";
+const testing = isolated || mode === "portal-billing-test";
 const { values } = parseArgs({
   args: process.argv.slice(3),
   options: {
@@ -35,26 +46,34 @@ const { values } = parseArgs({
   },
   strict: true,
 });
-if (mode === "billing" && (!values.config || !values["run-dir"]))
+if (sandboxMode && (!values.config || !values["run-dir"]))
   throw new Error("Billing requires --config and --run-dir outside Git.");
-if (mode !== "billing" && (values.config || values["run-dir"]))
-  throw new Error("Sandbox arguments require billing mode.");
-if ((values.origin || values["inbox-origin"]) && mode !== "portal")
+if (!sandboxMode && (values.config || values["run-dir"]))
+  throw new Error("Sandbox arguments require billing or portal-billing mode.");
+if (
+  (values.origin || values["inbox-origin"]) &&
+  mode !== "portal" &&
+  mode !== "portal-billing"
+)
   throw new Error("An external origin requires portal demo mode.");
 let sandbox: Awaited<ReturnType<typeof openSandbox>> | undefined;
 let serverPort = 0;
 const root = resolve(import.meta.dir, "..");
 const localId = createHash("sha256").update(root).digest("hex").slice(0, 12);
-const project = testing
+const project = isolated
   ? `datapad-test-${randomUUID()}`
-  : mode === "billing"
-    ? `datapad-billing-${createHash("sha256").update(resolve(values["run-dir"]!)).digest("hex").slice(0, 12)}`
+  : sandboxMode
+    ? `datapad-${portal ? "portal-billing" : "billing"}-${createHash("sha256").update(resolve(values["run-dir"]!)).digest("hex").slice(0, 12)}`
     : portal
       ? `datapad-portal-${localId}`
       : `datapad-${localId}`;
 const lock = resolve(
   root,
-  mode === "billing" ? ".scratch/billing-run.lock" : ".scratch/local-run.lock",
+  mode === "portal-billing-test"
+    ? ".scratch/billing-test.lock"
+    : sandboxMode
+      ? ".scratch/billing-run.lock"
+      : ".scratch/local-run.lock",
 );
 const compose = [
   "docker",
@@ -123,7 +142,7 @@ function cleanup(): Promise<void> {
           await command([
             ...compose,
             "down",
-            ...(testing ? ["--volumes"] : []),
+            ...(isolated ? ["--volumes"] : []),
           ]);
         }
       } finally {
@@ -193,7 +212,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 }
 
 try {
-  if (!testing) {
+  if (!isolated) {
     await mkdir(resolve(root, ".scratch"), { recursive: true });
     try {
       await mkdir(lock);
@@ -211,6 +230,8 @@ try {
   if (mode === "destroy" || mode === "portal-destroy") {
     await command([...compose, "down", "--volumes"]);
   } else {
+    if (sandboxMode)
+      sandbox = await openSandbox(values.config!, values["run-dir"]!);
     databaseStarted = true;
     await command([
       ...compose,
@@ -259,7 +280,8 @@ try {
       const inboxPort = /^127\.0\.0\.1:(\d+)$/.exec(inboxBinding)?.[1];
       if (!smtpPort || !inboxPort)
         throw new Error("Expected loopback-only test mail ports.");
-      // This composition has no provider credentials or external mail transport.
+      // Provider credentials are injected only by the explicit sandbox mode below.
+      delete env.PORTAL_BILLING_SANDBOX;
       for (const key of Object.keys(env)) {
         if (key.startsWith("STRIPE_") || key.startsWith("BILLING_"))
           delete env[key];
@@ -280,9 +302,8 @@ try {
       await command([process.execPath, "scripts/portal-seed.ts"]);
       console.log(`Sample inbox: ${env.PORTAL_TEST_MAILPIT_URL}`);
     }
-    if (mode === "billing") {
-      sandbox = await openSandbox(values.config!, values["run-dir"]!);
-      serverPort = await availableLoopbackPort();
+    if (sandbox) {
+      if (!portal) serverPort = await availableLoopbackPort();
       const listener = startStripeListener({
         secretKey: sandbox.key,
         forwardTo: `http://127.0.0.1:${serverPort}/api/billing/webhooks/stripe`,
@@ -292,8 +313,16 @@ try {
       env.STRIPE_WEBHOOK_SECRET = await listener.ready;
       env.STRIPE_SECRET_KEY = sandbox.key;
       env.BILLING_DEPLOYMENT_KEY = sandbox.deploymentKey;
-      env.BILLING_ISSUE_DATE = sandbox.issueDate;
-      await command([process.execPath, "scripts/billing-operator.ts", "issue"]);
+      if (portal) {
+        env.PORTAL_BILLING_SANDBOX = "true";
+      } else {
+        env.BILLING_ISSUE_DATE = sandbox.issueDate;
+        await command([
+          process.execPath,
+          "scripts/billing-operator.ts",
+          "issue",
+        ]);
+      }
     }
     env.NODE_ENV = mode === "dev" ? "development" : "production";
     env.ASSETS_DIR = mode === "dev" ? "" : "dist";
@@ -303,7 +332,14 @@ try {
       await command([
         "./node_modules/.bin/playwright",
         "test",
-        ...(portal ? ["--config", "playwright.portal.config.ts"] : []),
+        ...(portal
+          ? [
+              "--config",
+              mode === "portal-billing-test"
+                ? "playwright.billing.config.ts"
+                : "playwright.portal.config.ts",
+            ]
+          : []),
       ]);
     } else {
       if (mode === "dev") {
@@ -328,9 +364,11 @@ try {
         children.push(web);
       }
       console.log(
-        portal
-          ? "Press Ctrl+C to stop. Customer data persists; mise run portal:destroy removes this checkout's demo database."
-          : "Press Ctrl+C to stop. Imports persist; mise run demo:destroy removes this checkout's database.",
+        sandboxMode
+          ? "Press Ctrl+C to stop. Sandbox data persists for this run directory."
+          : portal
+            ? "Press Ctrl+C to stop. Customer data persists; mise run portal:destroy removes this checkout's demo database."
+            : "Press Ctrl+C to stop. Imports persist; mise run demo:destroy removes this checkout's database.",
       );
       await Promise.race([
         new Promise<void>((done) => {

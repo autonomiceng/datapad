@@ -35,8 +35,8 @@ interface StoredInvoice {
 const terminal = (status: string | null) =>
   status === "paid" || status === "void";
 const delays = [5000, 30000, 120000, 600000];
-function review(reason: ReviewReason): never {
-  throw new BillingProviderError("review", reason);
+function review(reason: ReviewReason, receiptMismatch = false): never {
+  throw new BillingProviderError("review", reason, receiptMismatch);
 }
 
 export function createLifecycle(
@@ -102,6 +102,7 @@ export function createLifecycle(
       invoiceId: record.invoice.id,
       customerId: record.customer.id,
       providerCustomerId: record.customer.providerCustomerId,
+      recipientName: record.customer.name,
       issueDate: record.invoice.issueDate,
       dueDate: record.invoice.dueDate,
       currency: "USD",
@@ -125,7 +126,7 @@ export function createLifecycle(
       (expected.providerLineId !== null &&
         line.providerLineId !== expected.providerLineId)
     )
-      review("invoice_mismatch");
+      review("invoice_mismatch", true);
   }
   function verify(
     record: StoredInvoice,
@@ -144,8 +145,10 @@ export function createLifecycle(
       (record.invoice.providerInvoiceId &&
         snapshot.providerInvoiceId !== record.invoice.providerInvoiceId)
     )
-      review("ownership_mismatch");
+      review("ownership_mismatch", true);
     if (
+      snapshot.recipientName !== expected.recipientName ||
+      snapshot.recipientEmail !== `${expected.customerId}@billing.test` ||
       snapshot.currency !== "USD" ||
       snapshot.issueDate !== expected.issueDate ||
       snapshot.dueDate !== expected.dueDate ||
@@ -155,7 +158,7 @@ export function createLifecycle(
         snapshot.status,
       )
     )
-      review("invoice_mismatch");
+      review("invoice_mismatch", true);
     const ids = new Set<string>();
     const providerIds = new Set<string>();
     for (const line of snapshot.lines) {
@@ -167,7 +170,7 @@ export function createLifecycle(
         ids.has(line.lineId) ||
         providerIds.has(line.providerLineId)
       )
-        review("invoice_mismatch");
+        review("invoice_mismatch", true);
       verifyLine(line, expectedLine);
       ids.add(line.lineId);
       providerIds.add(line.providerLineId);
@@ -179,18 +182,18 @@ export function createLifecycle(
         (ids.size !== record.lines.length ||
           snapshot.totalMinor !== expected.totalMinor))
     )
-      review("invoice_mismatch");
+      review("invoice_mismatch", true);
     if (
       snapshot.hostedInvoiceUrl !== null &&
       !snapshot.hostedInvoiceUrl.startsWith("https://invoice.stripe.com/")
     )
-      review("invoice_mismatch");
+      review("invoice_mismatch", true);
     if (
       snapshot.status !== "draft" &&
       (!snapshot.finalizedAt ||
         !Number.isFinite(Date.parse(snapshot.finalizedAt)))
     )
-      review("invoice_mismatch");
+      review("invoice_mismatch", true);
   }
   async function project(
     connection: NodePgDatabase,
@@ -205,41 +208,41 @@ export function createLifecycle(
       (previous === "uncollectible" &&
         ["draft", "open"].includes(snapshot.status)) ||
       (previous === "open" && snapshot.status === "draft");
+    if (regress) review("provider_conflict", true);
     await connection.transaction(async (tx) => {
-      if (!regress) {
+      await tx
+        .update(invoices)
+        .set({
+          providerInvoiceId: snapshot.providerInvoiceId,
+          providerReceiptState: "verified",
+          providerStatus: snapshot.status,
+          state:
+            snapshot.status === "draft" &&
+            record.invoice.state === "needs_review"
+              ? "needs_review"
+              : snapshot.status,
+          hostedInvoiceUrl: snapshot.hostedInvoiceUrl,
+          issuedAt: snapshot.finalizedAt,
+          lastCheckedAt: at(),
+          reviewReason:
+            snapshot.status === "draft" ? record.invoice.reviewReason : null,
+          attempts: snapshot.status === "draft" ? record.invoice.attempts : 0,
+          nextAttemptAt:
+            snapshot.status === "draft" ? record.invoice.nextAttemptAt : null,
+        })
+        .where(scope(record.invoice.id));
+      for (const line of snapshot.lines)
         await tx
-          .update(invoices)
-          .set({
-            providerInvoiceId: snapshot.providerInvoiceId,
-            providerStatus: snapshot.status,
-            state:
-              snapshot.status === "draft" &&
-              record.invoice.state === "needs_review"
-                ? "needs_review"
-                : snapshot.status,
-            hostedInvoiceUrl: snapshot.hostedInvoiceUrl,
-            issuedAt: snapshot.finalizedAt,
-            lastCheckedAt: at(),
-            reviewReason:
-              snapshot.status === "draft" ? record.invoice.reviewReason : null,
-            attempts: snapshot.status === "draft" ? record.invoice.attempts : 0,
-            nextAttemptAt:
-              snapshot.status === "draft" ? record.invoice.nextAttemptAt : null,
-          })
-          .where(scope(record.invoice.id));
-        for (const line of snapshot.lines)
-          await tx
-            .update(invoiceLines)
-            .set({ providerLineId: line.providerLineId })
-            .where(eq(invoiceLines.id, line.lineId));
-      }
+          .update(invoiceLines)
+          .set({ providerLineId: line.providerLineId })
+          .where(eq(invoiceLines.id, line.lineId));
       if (eventId)
         await tx
           .update(stripeEvents)
           .set({
             processedAt: at(),
             nextAttemptAt: null,
-            lastError: regress ? "provider_conflict" : null,
+            lastError: null,
           })
           .where(eq(stripeEvents.eventId, eventId));
     });
@@ -280,7 +283,28 @@ export function createLifecycle(
           })
           .where(eq(stripeEvents.eventId, eventId));
       if (
+        definitive &&
+        (error.receiptMismatch || !terminal(record.invoice.providerStatus))
+      ) {
+        await tx
+          .update(invoices)
+          .set({
+            ...(error.receiptMismatch
+              ? { providerReceiptState: "mismatch" as const }
+              : {}),
+            state: terminal(record.invoice.providerStatus)
+              ? record.invoice.state
+              : "needs_review",
+            reviewReason: reason,
+            nextAttemptAt: null,
+            ...(eventId ? {} : { attempts }),
+          })
+          .where(scope(record.invoice.id));
+      } else if (
         !eventOnly &&
+        (record.invoice.providerReceiptState === "unverified" ||
+          (record.invoice.providerReceiptState === "verified" &&
+            record.invoice.providerStatus === "draft")) &&
         !terminal(record.invoice.providerStatus) &&
         (exhausted || !eventId)
       )
@@ -374,6 +398,8 @@ export function createLifecycle(
         .update(invoices)
         .set({ state: "preparing" })
         .where(scope(invoice.id));
+      if (invoice.billToName !== record.customer.name)
+        review("invoice_mismatch");
       await customerReceipt(connection, record);
       const expected = intent(record);
       let snapshot: ProviderInvoice;
@@ -421,7 +447,7 @@ export function createLifecycle(
           line.providerLineId = found.providerLineId;
           continue;
         }
-        if (line.providerLineId) review("invoice_mismatch");
+        if (line.providerLineId) review("invoice_mismatch", true);
         canRetry(line.createAttemptedAt, "uncertain_line");
         await connection
           .update(invoiceLines)
@@ -456,7 +482,7 @@ export function createLifecycle(
           snapshot.providerInvoiceId,
           effectKey("invoice", invoice.id, "finalize"),
         );
-        if (snapshot.status === "draft") review("provider_conflict");
+        if (snapshot.status === "draft") review("provider_conflict", true);
       }
       await project(connection, record, snapshot);
       return "complete";
@@ -477,7 +503,7 @@ export function createLifecycle(
         providerId,
       );
       if (snapshot.providerInvoiceId !== providerId)
-        review("ownership_mismatch");
+        review("ownership_mismatch", true);
       await project(connection, record, snapshot, eventId);
       return "complete";
     } catch (error) {
@@ -485,7 +511,8 @@ export function createLifecycle(
         eventId &&
         error instanceof BillingProviderError &&
         error.kind === "review" &&
-        error.reason === "ownership_mismatch"
+        error.reason === "ownership_mismatch" &&
+        record.invoice.providerInvoiceId !== providerId
       ) {
         await connection
           .update(stripeEvents)

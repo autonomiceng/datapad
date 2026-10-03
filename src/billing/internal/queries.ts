@@ -1,8 +1,22 @@
-import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Value } from "@sinclair/typebox/value";
 import { BillingPaginationSchema, type InvoiceRequest } from "../contract";
-import type { BillingReader, BillingReaderOptions } from "../types";
+import type {
+  BillingReader,
+  BillingReaderOptions,
+  SyntheticInvoicePolicy,
+} from "../types";
 import {
   billingCustomers,
   invoiceLines,
@@ -75,6 +89,7 @@ export function createReader({
       .select({
         ...selection,
         hostedInvoiceUrl: invoices.hostedInvoiceUrl,
+        receiptState: invoices.providerReceiptState,
         billTo: {
           legalName: invoices.billToName,
           billingEmail: invoices.billToEmail,
@@ -102,15 +117,23 @@ export function createReader({
     const visible = ["open", "paid", "void", "uncollectible"].includes(
       row.state,
     );
+    const { receiptState, ...detail } = row;
     const url = row.hostedInvoiceUrl;
     return {
       invoice: {
-        ...row,
+        ...detail,
+        providerReceipt: {
+          state: receiptState,
+          reason: receiptState === "mismatch" ? row.reviewReason : null,
+        },
         lastCheckedAt: instant(row.lastCheckedAt),
         issuedAt: instant(row.issuedAt),
         lines,
         hostedInvoiceUrl:
-          visible && url && url.startsWith("https://invoice.stripe.com/")
+          receiptState === "verified" &&
+          visible &&
+          url &&
+          url.startsWith("https://invoice.stripe.com/")
             ? url
             : null,
       },
@@ -121,6 +144,79 @@ export function createReader({
       throw new RangeError("Invalid customer scope");
     return ids.length ? inArray(billingCustomers.customerId, ids) : sql`false`;
   };
+  async function assertSyntheticPolicy(
+    allowRequest: SyntheticInvoicePolicy,
+    accountId?: string,
+  ) {
+    const fail = () => {
+      throw new Error("Billing data is outside the reviewed synthetic dataset");
+    };
+    const customers = await db.select().from(billingCustomers);
+    const rows = await db.select().from(invoices);
+    const lines = await db
+      .select()
+      .from(invoiceLines)
+      .orderBy(asc(invoiceLines.position));
+    const events = await db.select().from(stripeEvents);
+    if (
+      customers.some(
+        (customer) =>
+          customer.deploymentKey !== deploymentKey ||
+          customer.providerAccountId !== accountId ||
+          !rows.some(
+            (row) =>
+              row.billingCustomerId === customer.id &&
+              row.requestCustomerName === customer.name,
+          ),
+      )
+    )
+      fail();
+    for (const row of rows) {
+      const customer = customers.find(
+        (value) => value.id === row.billingCustomerId,
+      );
+      if (!customer || row.deploymentKey !== deploymentKey) return fail();
+      const request: InvoiceRequest = {
+        originKey: row.originKey,
+        customer: { key: customer.key, name: row.requestCustomerName },
+        issueDate: row.issueDate,
+        dueDate: row.dueDate,
+        currency: row.currency,
+        lines: lines
+          .filter((line) => line.invoiceId === row.id)
+          .map((line) => ({
+            description: line.description,
+            amountMinor: line.amountMinor,
+            originRef: line.originRef,
+          })),
+      };
+      if (
+        !validateRequest(request) ||
+        requestDigest(request) !== row.requestDigest ||
+        !allowRequest({
+          request,
+          customerId: customer.customerId,
+          billTo: {
+            legalName: row.billToName,
+            billingEmail: row.billToEmail,
+            profileVersion: row.billToProfileVersion,
+          },
+        }) ||
+        request.lines.reduce((sum, line) => sum + line.amountMinor, 0) !==
+          row.totalMinor
+      )
+        fail();
+    }
+    if (
+      events.some(
+        (event) =>
+          event.deploymentKey !== deploymentKey ||
+          event.providerAccountId !== accountId ||
+          !rows.some((row) => row.id === event.invoiceId),
+      )
+    )
+      fail();
+  }
   return {
     listInvoices,
     getInvoice,
@@ -153,83 +249,88 @@ export function createReader({
         ? "unchanged"
         : "pending";
     },
+    assertSyntheticPolicy,
     async assertSyntheticData(
-      allowedRequests: InvoiceRequest[],
-      accountId?: string,
+      allowedRequests,
+      accountId,
       allowedBillTo = allowedRequests.map((request) => ({
         legalName: request.customer.name,
         billingEmail: null as string | null,
       })),
     ) {
-      const fail = () => {
-        throw new Error(
-          "Billing data is outside the reviewed synthetic dataset",
-        );
-      };
       const allowed = new Set(
         allowedRequests.map((request) => {
-          if (!validateRequest(request)) return fail();
+          if (!validateRequest(request))
+            throw new Error("Invalid synthetic invoice request");
           return requestDigest(request);
         }),
       );
-      const customers = await db.select().from(billingCustomers);
-      const rows = await db.select().from(invoices);
-      const lines = await db
-        .select()
-        .from(invoiceLines)
-        .orderBy(asc(invoiceLines.position));
-      const events = await db.select().from(stripeEvents);
-      if (
-        customers.some(
-          (customer) =>
-            customer.deploymentKey !== deploymentKey ||
-            customer.providerAccountId !== accountId ||
-            !rows.some((row) => row.billingCustomerId === customer.id),
-        )
-      )
-        fail();
-      for (const row of rows) {
-        const customer = customers.find(
-          (value) => value.id === row.billingCustomerId,
-        );
-        if (!customer || row.deploymentKey !== deploymentKey) return fail();
-        const request: InvoiceRequest = {
-          originKey: row.originKey,
-          customer: { key: customer.key, name: row.requestCustomerName },
-          issueDate: row.issueDate,
-          dueDate: row.dueDate,
-          currency: row.currency,
-          lines: lines
-            .filter((line) => line.invoiceId === row.id)
-            .map((line) => ({
-              description: line.description,
-              amountMinor: line.amountMinor,
-              originRef: line.originRef,
-            })),
-        };
-        if (
-          !allowedBillTo.some(
+      return assertSyntheticPolicy(
+        ({ request, billTo }) =>
+          allowed.has(requestDigest(request)) &&
+          allowedBillTo.some(
             (profile) =>
-              profile.legalName === row.billToName &&
-              profile.billingEmail === row.billToEmail,
-          ) ||
-          !validateRequest(request) ||
-          requestDigest(request) !== row.requestDigest ||
-          !allowed.has(row.requestDigest) ||
-          request.lines.reduce((sum, line) => sum + line.amountMinor, 0) !==
-            row.totalMinor
-        )
-          fail();
-      }
+              profile.legalName === billTo.legalName &&
+              profile.billingEmail === billTo.billingEmail,
+          ),
+        accountId,
+      );
+    },
+    async reconciliationPage({
+      limit = 100,
+      after = null,
+      through = null,
+    } = {}) {
+      const validCursor = (cursor: NonNullable<typeof after>) =>
+        isUuid(cursor.invoiceId) &&
+        /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}(?::?\d{2})?)$/.test(
+          cursor.createdAt,
+        ) &&
+        Number.isFinite(Date.parse(cursor.createdAt));
       if (
-        events.some(
-          (event) =>
-            event.deploymentKey !== deploymentKey ||
-            event.providerAccountId !== accountId ||
-            !rows.some((row) => row.id === event.invoiceId),
-        )
+        !Number.isInteger(limit) ||
+        limit < 1 ||
+        limit > 100 ||
+        (after && !validCursor(after)) ||
+        (through && !validCursor(through)) ||
+        (after && !through)
       )
-        fail();
+        throw new RangeError("Invalid reconciliation cursor");
+      const selection = {
+        createdAt: invoices.createdAt,
+        invoiceId: invoices.id,
+      };
+      const eligible = and(scope, isNotNull(invoices.providerInvoiceId));
+      if (!through) {
+        const [last] = await db
+          .select(selection)
+          .from(invoices)
+          .where(eligible)
+          .orderBy(desc(invoices.createdAt), desc(invoices.id))
+          .limit(1);
+        through = last ?? null;
+      }
+      if (!through) return { invoiceIds: [], next: null, through: null };
+      const rows = await db
+        .select(selection)
+        .from(invoices)
+        .where(
+          and(
+            eligible,
+            sql`(${invoices.createdAt},${invoices.id}) <= (${through.createdAt}::timestamptz,${through.invoiceId}::uuid)`,
+            after
+              ? sql`(${invoices.createdAt},${invoices.id}) > (${after.createdAt}::timestamptz,${after.invoiceId}::uuid)`
+              : undefined,
+          ),
+        )
+        .orderBy(asc(invoices.createdAt), asc(invoices.id))
+        .limit(limit + 1);
+      const page = rows.slice(0, limit);
+      return {
+        invoiceIds: page.map((row) => row.invoiceId),
+        next: rows.length > limit ? page[page.length - 1] : null,
+        through,
+      };
     },
   };
 }

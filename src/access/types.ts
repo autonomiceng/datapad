@@ -33,7 +33,8 @@ export type CustomerCapability =
   | "manage_services"
   | "read_members"
   | "manage_members"
-  | "read_billing";
+  | "read_billing"
+  | "manage_billing";
 export type CustomerReadScope =
   | { kind: "staff"; roles: StaffRole[]; organizationIds: string[] }
   | { kind: "memberships"; organizationIds: string[] };
@@ -76,6 +77,14 @@ export type AuditEntry = AuditEntryIdentity &
     | {
         action: "service.component_preference.updated";
         changedFields: Array<"requestedSetting">;
+      }
+    | {
+        action: "invoice.prepared";
+        changedFields: Array<"billTo" | "lines" | "issueDate" | "dueDate">;
+      }
+    | {
+        action: "invoice.issue_requested";
+        changedFields: Array<"issueRequestedAt">;
       }
     | {
         action: "service.addon.attached";

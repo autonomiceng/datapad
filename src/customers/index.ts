@@ -47,6 +47,15 @@ export function createCustomers(options: CustomersOptions): Customers {
     };
   }
   return {
+    async readProfile(tx, id) {
+      const [row] = await tx
+        .select()
+        .from(customers)
+        .where(eq(customers.id, id));
+      return row
+        ? { customerId: row.id, profile: profileOf(row), version: row.version }
+        : null;
+    },
     async billingScope(actor) {
       const scope = await options.access.readScope(actor);
       if (!scope.ok) return scope;
