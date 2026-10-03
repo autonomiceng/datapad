@@ -75,6 +75,7 @@ test("account migration preserves provider identities and invoice history while 
     );
     const historical = original.rows[0].invoice;
     historical.billing_customer_id = historical.customer_id;
+    historical.provider_receipt_state = "unverified";
     delete historical.customer_id;
     expect(after.rows).toEqual([{ invoice: historical }]);
     const customer = await pool.query(
@@ -95,6 +96,11 @@ test("account migration preserves provider identities and invoice history while 
       deploymentKey: "migration-test",
     });
     const detail = await reader.getInvoiceForCustomers([customerId], invoiceId);
+    expect(detail?.invoice.providerReceipt).toEqual({
+      state: "unverified",
+      reason: null,
+    });
+    expect(detail?.invoice.hostedInvoiceUrl).toBeNull();
     expect(detail?.invoice.customer).toEqual({
       id: customerId,
       name: "Elm Studio",

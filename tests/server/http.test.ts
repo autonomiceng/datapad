@@ -184,6 +184,17 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
       { type: "null" },
     ],
   });
+  const invoiceProperties =
+    contract.paths["/api/billing/invoices/{invoiceId}"].get.responses["200"]
+      .content["application/json"].schema.properties.invoice.properties;
+  for (const nullable of [
+    invoiceProperties.providerStatus,
+    invoiceProperties.reviewReason,
+    invoiceProperties.providerReceipt.properties.reason,
+  ]) {
+    expect(nullable.anyOf).toContainEqual({ type: "null" });
+    expect(nullable.enum).toBeUndefined();
+  }
   const live = await app.handle(request("/api/openapi/json"));
   expect(live.status).toBe(200);
   expect(live.headers.get("cache-control")).toBe("no-store");
@@ -214,6 +225,11 @@ test("offline OpenAPI describes the actual read operations, errors and stable ID
     "/api/customers/{customerId}/services/{serviceId}",
     "/api/customers/{customerId}/services/{serviceId}/components/{componentId}/preference",
     "/api/customers/{customerId}/addons/{addonId}/attach",
+    "/api/customers/{customerId}/invoice-options",
+    "/api/customers/{customerId}/invoices",
+    "/api/customers/{customerId}/invoices/{invoiceId}/preparation",
+    "/api/customers/{customerId}/invoices/{invoiceId}/issue",
+    "/api/customers/{customerId}/invoices/{invoiceId}/check",
   ]);
   expect(contract.paths[billingPaths[0]].get.operationId).toBe("listInvoices");
   expect(contract.paths[billingPaths[1]].get.operationId).toBe("getInvoice");

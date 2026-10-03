@@ -113,15 +113,31 @@ export function readPortalConfiguration() {
     throw new Error(
       "Portal demo requires an explicit origin and loopback mail sink.",
     );
-  if (
-    Object.keys(process.env).some(
-      (key) =>
-        (key.startsWith("STRIPE_") || key.startsWith("BILLING_")) &&
-        process.env[key],
+  const billingEnabled = process.env.PORTAL_BILLING_SANDBOX === "true";
+  const providerConfigurationPresent = Object.keys(process.env).some(
+    (key) =>
+      (key.startsWith("STRIPE_") || key.startsWith("BILLING_")) &&
+      process.env[key],
+  );
+  if (!billingEnabled && providerConfigurationPresent)
+    throw new Error("Portal billing requires explicit sandbox composition.");
+  let billing:
+    | { deploymentKey: string; apiKey: string; signingSecret: string }
+    | undefined;
+  if (billingEnabled) {
+    const deploymentKey = process.env.BILLING_DEPLOYMENT_KEY;
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    const signingSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (
+      !deploymentKey ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        deploymentKey,
+      ) ||
+      !apiKey?.startsWith("sk_test_") ||
+      !signingSecret?.startsWith("whsec_")
     )
-  )
-    throw new Error(
-      "Portal account demo cannot load payment-provider configuration.",
-    );
-  return { origin, secret, smtp, inbox };
+      throw new Error("Incomplete or invalid portal sandbox configuration.");
+    billing = { deploymentKey, apiKey, signingSecret };
+  }
+  return { origin, secret, smtp, inbox, billing };
 }

@@ -55,12 +55,24 @@ export const InvoiceSummarySchema = object({
   currency: Type.Literal("USD"),
   totalMinor: Type.Integer({ minimum: 50, maximum: 99999999 }),
   state: InvoiceStateSchema,
-  providerStatus: Type.Union([ProviderInvoiceStatusSchema, Type.Null()]),
-  reviewReason: Type.Union([ReviewReasonSchema, Type.Null()]),
+  providerStatus: Type.Union([
+    ...ProviderInvoiceStatusSchema.anyOf,
+    Type.Null(),
+  ]),
+  reviewReason: Type.Union([...ReviewReasonSchema.anyOf, Type.Null()]),
   lastCheckedAt: Type.Union([instant, Type.Null()]),
   issuedAt: Type.Union([instant, Type.Null()]),
 });
+export const ProviderReceiptStateSchema = Type.Union([
+  Type.Literal("unverified"),
+  Type.Literal("verified"),
+  Type.Literal("mismatch"),
+]);
 export const InvoiceDetailSchema = object({
+  providerReceipt: object({
+    state: ProviderReceiptStateSchema,
+    reason: Type.Union([...ReviewReasonSchema.anyOf, Type.Null()]),
+  }),
   ...InvoiceSummarySchema.properties,
   billTo: object({
     legalName: label,
@@ -115,3 +127,52 @@ export type InvoiceDetail = Static<typeof InvoiceDetailSchema>;
 export type BillingPagination = Static<typeof BillingPaginationSchema>;
 export type InvoicesResponse = Static<typeof InvoicesResponseSchema>;
 export type InvoiceResponse = Static<typeof InvoiceResponseSchema>;
+
+export const PrepareInvoiceRequestSchema = object({
+  requestId: id,
+  expectedCustomerVersion: Type.Integer({ minimum: 1, maximum: 2147483647 }),
+  dueDate: date,
+  currency: Type.Literal("USD"),
+  lines: Type.Array(object({ description: label, amountMinor: amount }), {
+    minItems: 1,
+    maxItems: 100,
+  }),
+});
+export const InvoicePreparationResponseSchema = object({
+  ...InvoiceResponseSchema.properties,
+  issueBlocker: Type.Union([
+    Type.Null(),
+    Type.Literal("past_due"),
+    Type.Literal("provider_profile_pending"),
+    Type.Literal("needs_review"),
+    Type.Literal("already_issued"),
+  ]),
+});
+export const PrepareInvoiceResponseSchema = object({
+  ...InvoicePreparationResponseSchema.properties,
+  outcome: Type.Union([Type.Literal("created"), Type.Literal("unchanged")]),
+});
+export const ConfirmIssueResponseSchema = object({
+  outcome: Type.Union([Type.Literal("accepted"), Type.Literal("unchanged")]),
+  invoiceId: id,
+});
+export type ProviderReceiptState = Static<typeof ProviderReceiptStateSchema>;
+export type PrepareInvoiceRequest = Static<typeof PrepareInvoiceRequestSchema>;
+export type InvoicePreparationResponse = Static<
+  typeof InvoicePreparationResponseSchema
+>;
+export type PrepareInvoiceResponse = Static<
+  typeof PrepareInvoiceResponseSchema
+>;
+export type ConfirmIssueResponse = Static<typeof ConfirmIssueResponseSchema>;
+export const InvoicePreparationOptionsResponseSchema = object({
+  available: Type.Boolean(),
+  lines: Type.Array(object({ description: label, amountMinor: amount }), {
+    maxItems: 100,
+  }),
+  issueDate: date,
+  dueDate: date,
+});
+export type InvoicePreparationOptionsResponse = Static<
+  typeof InvoicePreparationOptionsResponseSchema
+>;

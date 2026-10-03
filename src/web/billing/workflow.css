@@ -1,0 +1,66 @@
+.invoice-prepare-form {
+  gap: 20px;
+  overflow-wrap: anywhere;
+}
+.invoice-due-date {
+  display: grid;
+  gap: 4px;
+}
+.invoice-prepare-form .invoice-due-date label {
+  max-width: 220px;
+}
+.invoice-prepare-form .invoice-choices {
+  gap: 0;
+}
+.invoice-choices legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+}
+.invoice-prepare-form .invoice-choice {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  max-width: none;
+  min-height: 44px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+  cursor: pointer;
+}
+.invoice-choices:disabled .invoice-choice {
+  cursor: default;
+}
+.invoice-choice input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.invoice-choice-amount,
+.invoice-choice-total {
+  font-variant-numeric: tabular-nums;
+}
+.invoice-choice-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 10px;
+  font-weight: 600;
+}
+.invoice-workflow {
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.invoice-workflow [role="alert"] {
+  color: var(--danger);
+}
+.invoice-workflow > button {
+  justify-self: start;
+}
+.invoice-workflow a {
+  text-decoration: none;
+}

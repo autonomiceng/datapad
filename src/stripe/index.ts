@@ -43,7 +43,8 @@ const invoiceEvents = new Set([
 ]);
 const review = (
   reason: "ownership_mismatch" | "invoice_mismatch" | "provider_conflict",
-) => new BillingProviderError("review", reason);
+  receiptMismatch = false,
+) => new BillingProviderError("review", reason, receiptMismatch);
 const objectId = (value: string | { id: string } | null) =>
   typeof value === "string" ? value : value?.id;
 const dueSeconds = (intent: InvoiceIntent) =>
@@ -130,12 +131,13 @@ export async function createStripeBillingProvider(
   function checkMetadata(
     actual: Stripe.Metadata | null,
     expected: Stripe.MetadataParam,
+    receiptMismatch = false,
   ) {
     if (
       !actual ||
       Object.entries(expected).some(([key, value]) => actual[key] !== value)
     ) {
-      throw review("ownership_mismatch");
+      throw review("ownership_mismatch", receiptMismatch);
     }
   }
   function customerSnapshot(
@@ -205,9 +207,9 @@ export async function createStripeBillingProvider(
       value.parent.invoice_item_details?.subscription ||
       !value.parent.invoice_item_details?.invoice_item
     ) {
-      throw review("invoice_mismatch");
+      throw review("invoice_mismatch", true);
     }
-    checkMetadata(value.metadata, metadata(intent, expected));
+    checkMetadata(value.metadata, metadata(intent, expected), true);
     return {
       lineId: value.metadata[metadataKeys.line],
       position: Number(value.metadata[metadataKeys.position]),
@@ -221,7 +223,7 @@ export async function createStripeBillingProvider(
     intent: InvoiceIntent,
     value: Stripe.Invoice,
   ): Promise<ProviderInvoice> {
-    checkMetadata(value.metadata, metadata(intent));
+    checkMetadata(value.metadata, metadata(intent), true);
     if (
       value.livemode ||
       objectId(value.customer) !== intent.providerCustomerId ||
@@ -240,7 +242,7 @@ export async function createStripeBillingProvider(
       !value.status ||
       !["draft", "open", "paid", "void", "uncollectible"].includes(value.status)
     )
-      throw review("invoice_mismatch");
+      throw review("invoice_mismatch", true);
     const actualLines = await pages((cursor) =>
       stripe.invoices.listLineItems(value.id, {
         limit: 100,
@@ -261,7 +263,7 @@ export async function createStripeBillingProvider(
         (lines.length !== intent.lines.length ||
           value.total !== intent.totalMinor))
     ) {
-      throw review("invoice_mismatch");
+      throw review("invoice_mismatch", true);
     }
     let hostedInvoiceUrl = value.hosted_invoice_url;
     if (hostedInvoiceUrl) {
@@ -269,7 +271,7 @@ export async function createStripeBillingProvider(
       try {
         url = new URL(hostedInvoiceUrl);
       } catch {
-        throw review("invoice_mismatch");
+        throw review("invoice_mismatch", true);
       }
       if (
         url.protocol !== "https:" ||
@@ -279,7 +281,7 @@ export async function createStripeBillingProvider(
         url.port ||
         hostedInvoiceUrl.length > 2048
       )
-        throw review("invoice_mismatch");
+        throw review("invoice_mismatch", true);
     } else hostedInvoiceUrl = null;
     function invoiceStatus(raw: string): ProviderInvoiceStatus {
       switch (raw) {
@@ -294,19 +296,21 @@ export async function createStripeBillingProvider(
         case "uncollectible":
           return "uncollectible";
         default:
-          throw review("invoice_mismatch");
+          throw review("invoice_mismatch", true);
       }
     }
     const status = invoiceStatus(value.status);
     const finalized = value.status_transitions.finalized_at;
     if (value.status !== "draft" && !finalized)
-      throw review("invoice_mismatch");
+      throw review("invoice_mismatch", true);
     return {
       deploymentKey: intent.deploymentKey,
       accountId: intent.accountId,
       invoiceId: value.metadata![metadataKeys.invoice],
       customerId: value.metadata![metadataKeys.customer],
       providerCustomerId: objectId(value.customer)!,
+      recipientName: value.customer_name,
+      recipientEmail: value.customer_email,
       issueDate: value.metadata![metadataKeys.issueDate],
       dueDate: value.metadata![metadataKeys.dueDate],
       currency: "USD",
@@ -415,7 +419,7 @@ export async function createStripeBillingProvider(
       safe(async () => {
         checkIntent(intent);
         const value = await stripe.invoices.retrieve(invoiceId);
-        if (value.id !== invoiceId) throw review("ownership_mismatch");
+        if (value.id !== invoiceId) throw review("ownership_mismatch", true);
         return invoiceSnapshot(intent, value);
       }),
     addLine: (intent, invoiceId, line, effect) =>
@@ -452,7 +456,7 @@ export async function createStripeBillingProvider(
           },
           { idempotencyKey: effect.idempotencyKey },
         );
-        checkMetadata(value.metadata, metadata(intent, line));
+        checkMetadata(value.metadata, metadata(intent, line), true);
         if (
           value.livemode ||
           objectId(value.invoice) !== invoiceId ||
@@ -463,7 +467,7 @@ export async function createStripeBillingProvider(
           value.discounts?.length ||
           value.proration
         )
-          throw review("invoice_mismatch");
+          throw review("invoice_mismatch", true);
         return {
           lineId: value.metadata![metadataKeys.line],
           position: Number(value.metadata![metadataKeys.position]),
@@ -482,9 +486,11 @@ export async function createStripeBillingProvider(
         );
         if (
           current.lines.length !== intent.lines.length ||
-          current.totalMinor !== intent.totalMinor
+          current.totalMinor !== intent.totalMinor ||
+          current.recipientName !== intent.recipientName ||
+          current.recipientEmail !== `${intent.customerId}@billing.test`
         )
-          throw review("invoice_mismatch");
+          throw review("invoice_mismatch", true);
         if (current.status !== "draft") return current;
         return invoiceSnapshot(
           intent,

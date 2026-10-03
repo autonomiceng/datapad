@@ -14,6 +14,7 @@ import {
 import { createServices, assertSyntheticServices } from "../services";
 import { portalServicePolicy } from "./portal-services";
 import { createBillingReader } from "../billing";
+import { createPortalBilling } from "./portal-billing";
 import type { BillingHttp } from "./billing-routes";
 import {
   allowPortalProfile,
@@ -93,7 +94,7 @@ export async function createPortalRuntime(pool: Pool) {
   });
   const reader = createBillingReader({
     pool,
-    deploymentKey: portalDeploymentKey,
+    deploymentKey: configuration.billing?.deploymentKey ?? portalDeploymentKey,
   });
   customers = createCustomers({
     pool,
@@ -117,9 +118,18 @@ export async function createPortalRuntime(pool: Pool) {
     allowRecord: servicePolicy.allowRecord,
     providerLinks: {},
   });
-  await reader.assertSyntheticData([]);
+  const portalBilling = await createPortalBilling({
+    pool,
+    reader,
+    customers,
+    access,
+    configuration: configuration.billing,
+    customerIds: { elm: elm.customerId, birch: birch.customerId },
+    origin: configuration.origin,
+  });
   const billing: BillingHttp = {
     reader,
+    webhook: portalBilling.webhook,
     async authorizeRead(headers) {
       const actor = await access.resolveActor(headers);
       if (!actor) return { ok: false, code: "unauthenticated" };
@@ -137,6 +147,8 @@ export async function createPortalRuntime(pool: Pool) {
     },
   };
   return {
+    invoiceWorkflow: portalBilling.http,
+    commands: portalBilling.commands,
     services: { services, access, origin: configuration.origin },
     billing,
     accounts: {

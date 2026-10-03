@@ -8,6 +8,7 @@ import {
   Navigate,
   Outlet,
 } from "@tanstack/react-router";
+import { StaffInvoicePage } from "./billing/workflow";
 import { Invoices } from "./billing/invoices";
 import { ImportReview } from "./import-review/viewer";
 import { useSession } from "./accounts/api";
@@ -144,6 +145,22 @@ const serviceRoute = createRoute({
     );
   },
 });
+const prepareInvoiceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/invoices/new",
+  component: () => {
+    const { customerId } = prepareInvoiceRoute.useParams();
+    return <StaffInvoicePage customerId={customerId} />;
+  },
+});
+const reviewInvoiceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId/invoices/$invoiceId/review",
+  component: () => {
+    const { customerId, invoiceId } = reviewInvoiceRoute.useParams();
+    return <StaffInvoicePage customerId={customerId} invoiceId={invoiceId} />;
+  },
+});
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     entryRoute,
@@ -155,6 +172,8 @@ export const router = createRouter({
     invitationRoute,
     servicesRoute,
     serviceRoute,
+    prepareInvoiceRoute,
+    reviewInvoiceRoute,
   ]),
 });
 declare module "@tanstack/react-router" {

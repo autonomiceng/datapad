@@ -20,7 +20,7 @@ depends = ["check", "test"]
 [tasks."format:check"]
 description = "Check repository documentation and tooling configuration without rewriting them"
 depends = ["deps:install"]
-run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts playwright.portal.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
+run = "./node_modules/.bin/vp fmt --config vite.config.ts --check '*.md' '.github/**/*.{md,yml}' 'changes/**/*.md' '.coderabbit.yaml' 'compose.yaml' package.json tsconfig.json .dependency-cruiser.cjs vite.config.ts drizzle.config.ts playwright.config.ts playwright.portal.config.ts playwright.billing.config.ts 'index.html' 'src/**/*.{ts,tsx,css}' 'scripts/**/*.ts' 'tests/**/*.ts' 'docs/**/*.md' 'fixtures/**/*.json'"
 
 [tasks."deps:install"]
 description = "Install pinned project tools from the frozen Bun lockfile"
@@ -169,3 +169,13 @@ run = "bun scripts/local.ts billing"
 description = "Reconcile the approved synthetic invoice using explicit sandbox runtime configuration"
 depends = ["deps:install"]
 run = "bun scripts/billing-operator.ts refresh"
+
+[tasks."portal:billing"]
+description = "Run the authenticated portal with explicitly configured Stripe sandbox invoices"
+depends = ["build"]
+run = "bun scripts/local.ts portal-billing"
+
+[tasks."test:portal:billing"]
+description = "Verify portal issue, hosted invoice and test payment reconciliation with explicit Stripe sandbox configuration"
+depends = ["build", "browser:install"]
+run = "bun scripts/local.ts portal-billing-test"

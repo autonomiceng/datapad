@@ -16,6 +16,7 @@ export interface LineIntent {
   amountMinor: number;
 }
 export interface InvoiceIntent extends ProviderOwnership {
+  recipientName: string;
   invoiceId: string;
   customerId: string;
   providerCustomerId: string;
@@ -34,7 +35,9 @@ export interface ProviderLine extends LineIntent {
   currency: "USD";
 }
 /** Observed data: draft totals may be zero and lines may be a partial set. */
-export interface ProviderInvoice extends InvoiceIntent {
+export interface ProviderInvoice extends Omit<InvoiceIntent, "recipientName"> {
+  recipientName: string | null;
+  recipientEmail: string | null;
   providerInvoiceId: string;
   livemode: false;
   status: ProviderInvoiceStatus;
@@ -66,6 +69,8 @@ export class BillingProviderError extends Error {
   constructor(
     readonly kind: "retryable" | "review",
     readonly reason: ReviewReason,
+    /** True only when an observed invoice or line receipt contradicts its intent. */
+    readonly receiptMismatch = false,
   ) {
     super(reason);
     this.name = "BillingProviderError";

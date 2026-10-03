@@ -42,7 +42,7 @@ module.exports = {
       name: "http-no-sql",
       severity: "error",
       from: {
-        path: "^src/server/(app|billing-routes|account-routes|service-routes|portal-app)\\.ts$",
+        path: "^src/server/(app|billing-routes|account-routes|service-routes|invoice-workflow-routes|portal-app)\\.ts$",
       },
       to: {
         path: "(src/(import-review|billing|access|customers|services)/internal/|src/server/db/|node_modules/(pg|drizzle-orm)/)",

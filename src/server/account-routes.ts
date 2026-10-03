@@ -69,24 +69,25 @@ const paginationQuery = t.Object(
 );
 
 export function accountRoutes({ access, customers, origin }: AccountHttp) {
+  const browserMutation = ({ request }: { request: Request }) => {
+    if (request.method !== "POST" && request.method !== "PATCH") return;
+    if (request.headers.get("origin") !== origin)
+      return status(403, { code: "forbidden" });
+    if (
+      request.headers
+        .get("content-type")
+        ?.split(";")[0]
+        ?.trim()
+        .toLowerCase() !== "application/json"
+    )
+      return status(422, { code: "invalid_request" });
+  };
+
   return new Elysia({ normalize: false })
     .onRequest(({ set }) => {
       set.headers["cache-control"] = "no-store";
     })
     .as("global")
-    .onRequest(({ request }) => {
-      if (request.method !== "POST" && request.method !== "PATCH") return;
-      if (request.headers.get("origin") !== origin)
-        return status(403, { code: "forbidden" });
-      if (
-        request.headers
-          .get("content-type")
-          ?.split(";")[0]
-          ?.trim()
-          .toLowerCase() !== "application/json"
-      )
-        return status(422, { code: "invalid_request" });
-    })
     .onError(({ code }) => {
       if (code === "VALIDATION" || code === "PARSE")
         return status(422, { code: "invalid_request" });
@@ -142,6 +143,7 @@ export function accountRoutes({ access, customers, origin }: AccountHttp) {
         params: customerParams,
         body: UpdateCustomerRequestSchema,
         parse: "json",
+        beforeHandle: browserMutation,
         response: {
           200: UpdateCustomerResponseSchema,
           ...accessErrorResponses,
@@ -194,6 +196,7 @@ export function accountRoutes({ access, customers, origin }: AccountHttp) {
         params: customerParams,
         body: InviteMemberRequestSchema,
         parse: "json",
+        beforeHandle: browserMutation,
         response: { 200: AccessActionResponseSchema, ...accessErrorResponses },
         detail: {
           operationId: "inviteCustomerMember",
@@ -219,6 +222,7 @@ export function accountRoutes({ access, customers, origin }: AccountHttp) {
         ),
         body: RevokeInvitationRequestSchema,
         parse: "json",
+        beforeHandle: browserMutation,
         response: { 200: AccessActionResponseSchema, ...accessErrorResponses },
         detail: {
           operationId: "revokeCustomerInvitation",
@@ -240,6 +244,7 @@ export function accountRoutes({ access, customers, origin }: AccountHttp) {
         params: invitationParams,
         body: AcceptInvitationRequestSchema,
         parse: "json",
+        beforeHandle: browserMutation,
         response: { 200: AccessActionResponseSchema, ...accessErrorResponses },
         detail: {
           operationId: "acceptCustomerInvitation",
@@ -268,6 +273,7 @@ export function accountRoutes({ access, customers, origin }: AccountHttp) {
         ),
         body: RevokeMemberRequestSchema,
         parse: "json",
+        beforeHandle: browserMutation,
         response: { 200: AccessActionResponseSchema, ...accessErrorResponses },
         detail: {
           operationId: "revokeCustomerMember",

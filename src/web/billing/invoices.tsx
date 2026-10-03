@@ -8,6 +8,7 @@ import type {
   InvoiceState,
   ReviewReason,
 } from "../../billing/contract";
+import { useSession } from "../accounts/api";
 import "./invoices.css";
 
 const pageSize = 50;
@@ -40,11 +41,11 @@ const reasons: Record<ReviewReason, string> = {
     "The request or invoice status could not be confirmed with Stripe.",
   retry_exhausted: "Processing stopped after repeated failures.",
 };
-const money = (amountMinor: number, currency: string) =>
+export const money = (amountMinor: number, currency: string) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
     amountMinor / 100,
   );
-const date = (value: string) =>
+export const date = (value: string) =>
   new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -85,9 +86,16 @@ function Status({ state }: { state: InvoiceState }) {
 }
 export function Invoices() {
   const { invoiceId, offset } = useSearch({ from: "/invoices" });
+  const session = useSession();
+  const userId = session.data?.user?.id;
+  const enabled =
+    !session.isPending &&
+    !session.isError &&
+    (session.data === null || Boolean(userId));
   // React Query pauses the interval while the tab is hidden and refetches on return.
   const list = useQuery({
-    queryKey: ["invoices", offset],
+    queryKey: ["invoices", userId, offset],
+    enabled,
     queryFn: () =>
       read<InvoicesResponse>(
         `/api/billing/invoices?limit=${pageSize}&offset=${offset}`,
@@ -95,12 +103,12 @@ export function Invoices() {
     refetchInterval: 5000,
   });
   const detail = useQuery({
-    queryKey: ["invoice", invoiceId],
+    queryKey: ["invoice", userId, invoiceId],
     queryFn: () =>
       read<InvoiceResponse>(
         `/api/billing/invoices/${encodeURIComponent(invoiceId!)}`,
       ),
-    enabled: Boolean(invoiceId),
+    enabled: enabled && Boolean(invoiceId),
     refetchInterval: (query) =>
       query.state.error instanceof InvoiceReadError &&
       [404, 422].includes(query.state.error.status)
@@ -111,6 +119,28 @@ export function Invoices() {
   useEffect(() => {
     detailRef.current?.scrollIntoView({ block: "nearest" });
   }, [invoiceId]);
+  if (session.isPending)
+    return (
+      <p className="panel state-panel" role="status">
+        Checking your session…
+      </p>
+    );
+  if (session.isError)
+    return (
+      <section className="panel state-panel">
+        <h1>Invoices unavailable</h1>
+        <p role="alert">{session.error.message}</p>
+      </section>
+    );
+  if (session.data && !session.data.user)
+    return (
+      <section className="panel state-panel">
+        <h1>Sign in to continue</h1>
+        <a href={`/sign-in?returnTo=${encodeURIComponent(location.href)}`}>
+          Sign in
+        </a>
+      </section>
+    );
   const shown = list.data?.invoices.length ?? 0;
   return (
     <>
@@ -158,6 +188,11 @@ export function Invoices() {
                       Due {date(item.dueDate)}
                     </span>
                     <Status state={item.state} />
+                    {item.reviewReason && (
+                      <span className="invoice-row-warning">
+                        {reasons[item.reviewReason]}
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}
@@ -217,7 +252,23 @@ export function Invoices() {
                   {detail.error.message}
                 </p>
               ))}
-            {detail.data && <Invoice invoice={detail.data.invoice} />}
+            {detail.data && (
+              <>
+                <Invoice invoice={detail.data.invoice} />
+                {session.data?.staffRoles.includes("billing") && (
+                  <Link
+                    className="secondary-button"
+                    to="/customers/$customerId/invoices/$invoiceId/review"
+                    params={{
+                      customerId: detail.data.invoice.customer.id,
+                      invoiceId: detail.data.invoice.id,
+                    }}
+                  >
+                    Review invoice
+                  </Link>
+                )}
+              </>
+            )}
           </section>
         ) : (
           shown > 0 && (
@@ -230,18 +281,19 @@ export function Invoices() {
     </>
   );
 }
-function Invoice({ invoice }: { invoice: InvoiceDetail }) {
+export function Invoice({ invoice }: { invoice: InvoiceDetail }) {
   return (
     <>
       <header className="invoice-header">
-        <h2>{invoice.customer.name}</h2>
+        <h2>{invoice.billTo.legalName}</h2>
         <Status state={invoice.state} />
         <p className="invoice-total">
           {money(invoice.totalMinor, invoice.currency)}{" "}
           <span className="invoice-currency">{invoice.currency}</span>
         </p>
       </header>
-      {invoice.state === "needs_review" ? (
+      {invoice.state === "needs_review" &&
+      invoice.providerReceipt.state !== "mismatch" ? (
         <p className="invoice-review">
           {invoice.reviewReason && `${reasons[invoice.reviewReason]} `}
           Processing is paused until an operator checks it.
@@ -251,9 +303,28 @@ function Invoice({ invoice }: { invoice: InvoiceDetail }) {
           <p className="invoice-note">{notes[invoice.state]}</p>
         )
       )}
+      {invoice.providerReceipt.state === "mismatch" && (
+        <p className="invoice-review" role="alert">
+          {invoice.providerReceipt.reason &&
+            `${reasons[invoice.providerReceipt.reason]} `}
+          The payment link is unavailable until the provider receipt is
+          verified.
+        </p>
+      )}
+      {invoice.providerReceipt.state === "unverified" &&
+        invoice.providerStatus !== null && (
+          <p className="invoice-review" role="alert">
+            The provider receipt has not been verified. The payment link is
+            unavailable.
+          </p>
+        )}
       <dl className="invoice-facts">
         <div>
-          <dt>{invoice.issuedAt ? "Issued at" : "Issue date"}</dt>
+          <dt>Billing contact</dt>
+          <dd>{invoice.billTo.billingEmail ?? "Not recorded"}</dd>
+        </div>
+        <div>
+          <dt>{invoice.issuedAt ? "Issued at" : "Issue date (UTC)"}</dt>
           <dd>
             {invoice.issuedAt
               ? instant(invoice.issuedAt)
@@ -261,7 +332,7 @@ function Invoice({ invoice }: { invoice: InvoiceDetail }) {
           </dd>
         </div>
         <div>
-          <dt>Due date</dt>
+          <dt>Due date (UTC)</dt>
           <dd>{date(invoice.dueDate)}</dd>
         </div>
         <div>
@@ -277,29 +348,30 @@ function Invoice({ invoice }: { invoice: InvoiceDetail }) {
           </dd>
         </div>
       </dl>
-      {invoice.hostedInvoiceUrl && (
-        <div className="invoice-payment">
-          <a
-            className={
-              invoice.state === "open"
-                ? "secondary-button invoice-pay"
-                : "secondary-button"
-            }
-            href={invoice.hostedInvoiceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {invoice.state === "open" ? "Pay invoice" : "View invoice"}
-            <span aria-hidden="true">↗</span>
-            <span className="sr-only"> on Stripe, opens a new tab</span>
-          </a>
-          {invoice.state === "open" && (
-            <p className="invoice-note">
-              Stripe test mode. No real money moves.
-            </p>
-          )}
-        </div>
-      )}
+      {invoice.providerReceipt.state === "verified" &&
+        invoice.hostedInvoiceUrl && (
+          <div className="invoice-payment">
+            <a
+              className={
+                invoice.state === "open"
+                  ? "secondary-button invoice-pay"
+                  : "secondary-button"
+              }
+              href={invoice.hostedInvoiceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {invoice.state === "open" ? "Pay invoice" : "View invoice"}
+              <span aria-hidden="true">↗</span>
+              <span className="sr-only"> on Stripe, opens a new tab</span>
+            </a>
+            {invoice.state === "open" && (
+              <p className="invoice-note">
+                Stripe test mode. No real money moves.
+              </p>
+            )}
+          </div>
+        )}
       <table className="invoice-lines">
         <thead>
           <tr>

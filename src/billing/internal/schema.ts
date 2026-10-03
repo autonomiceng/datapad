@@ -15,6 +15,7 @@ import {
 import type {
   InvoiceState,
   ProviderInvoiceStatus,
+  ProviderReceiptState,
   ReviewReason,
 } from "../contract";
 import { customers } from "../../customers/schema";
@@ -72,6 +73,10 @@ export const invoices = pgTable(
     providerInvoiceId: text("provider_invoice_id"),
     providerStatus: text("provider_status").$type<ProviderInvoiceStatus>(),
     hostedInvoiceUrl: text("hosted_invoice_url"),
+    providerReceiptState: text("provider_receipt_state")
+      .$type<ProviderReceiptState>()
+      .notNull()
+      .default("unverified"),
     issuedAt: instant("issued_at"),
     issueRequestedAt: instant("issue_requested_at"),
     createAttemptedAt: instant("create_attempted_at"),
@@ -114,7 +119,11 @@ export const invoices = pgTable(
     ),
     check(
       "invoice_review_reason",
-      sql`(${table.state} = 'needs_review') = (${table.reviewReason} IS NOT NULL)`,
+      sql`(${table.state} = 'needs_review' OR ${table.providerReceiptState} = 'mismatch') = (${table.reviewReason} IS NOT NULL)`,
+    ),
+    check(
+      "invoice_provider_receipt_state",
+      sql`${table.providerReceiptState} IN ('unverified', 'verified', 'mismatch')`,
     ),
     check("invoice_attempts", sql`${table.attempts} >= 0`),
   ],

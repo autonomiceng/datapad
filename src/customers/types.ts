@@ -34,6 +34,11 @@ export interface CustomersOptions {
   allowProfile: (profile: CustomerProfile) => boolean;
 }
 export interface Customers {
+  /** Customer-owned profile read in the caller transaction; confers no authorization. */
+  readProfile(
+    tx: NodePgDatabase,
+    customerId: string,
+  ): Promise<RegisteredCustomer | null>;
   billingScope(
     actor: HumanActor,
   ): Promise<

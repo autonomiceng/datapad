@@ -32,3 +32,15 @@ mise run portal:demo -- --origin https://portal.example.test --inbox-origin http
 Configure the proxy to reach the printed loopback ports and preserve the original host. The application continues to listen on loopback. Authentication trusts only the configured origin. This task does not configure a proxy, publish a server or enable production records.
 
 `mise run test:portal` runs the genuine mailbox sign-in, profile, invitation, scope and sign-out journey against a disposable database and inbox. `mise run test:app` covers domain authorization, transactional persistence, forward migration and the existing viewer. Both belong to `mise run pr:check`. The [account architecture](accounts.md) defines the access contract; [portal OpenAPI](../contracts/portal-openapi.json) documents its routes.
+
+## Staff invoice sandbox
+
+`mise run portal:billing -- --config "$STRIPE_SANDBOX_CONFIG" --run-dir "$STRIPE_SANDBOX_RUN_DIR"` adds the staff invoice workflow to the authenticated portal. The config and run directory must be owner-only and outside Git, using the same key-file format as the [invoice sandbox](billing-demo.md). Only test keys are accepted. The run directory preserves the deployment identity and owns a separate database; restarting it preserves prepared invoices and provider receipts. Stripe CLI forwards signed events to the local app. All sign-in and invitation mail stays in Mailpit.
+
+Sign in as sample staff, open a customer and choose **Prepare invoice**. Select sample lines and a due date, then **Review invoice**. Preparation stores the invoice without contacting Stripe. **Issue invoice** authorizes the existing worker to issue that saved content. Only the explicit staff billing grant permits those commands. Customer members can view their own invoices and follow a verified payment link.
+
+This manual sandbox uses the current UTC issue date and a due date within the following 21 days. Stripe uses a deterministic placeholder email; no invoice email is sent. The local billing contact is still preserved in the invoice snapshot. A changed legal name that differs from the original Stripe customer creation name blocks issuance until provider-profile synchronization is implemented. Editing a customer never rewrites an existing invoice.
+
+Ordinary `portal:demo` keeps invoice creation visibly unavailable without provider configuration. It does not substitute a fake payment provider. Web, email and DNS preferences remain independent of billing.
+
+`mise run test:portal:billing -- --config "$STRIPE_SANDBOX_CONFIG" --run-dir "$STRIPE_ACCEPTANCE_RUN_DIR"` runs the explicit provider acceptance journey in its own run directory. It prepares and issues through the portal, opens the customer's hosted test invoice, pays using Stripe's test payment API, and waits for the real signed webhook to update the customer view. It does not automate hosted card entry, which can require a provider challenge. The normal PR gate needs no Stripe credentials; this task is separate and its result must be reported when provider behavior changes.

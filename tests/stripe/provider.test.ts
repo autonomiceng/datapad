@@ -13,6 +13,7 @@ import {
 const ownership = { accountId: "acct_synthetic", deploymentKey: "synthetic" };
 const intent: InvoiceIntent = {
   ...ownership,
+  recipientName: "Synthetic customer",
   customerId: "00000000-0000-4000-8000-000000000001",
   invoiceId: "00000000-0000-4000-8000-000000000002",
   providerCustomerId: "cus_synthetic",
@@ -43,6 +44,8 @@ function invoice(status = "draft", total = 0) {
     metadata: invoiceMetadata,
     livemode: false,
     customer: intent.providerCustomerId,
+    customer_name: intent.recipientName,
+    customer_email: `${intent.customerId}@billing.test`,
     currency: "usd",
     collection_method: "send_invoice",
     auto_advance: false,
@@ -147,15 +150,73 @@ test("recovery inspects every page, returns actual partial draft and stops on in
     1,
   );
   expect(await bounded.findInvoice(intent)).toEqual({ kind: "ambiguous" });
+  const incompleteLines = await provider(
+    (url) =>
+      url.pathname.endsWith("/lines")
+        ? list([line], true)
+        : invoice("paid", 100),
+    1,
+  );
+  await rejects(incompleteLines.retrieveInvoice(intent, "in_synthetic"), {
+    kind: "review",
+    receiptMismatch: false,
+  });
 });
 
-test("retrieval uses provider amounts and invoice-item identities; mutated line and duplicate ownership fail", async () => {
+test("retrieval preserves actual recipients, amounts and line identities; recipient mismatch blocks finalization and duplicate ownership fails", async () => {
   const adapter = await provider((url) =>
     url.pathname.endsWith("/lines") ? list([line]) : invoice("paid", 100),
   );
   const paid = await adapter.retrieveInvoice(intent, "in_synthetic");
   expect(paid.lines[0].providerLineId).toBe("ii_synthetic");
   expect(paid.lines[0].amountMinor).toBe(100);
+  expect(paid.recipientName).toBe(intent.recipientName);
+  expect(paid.recipientEmail).toBe(`${intent.customerId}@billing.test`);
+  const renamed = await provider((url) =>
+    url.pathname.endsWith("/lines")
+      ? list([line])
+      : {
+          ...invoice("draft", 100),
+          customer_name: "Changed synthetic customer",
+        },
+  );
+  expect(await renamed.retrieveInvoice(intent, "in_synthetic")).toMatchObject({
+    recipientName: "Changed synthetic customer",
+    recipientEmail: `${intent.customerId}@billing.test`,
+  });
+  await rejects(
+    renamed.finalizeInvoice(intent, "in_synthetic", {
+      idempotencyKey: "synthetic",
+    }),
+    { kind: "review", reason: "invoice_mismatch", receiptMismatch: true },
+  );
+  const differentEmail = await provider((url) =>
+    url.pathname.endsWith("/lines")
+      ? list([line])
+      : { ...invoice("draft", 100), customer_email: "changed@billing.test" },
+  );
+  expect(
+    await differentEmail.retrieveInvoice(intent, "in_synthetic"),
+  ).toMatchObject({
+    recipientName: intent.recipientName,
+    recipientEmail: "changed@billing.test",
+  });
+  await rejects(
+    differentEmail.finalizeInvoice(intent, "in_synthetic", {
+      idempotencyKey: "synthetic",
+    }),
+    { kind: "review", reason: "invoice_mismatch", receiptMismatch: true },
+  );
+  const missing = await provider((url) =>
+    url.pathname.endsWith("/lines")
+      ? list([line])
+      : { ...invoice("paid", 100), customer_name: null, customer_email: null },
+  );
+  expect(await missing.retrieveInvoice(intent, "in_synthetic")).toMatchObject({
+    status: "paid",
+    recipientName: null,
+    recipientEmail: null,
+  });
   const changed = await provider((url) =>
     url.pathname.endsWith("/lines")
       ? list([{ ...line, amount: 200 }])
@@ -164,6 +225,7 @@ test("retrieval uses provider amounts and invoice-item identities; mutated line 
   await rejects(changed.retrieveInvoice(intent, "in_synthetic"), {
     kind: "review",
     reason: "invoice_mismatch",
+    receiptMismatch: true,
   });
   const duplicate = await provider(() =>
     list([invoice(), { ...invoice(), id: "in_duplicate" }]),

@@ -3,6 +3,10 @@ import { staticPlugin } from "@elysia/static";
 import { Type } from "@sinclair/typebox";
 import { Elysia, t } from "elysia";
 import { join } from "node:path";
+import {
+  invoiceWorkflowRoutes,
+  type InvoiceWorkflowHttp,
+} from "./invoice-workflow-routes";
 import { serviceRoutes, type ServiceHttp } from "./service-routes";
 import { billingRoutes, type BillingHttp } from "./billing-routes";
 import {
@@ -64,12 +68,14 @@ export function createApp({
   assetsDir,
   billing,
   services,
+  invoiceWorkflow,
   accounts,
 }: {
   importReview: ImportReviewReader;
   assetsDir?: string;
   billing?: BillingHttp;
   services?: ServiceHttp;
+  invoiceWorkflow?: InvoiceWorkflowHttp;
   accounts?: {
     routes: Parameters<typeof accountRoutes>[0];
     authHandler: (request: Request) => Promise<Response>;
@@ -235,7 +241,7 @@ export function createApp({
     );
 
   app.use(billingRoutes(billing));
-  app.use(serviceRoutes(services));
+  app.use(serviceRoutes(services)).use(invoiceWorkflowRoutes(invoiceWorkflow));
   if (accounts) {
     app.use(accountRoutes(accounts.routes));
     app.get("/api/auth/*", ({ request }) => accounts.authHandler(request), {
